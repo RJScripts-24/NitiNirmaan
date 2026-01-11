@@ -4,12 +4,7 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { Database } from '@/types/database.types';
-import OpenAI from 'openai';
-
-// Initialize OpenAI for Vector Embeddings
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+import { generateEmbedding } from '@/lib/ai/embeddings';
 
 // Helper: Supabase Client
 const createClient = () => {
@@ -20,8 +15,8 @@ const createClient = () => {
     {
       cookies: {
         get(name: string) { return cookieStore.get(name)?.value; },
-        set(name: string, value: string, options: CookieOptions) { try { cookieStore.set({ name, value, ...options }); } catch (e) {} },
-        remove(name: string, options: CookieOptions) { try { cookieStore.set({ name, value: '', ...options }); } catch (e) {} },
+        set(name: string, value: string, options: CookieOptions) { try { cookieStore.set({ name, value, ...options }); } catch (e) { } },
+        remove(name: string, options: CookieOptions) { try { cookieStore.set({ name, value: '', ...options }); } catch (e) { } },
       },
     }
   );
@@ -30,20 +25,20 @@ const createClient = () => {
 // --- ACTION 1: FETCH ALL TEMPLATES (For the Library Page) ---
 export async function getTemplates(filter?: string) {
   const supabase = createClient();
-  
+
   let query = supabase.from('templates').select('*');
-  
+
   if (filter && filter !== 'all') {
     query = query.eq('domain', filter); // Filter by 'FLN', 'Career', 'Leadership'
   }
 
   const { data, error } = await query;
-  
+
   if (error) {
     console.error('Fetch Templates Error:', error);
     return [];
   }
-  
+
   return data;
 }
 
@@ -52,13 +47,8 @@ export async function findMatchingTemplates(userGoal: string) {
   const supabase = createClient();
 
   try {
-    // 1. Generate Embedding for the User's Goal
-    const embeddingResponse = await openai.embeddings.create({
-      model: 'text-embedding-3-small',
-      input: userGoal,
-    });
-    
-    const vector = embeddingResponse.data[0].embedding;
+    // 1. Generate Embedding for the User's Goal (via Hugging Face)
+    const vector = await generateEmbedding(userGoal);
 
     // 2. Query Supabase using pgvector (RPC call to match_templates function)
     const { data: templates, error } = await supabase.rpc('match_templates', {
@@ -68,7 +58,7 @@ export async function findMatchingTemplates(userGoal: string) {
     });
 
     if (error) throw error;
-    
+
     return templates;
 
   } catch (err) {
@@ -81,7 +71,7 @@ export async function findMatchingTemplates(userGoal: string) {
 // --- ACTION 3: FORK TEMPLATE (The "Clone" Logic) ---
 export async function forkTemplate(templateId: string, projectTitle: string) {
   const supabase = createClient();
-  
+
   // 1. Get Current User
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: 'Unauthorized' };
@@ -132,7 +122,7 @@ export async function forkTemplate(templateId: string, projectTitle: string) {
   // Logic: We need to match the old template node ID to the new project node ID.
   // Assumption: The order of insertion is preserved or we map by label/data.
   // For Hackathon simplicity, we map by Label (assuming unique labels in template).
-  
+
   const nodeMap = new Map(); // Key: Label, Value: New Node ID
   insertedNodes.forEach(n => nodeMap.set(n.data['label'], n.id));
 
