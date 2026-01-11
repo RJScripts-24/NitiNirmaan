@@ -48,28 +48,22 @@ export default function Dashboard({ onBack, onNavigateToPatterns, onNavigateToIn
     }
   ];
 
-  const getHealthColor = (health: number) => {
-    if (health <= 30) return '#B91C1C';
-    if (health <= 70) return '#F59E0B';
-    return '#047857';
-  };
-
   return (
     <div className="min-h-screen bg-[#0F1216] text-gray-200 relative">
       {/* Global Noise Layer */}
       <div className="fixed inset-0 pointer-events-none opacity-[0.06]" style={{
         backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
-      }}></div>
+      }} />
 
       {/* Global Vignette */}
       <div className="fixed inset-0 pointer-events-none" style={{
         background: 'radial-gradient(ellipse at center, transparent 30%, rgba(0,0,0,0.4) 100%)'
-      }}></div>
+      }} />
 
       {/* Soft Radial Gradient */}
       <div className="fixed inset-0 pointer-events-none" style={{
         background: 'radial-gradient(ellipse 100% 80% at 50% 30%, rgba(23, 27, 33, 0.15) 0%, transparent 60%)'
-      }}></div>
+      }} />
 
       {/* Top Bar */}
       <nav className="sticky top-0 z-50 backdrop-blur-md border-b border-[#1F2937]/30">
@@ -77,7 +71,7 @@ export default function Dashboard({ onBack, onNavigateToPatterns, onNavigateToIn
           {/* Noise on top bar */}
           <div className="absolute inset-0 opacity-[0.05]" style={{
             backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
-          }}></div>
+          }} />
 
           <div className="max-w-[1920px] mx-auto px-6 py-4 flex items-center gap-6 relative">
             {/* Left: Logo */}

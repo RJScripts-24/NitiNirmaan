@@ -45,24 +45,16 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0f1318] text-white relative overflow-x-hidden">
-      {/* Hero Background Gradient */}
-      <div className="fixed inset-0 pointer-events-none" style={{
-        background: `
-          radial-gradient(ellipse 100% 60% at 50% 20%, rgba(230, 126, 34, 0.08) 0%, transparent 50%),
-          linear-gradient(180deg, #0f1318 0%, #1a1f28 100%)
-        `
-      }}></div>
-
-      {/* Noise texture overlay */}
-      <div className="fixed inset-0 pointer-events-none opacity-[0.03] z-50" style={{
-        backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
-      }}></div>
-
-      {/* Vignette */}
-      <div className="fixed inset-0 pointer-events-none" style={{
-        background: 'radial-gradient(ellipse at center, transparent 0%, transparent 40%, rgba(15, 19, 24, 0.3) 70%, rgba(15, 19, 24, 0.6) 100%)'
-      }}></div>
+    <div className="min-h-screen text-white relative overflow-x-hidden" style={{
+      background: `
+        radial-gradient(circle, transparent 20%, rgba(0,0,0,0.4) 100%),
+        url("https://www.transparenttextures.com/patterns/stardust.png"),
+        linear-gradient(to right, rgba(255,255,255,0.05) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255,255,255,0.05) 1px, transparent 1px),
+        #121418
+      `,
+      backgroundSize: 'auto, auto, 40px 40px, 40px 40px, auto'
+    }}>
 
       {/* Sticky Navbar */}
       <nav className="sticky top-0 z-50 backdrop-blur-sm">
@@ -92,26 +84,27 @@ export default function App() {
 
               {/* Right CTA Group */}
               <div className="flex items-center space-x-2 md:space-x-4">
-                <button 
+                <button
                   onClick={() => setCurrentPage('auth')}
                   className="px-3 py-1.5 md:px-4 md:py-2 border border-[#2d3340] text-white rounded hover:bg-[#1a1f28] transition-colors text-sm"
                 >
                   Log In
                 </button>
-                <button 
+                <button
                   onClick={() => setCurrentPage('auth')}
-                  className="px-3 py-1.5 md:px-5 md:py-2 rounded font-medium text-sm text-white transition-all duration-300 hover:transform hover:-translate-y-0.5"
+                  className="px-3 py-1.5 md:px-5 md:py-2 rounded font-medium text-sm text-white transition-all duration-300"
                   style={{
-                    background: 'linear-gradient(135deg, #e67e22 0%, #d35400 100%)',
-                    boxShadow: '0 4px 14px rgba(230, 126, 34, 0.3)'
+                    background: 'linear-gradient(180deg, #e67e22 0%, #d35400 100%)',
+                    border: '1px solid rgba(255,255,255,0.2)',
+                    boxShadow: '0 4px 15px rgba(230, 126, 34, 0.3)'
                   }}
                   onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => {
-                    e.currentTarget.style.background = 'linear-gradient(135deg, #f39c12 0%, #e67e22 100%)';
-                    e.currentTarget.style.boxShadow = '0 6px 20px rgba(230, 126, 34, 0.4)';
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 6px 20px rgba(230, 126, 34, 0.5)';
                   }}
                   onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => {
-                    e.currentTarget.style.background = 'linear-gradient(135deg, #e67e22 0%, #d35400 100%)';
-                    e.currentTarget.style.boxShadow = '0 4px 14px rgba(230, 126, 34, 0.3)';
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 4px 15px rgba(230, 126, 34, 0.3)';
                   }}
                   title="No blank documents. Start with a system."
                 >
@@ -126,17 +119,17 @@ export default function App() {
 
       {/* Hero Section */}
       <section className="relative w-full px-4 md:px-6 pt-12 md:pt-20 pb-12 md:pb-16 overflow-hidden">
-        {/* Grid background covering entire hero section */}
-        <div 
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            backgroundImage: `
-              linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-              linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px)
-            `,
-            backgroundSize: '30px 30px'
-          }}
-        ></div>
+        {/* Glowing Hero Accent */}
+        <div className="absolute pointer-events-none" style={{
+          top: '15%',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          width: '600px',
+          height: '400px',
+          background: 'radial-gradient(circle, rgba(230, 126, 34, 0.15) 0%, transparent 70%)',
+          filter: 'blur(60px)',
+          zIndex: 0
+        }} />
 
         {/* 3D Hover Effect */}
         <HeroGrid3D />
@@ -155,20 +148,21 @@ export default function App() {
 
           {/* Primary CTA */}
           <div className="mb-3">
-            <button 
+            <button
               onClick={() => setCurrentPage('auth')}
-              className="px-6 py-2.5 md:px-8 md:py-3 rounded font-semibold text-base md:text-lg text-white transition-all duration-300 hover:transform hover:-translate-y-0.5 inline-flex items-center gap-2"
+              className="px-6 py-2.5 md:px-8 md:py-3 rounded font-semibold text-base md:text-lg text-white transition-all duration-300 inline-flex items-center gap-2"
               style={{
-                background: 'linear-gradient(135deg, #e67e22 0%, #d35400 100%)',
-                boxShadow: '0 4px 14px rgba(230, 126, 34, 0.3)'
+                background: 'linear-gradient(180deg, #e67e22 0%, #d35400 100%)',
+                border: '1px solid rgba(255,255,255,0.2)',
+                boxShadow: '0 4px 15px rgba(230, 126, 34, 0.3)'
               }}
               onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => {
-                e.currentTarget.style.background = 'linear-gradient(135deg, #f39c12 0%, #e67e22 100%)';
-                e.currentTarget.style.boxShadow = '0 6px 20px rgba(230, 126, 34, 0.4)';
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.boxShadow = '0 6px 20px rgba(230, 126, 34, 0.5)';
               }}
               onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => {
-                e.currentTarget.style.background = 'linear-gradient(135deg, #e67e22 0%, #d35400 100%)';
-                e.currentTarget.style.boxShadow = '0 4px 14px rgba(230, 126, 34, 0.3)';
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = '0 4px 15px rgba(230, 126, 34, 0.3)';
               }}
             >
               Start Building <ArrowRight className="w-4 h-4 md:w-5 md:h-5" />
@@ -244,19 +238,19 @@ export default function App() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
             {/* Card 1 - Drag-and-Drop LFA Builder */}
             <div className="rounded-lg p-6 md:p-8 relative transition-all duration-300 hover:transform hover:-translate-y-1" style={{
-              background: 'linear-gradient(135deg, rgba(26, 31, 40, 0.8) 0%, rgba(37, 43, 53, 0.6) 100%)',
+              background: 'rgba(255, 255, 255, 0.03)',
               backdropFilter: 'blur(10px)',
-              border: '1px solid #2d3340',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
               boxShadow: '0 12px 24px rgba(0, 0, 0, 0.2)'
             }}
-            onMouseEnter={(e: React.MouseEvent<HTMLDivElement>) => {
-              e.currentTarget.style.borderColor = '#3d4451';
-              e.currentTarget.style.boxShadow = '0 12px 24px rgba(0, 0, 0, 0.3)';
-            }}
-            onMouseLeave={(e: React.MouseEvent<HTMLDivElement>) => {
-              e.currentTarget.style.borderColor = '#2d3340';
-              e.currentTarget.style.boxShadow = '0 12px 24px rgba(0, 0, 0, 0.2)';
-            }}
+              onMouseEnter={(e: React.MouseEvent<HTMLDivElement>) => {
+                e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.15)';
+                e.currentTarget.style.boxShadow = '0 12px 24px rgba(0, 0, 0, 0.3)';
+              }}
+              onMouseLeave={(e: React.MouseEvent<HTMLDivElement>) => {
+                e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                e.currentTarget.style.boxShadow = '0 12px 24px rgba(0, 0, 0, 0.2)';
+              }}
             >
               <div className="relative z-10">
                 <Network className="w-8 h-8 md:w-10 md:h-10 text-[#e67e22] mb-3 md:mb-4" />
@@ -267,7 +261,7 @@ export default function App() {
                 <p className="text-[#b8bcc4] mb-3 md:mb-4 text-sm md:text-base">
                   Visual Logic Construction
                 </p>
-                
+
                 {/* Mini Visual */}
                 <div className="my-4 md:my-6 flex items-center gap-2 md:gap-3">
                   <div className="bg-[#252b35] px-2 py-1.5 md:px-3 md:py-2 rounded text-xs flex items-center gap-1 text-white">
@@ -298,19 +292,19 @@ export default function App() {
 
             {/* Card 2 - Pre-Mortem Simulator */}
             <div className="rounded-lg p-6 md:p-8 relative transition-all duration-300 hover:transform hover:-translate-y-1" style={{
-              background: 'linear-gradient(135deg, rgba(26, 31, 40, 0.8) 0%, rgba(37, 43, 53, 0.6) 100%)',
+              background: 'rgba(255, 255, 255, 0.03)',
               backdropFilter: 'blur(10px)',
-              border: '1px solid #2d3340',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
               boxShadow: '0 12px 24px rgba(0, 0, 0, 0.2)'
             }}
-            onMouseEnter={(e: React.MouseEvent<HTMLDivElement>) => {
-              e.currentTarget.style.borderColor = '#3d4451';
-              e.currentTarget.style.boxShadow = '0 12px 24px rgba(0, 0, 0, 0.3)';
-            }}
-            onMouseLeave={(e: React.MouseEvent<HTMLDivElement>) => {
-              e.currentTarget.style.borderColor = '#2d3340';
-              e.currentTarget.style.boxShadow = '0 12px 24px rgba(0, 0, 0, 0.2)';
-            }}
+              onMouseEnter={(e: React.MouseEvent<HTMLDivElement>) => {
+                e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.15)';
+                e.currentTarget.style.boxShadow = '0 12px 24px rgba(0, 0, 0, 0.3)';
+              }}
+              onMouseLeave={(e: React.MouseEvent<HTMLDivElement>) => {
+                e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                e.currentTarget.style.boxShadow = '0 12px 24px rgba(0, 0, 0, 0.2)';
+              }}
             >
               <div className="relative z-10">
                 <Activity className="w-8 h-8 md:w-10 md:h-10 text-[#047857] mb-3 md:mb-4" />
@@ -350,19 +344,19 @@ export default function App() {
 
             {/* Card 3 - AI That Challenges Your Logic */}
             <div className="rounded-lg p-6 md:p-8 relative transition-all duration-300 hover:transform hover:-translate-y-1" style={{
-              background: 'linear-gradient(135deg, rgba(26, 31, 40, 0.8) 0%, rgba(37, 43, 53, 0.6) 100%)',
+              background: 'rgba(255, 255, 255, 0.03)',
               backdropFilter: 'blur(10px)',
-              border: '1px solid #2d3340',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
               boxShadow: '0 12px 24px rgba(0, 0, 0, 0.2)'
             }}
-            onMouseEnter={(e: React.MouseEvent<HTMLDivElement>) => {
-              e.currentTarget.style.borderColor = '#3d4451';
-              e.currentTarget.style.boxShadow = '0 12px 24px rgba(0, 0, 0, 0.3)';
-            }}
-            onMouseLeave={(e: React.MouseEvent<HTMLDivElement>) => {
-              e.currentTarget.style.borderColor = '#2d3340';
-              e.currentTarget.style.boxShadow = '0 12px 24px rgba(0, 0, 0, 0.2)';
-            }}
+              onMouseEnter={(e: React.MouseEvent<HTMLDivElement>) => {
+                e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.15)';
+                e.currentTarget.style.boxShadow = '0 12px 24px rgba(0, 0, 0, 0.3)';
+              }}
+              onMouseLeave={(e: React.MouseEvent<HTMLDivElement>) => {
+                e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                e.currentTarget.style.boxShadow = '0 12px 24px rgba(0, 0, 0, 0.2)';
+              }}
             >
               <div className="relative z-10">
                 <Bot className="w-8 h-8 md:w-10 md:h-10 text-[#4ecdc4] mb-3 md:mb-4" />
@@ -416,15 +410,15 @@ export default function App() {
           <h3 className="text-white text-xl md:text-2xl text-center mb-8 md:mb-12">
             Trusted by 150+ Education Organizations
           </h3>
-          
+
           <div className="flex flex-wrap items-center justify-center gap-6 md:gap-12 opacity-40">
             {/* Logo placeholders - grayscale rectangles representing logos */}
             {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-              <div 
+              <div
                 key={i}
                 className="w-16 h-12 md:w-24 md:h-16 bg-[#252b35] rounded opacity-50 hover:opacity-100 transition-opacity cursor-pointer border border-[#2d3340]"
                 title={`Program model forked ${Math.floor(Math.random() * 50) + 10} times`}
-              ></div>
+              />
             ))}
           </div>
         </div>
@@ -438,20 +432,21 @@ export default function App() {
             NitiNirmaan just makes it visible.
           </p>
 
-          <button 
+          <button
             onClick={() => setCurrentPage('auth')}
-            className="px-6 py-2.5 md:px-8 md:py-3 rounded font-semibold text-base md:text-lg text-white transition-all duration-300 hover:transform hover:-translate-y-0.5 inline-flex items-center gap-2"
+            className="px-6 py-2.5 md:px-8 md:py-3 rounded font-semibold text-base md:text-lg text-white transition-all duration-300 inline-flex items-center gap-2"
             style={{
-              background: 'linear-gradient(135deg, #e67e22 0%, #d35400 100%)',
-              boxShadow: '0 4px 14px rgba(230, 126, 34, 0.3)'
+              background: 'linear-gradient(180deg, #e67e22 0%, #d35400 100%)',
+              border: '1px solid rgba(255,255,255,0.2)',
+              boxShadow: '0 4px 15px rgba(230, 126, 34, 0.3)'
             }}
             onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => {
-              e.currentTarget.style.background = 'linear-gradient(135deg, #f39c12 0%, #e67e22 100%)';
-              e.currentTarget.style.boxShadow = '0 6px 20px rgba(230, 126, 34, 0.4)';
+              e.currentTarget.style.transform = 'translateY(-2px)';
+              e.currentTarget.style.boxShadow = '0 6px 20px rgba(230, 126, 34, 0.5)';
             }}
             onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => {
-              e.currentTarget.style.background = 'linear-gradient(135deg, #e67e22 0%, #d35400 100%)';
-              e.currentTarget.style.boxShadow = '0 4px 14px rgba(230, 126, 34, 0.3)';
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 4px 15px rgba(230, 126, 34, 0.3)';
             }}
           >
             Start Building <ArrowRight className="w-4 h-4 md:w-5 md:h-5" />
@@ -459,8 +454,6 @@ export default function App() {
         </div>
       </section>
 
-      {/* Footer Spacing */}
-      <div className="h-12 md:h-20"></div>
     </div>
   );
 }
