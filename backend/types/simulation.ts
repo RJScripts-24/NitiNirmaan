@@ -1,0 +1,1 @@
+// SimulationResult, LogicError

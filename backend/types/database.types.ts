@@ -1,0 +1,1 @@
+// Supabase Auto-generated types
