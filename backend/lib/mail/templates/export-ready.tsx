@@ -1,1 +1,0 @@
-// Export ready email template
