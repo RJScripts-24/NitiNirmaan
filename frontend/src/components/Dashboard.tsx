@@ -51,13 +51,24 @@ export default function Dashboard({ onBack, onNavigateToPatterns, onNavigateToIn
   return (
     <div className="min-h-screen bg-[#0F1216] text-gray-200 relative">
       {/* Global Noise Layer */}
-      <div className="fixed inset-0 pointer-events-none opacity-[0.06]" style={{
-        backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
+      <div className="fixed inset-0 pointer-events-none opacity-[0.04]" style={{
+        backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
       }} />
 
-      {/* Global Vignette */}
+      {/* Vertical Grain Texture */}
+      <div className="fixed inset-0 pointer-events-none opacity-[0.02]" style={{
+        backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,0.03) 2px, rgba(255,255,255,0.03) 4px)',
+      }} />
+
+      {/* Scanlines Effect */}
+      <div className="fixed inset-0 pointer-events-none opacity-[0.015]" style={{
+        backgroundImage: 'repeating-linear-gradient(0deg, rgba(0,0,0,0.15) 0px, transparent 1px, transparent 2px)',
+        backgroundSize: '100% 3px',
+      }} />
+
+      {/* Global Vignette - Enhanced */}
       <div className="fixed inset-0 pointer-events-none" style={{
-        background: 'radial-gradient(ellipse at center, transparent 30%, rgba(0,0,0,0.4) 100%)'
+        background: 'radial-gradient(ellipse at center, transparent 20%, rgba(0,0,0,0.6) 100%)'
       }} />
 
       {/* Soft Radial Gradient */}
@@ -69,8 +80,8 @@ export default function Dashboard({ onBack, onNavigateToPatterns, onNavigateToIn
       <nav className="sticky top-0 z-50 backdrop-blur-md border-b border-[#1F2937]/30">
         <div className="bg-[#171B21]/90 relative">
           {/* Noise on top bar */}
-          <div className="absolute inset-0 opacity-[0.05]" style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
+          <div className="absolute inset-0 opacity-[0.03]" style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
           }} />
 
           <div className="max-w-[1920px] mx-auto px-6 py-4 flex items-center gap-6 relative">
@@ -108,14 +119,14 @@ export default function Dashboard({ onBack, onNavigateToPatterns, onNavigateToIn
             <div className="flex items-center gap-3">
               {/* Avatar */}
               <div className="relative w-12 h-12 rounded-full bg-[#374151] overflow-hidden border-2 border-[#2D3340]">
-                <img 
-                  src="figma:asset/c2883b253b54d2569f35712fdc66c1601585d805.png" 
+                <img
+                  src="figma:asset/c2883b253b54d2569f35712fdc66c1601585d805.png"
                   alt="User avatar"
                   className="w-full h-full object-cover"
                 />
                 <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-[#D97706] rounded-full border-2 border-[#171B21]"></div>
               </div>
-              
+
               {/* Level Badge */}
               <div className="group relative cursor-help">
                 <div className="text-sm">
@@ -123,7 +134,7 @@ export default function Dashboard({ onBack, onNavigateToPatterns, onNavigateToIn
                   <span className="text-[#D97706]">Strategist</span>
                   <span className="text-[#D97706] ml-1">•</span>
                 </div>
-                
+
                 {/* Tooltip */}
                 <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 px-4 py-2.5 bg-[#1F2937] rounded text-xs text-[#E5E7EB] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 shadow-lg">
                   <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-[#1F2937] rotate-45"></div>
@@ -138,7 +149,7 @@ export default function Dashboard({ onBack, onNavigateToPatterns, onNavigateToIn
                 <Bell className="w-5 h-5 text-[#9CA3AF]" />
                 <div className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#D97706] rounded-full"></div>
               </button>
-              <button 
+              <button
                 onClick={onNavigateToSettings}
                 className="w-10 h-10 flex items-center justify-center hover:bg-[#1F2937] rounded transition-colors border border-[#2D3340]"
               >
@@ -157,65 +168,72 @@ export default function Dashboard({ onBack, onNavigateToPatterns, onNavigateToIn
         {/* Quick Actions */}
         <section className="mb-12">
           <h2 className="text-[#E5E7EB] text-xl font-semibold mb-6">Quick Actions</h2>
-          
+
           <div className="grid md:grid-cols-2 gap-6">
             {/* Create New Mission Card */}
-            <div 
+            <div
               onClick={onNavigateToInitialize}
-              className="group relative bg-[#1F2329] rounded-lg overflow-hidden cursor-pointer transition-all hover:bg-[#232831] border border-[#2D3340]" style={{
-              boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
-            }}>
+              className="group relative rounded-lg overflow-hidden cursor-pointer transition-all"
+              style={{
+                background: 'linear-gradient(to bottom, #1E2024 0%, #181A1E 100%)',
+                boxShadow: '0 8px 24px rgba(0,0,0,0.5), inset 1px 1px 0 rgba(74,77,82,0.4)',
+                border: '1px solid rgba(74,77,82,0.3)'
+              }}>
               {/* Noise on card */}
-              <div className="absolute inset-0 rounded-lg opacity-[0.04]" style={{
-                backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
+              <div className="absolute inset-0 rounded-lg opacity-[0.03]" style={{
+                backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
               }}></div>
 
-              <div className="relative p-8">
-                <div className="flex items-start gap-4 mb-6">
-                  <div className="w-14 h-14 bg-[#D97706] rounded-lg flex items-center justify-center flex-shrink-0">
-                    <Plus className="w-7 h-7 text-white" />
+              {/* Etched Copper Schematics Background */}
+              <div className="absolute inset-0 opacity-[0.12]">
+                <svg className="w-full h-full" viewBox="0 0 400 200" fill="none" stroke="#A0522D" strokeWidth="0.5">
+                  <line x1="50" y1="100" x2="120" y2="100" />
+                  <circle cx="120" cy="100" r="8" />
+                  <line x1="128" y1="100" x2="180" y2="60" />
+                  <line x1="128" y1="100" x2="180" y2="140" />
+                  <rect x="180" y="50" width="40" height="20" rx="2" />
+                  <rect x="180" y="130" width="40" height="20" rx="2" />
+                  <line x1="220" y1="60" x2="280" y2="60" />
+                  <line x1="220" y1="140" x2="280" y2="140" />
+                  <circle cx="280" cy="60" r="6" />
+                  <circle cx="280" cy="140" r="6" />
+                </svg>
+              </div>
+
+              <div className="relative p-8 min-h-[200px] flex flex-col justify-between">
+                <div className="flex items-start gap-6">
+                  {/* Vibrant Orange Plus Icon with Neon Glow */}
+                  <div className="relative flex-shrink-0">
+                    {/* Outer halo */}
+                    <div className="absolute inset-0 -m-2 bg-[#CC7A00] blur-lg opacity-30 rounded-full"></div>
+                    <Plus className="w-12 h-12 text-[#FF8C00] relative z-10" strokeWidth={2.5} style={{
+                      filter: 'drop-shadow(0 0 6px rgba(255, 140, 0, 0.6))'
+                    }} />
                   </div>
+
                   <div className="flex-1">
-                    <h3 className="text-[#E5E7EB] text-xl font-semibold mb-2">Create New Mission</h3>
-                    <p className="text-[#9CA3AF] text-sm">Start from a goal, not a blank canvas.</p>
+                    <h3 className="text-white text-xl font-bold mb-2">Create New Mission</h3>
+                    <p className="text-[#8E959F] text-sm">Start from a goal, not a blank canvas.</p>
                   </div>
                 </div>
 
-                {/* Wireframe preview - always visible */}
-                <div className="h-24 bg-[#171B21] rounded p-4 relative overflow-hidden">
-                  {/* Grid background */}
-                  <div className="absolute inset-0 opacity-20" style={{
-                    backgroundImage: `
-                      linear-gradient(#374151 1px, transparent 1px),
-                      linear-gradient(90deg, #374151 1px, transparent 1px)
-                    `,
-                    backgroundSize: '12px 12px',
-                  }}></div>
+                {/* Decorative Icons - Bottom Right */}
+                <div className="flex justify-end items-end">
+                  <div className="flex items-center gap-3 opacity-40">
+                    {/* Levels/Slider Icon */}
+                    <div className="flex flex-col justify-center gap-[6px]">
+                      <div className="w-5 h-[2px] bg-[#70757D] relative">
+                        <div className="absolute -top-[2px] left-1 w-[2px] h-[6px] bg-[#70757D]"></div>
+                      </div>
+                      <div className="w-5 h-[2px] bg-[#70757D] relative">
+                        <div className="absolute -top-[2px] right-1 w-[2px] h-[6px] bg-[#70757D]"></div>
+                      </div>
+                    </div>
 
-                  {/* Flowchart elements */}
-                  <div className="relative w-full h-full flex items-center justify-start gap-3">
-                    {/* Input node */}
-                    <div className="w-6 h-6 border-2 border-[#6B7280] rounded-sm"></div>
-                    
-                    {/* Arrow */}
-                    <div className="w-8 h-px bg-[#6B7280]"></div>
-                    
-                    {/* Process box */}
-                    <div className="w-12 h-8 border-2 border-[#6B7280] rounded"></div>
-                    
-                    {/* Arrow */}
-                    <div className="w-8 h-px bg-[#6B7280]"></div>
-                    
-                    {/* Decision diamond */}
-                    <div className="w-7 h-7 border-2 border-[#6B7280] rotate-45"></div>
-                    
-                    {/* Arrow */}
-                    <div className="w-8 h-px bg-[#6B7280]"></div>
-                    
-                    {/* Output boxes */}
-                    <div className="flex flex-col gap-1.5">
-                      <div className="w-10 h-3 border border-[#6B7280] rounded-sm"></div>
-                      <div className="w-10 h-3 border border-[#6B7280] rounded-sm"></div>
+                    {/* Equals Icon */}
+                    <div className="flex flex-col gap-[4px]">
+                      <div className="w-5 h-[3px] bg-[#70757D] rounded-sm"></div>
+                      <div className="w-5 h-[3px] bg-[#70757D] rounded-sm"></div>
                     </div>
                   </div>
                 </div>
@@ -223,63 +241,64 @@ export default function Dashboard({ onBack, onNavigateToPatterns, onNavigateToIn
             </div>
 
             {/* Browse Pattern Library Card */}
-            <div 
+            <div
               onClick={onNavigateToPatterns}
-              className="group relative bg-[#1F2329] rounded-lg overflow-hidden cursor-pointer transition-all hover:bg-[#232831] border border-[#2D3340]" 
+              className="group relative rounded-lg overflow-hidden cursor-pointer transition-all"
               style={{
-              boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
-            }}>
+                background: 'linear-gradient(to bottom, #1E2024 0%, #181A1E 100%)',
+                boxShadow: '0 8px 24px rgba(0,0,0,0.5), inset 1px 1px 0 rgba(74,77,82,0.4)',
+                border: '1px solid rgba(74,77,82,0.3)'
+              }}>
               {/* Noise on card */}
-              <div className="absolute inset-0 rounded-lg opacity-[0.04]" style={{
-                backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
+              <div className="absolute inset-0 rounded-lg opacity-[0.03]" style={{
+                backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
               }}></div>
 
-              <div className="relative p-8">
-                <div className="flex items-start gap-4 mb-6">
-                  <div className="w-14 h-14 bg-[#D97706] rounded-lg flex items-center justify-center flex-shrink-0">
-                    <Book className="w-7 h-7 text-white" />
+              {/* Etched Copper Schematics Background - Fork Pattern */}
+              <div className="absolute inset-0 opacity-[0.12]">
+                <svg className="w-full h-full" viewBox="0 0 400 200" fill="none" stroke="#A0522D" strokeWidth="0.5">
+                  <line x1="40" y1="100" x2="100" y2="100" />
+                  <circle cx="100" cy="100" r="8" />
+                  <line x1="108" y1="100" x2="160" y2="60" />
+                  <line x1="108" y1="100" x2="160" y2="140" />
+                  <rect x="160" y="50" width="50" height="20" rx="2" />
+                  <rect x="160" y="130" width="50" height="20" rx="2" />
+                  <line x1="210" y1="60" x2="260" y2="60" />
+                  <line x1="210" y1="140" x2="260" y2="140" />
+                  <line x1="260" y1="60" x2="300" y2="100" />
+                  <line x1="260" y1="140" x2="300" y2="100" />
+                  <circle cx="300" cy="100" r="8" />
+                </svg>
+              </div>
+
+              <div className="relative p-8 min-h-[200px] flex flex-col justify-between">
+                <div className="flex items-start gap-6">
+                  {/* Vibrant Orange Book Icon with Neon Glow */}
+                  <div className="relative flex-shrink-0">
+                    {/* Outer halo */}
+                    <div className="absolute inset-0 -m-2 bg-[#CC7A00] blur-lg opacity-30 rounded-full"></div>
+                    <Book className="w-12 h-12 text-[#FF8C00] relative z-10" strokeWidth={2.5} style={{
+                      filter: 'drop-shadow(0 0 6px rgba(255, 140, 0, 0.6))'
+                    }} />
                   </div>
+
                   <div className="flex-1">
-                    <h3 className="text-[#E5E7EB] text-xl font-semibold mb-2">Browse Pattern Library</h3>
-                    <p className="text-[#9CA3AF] text-sm">Fork proven program logic from the network.</p>
+                    <h3 className="text-white text-xl font-bold mb-2">Browse Pattern Library</h3>
+                    <p className="text-[#8E959F] text-sm">Fork proven program logic from the network.</p>
                   </div>
                 </div>
 
-                {/* Branching preview - always visible */}
-                <div className="h-24 bg-[#171B21] rounded p-4 relative overflow-hidden">
-                  {/* Grid background */}
-                  <div className="absolute inset-0 opacity-20" style={{
-                    backgroundImage: `
-                      linear-gradient(#374151 1px, transparent 1px),
-                      linear-gradient(90deg, #374151 1px, transparent 1px)
-                    `,
-                    backgroundSize: '12px 12px',
-                  }}></div>
+                {/* Decorative Icons - Bottom Right */}
+                <div className="flex justify-end items-end">
+                  <div className="flex items-center gap-3 opacity-40">
+                    {/* Play/Triangle Icon */}
+                    <div className="w-0 h-0 border-t-[6px] border-t-transparent border-l-[10px] border-l-[#70757D] border-b-[6px] border-b-transparent"></div>
 
-                  {/* Fork/branch diagram */}
-                  <div className="relative w-full h-full">
-                    {/* Main branch */}
-                    <svg className="absolute inset-0 w-full h-full" viewBox="0 0 300 80" fill="none" stroke="#6B7280" strokeWidth="2">
-                      {/* Main line */}
-                      <line x1="20" y1="40" x2="80" y2="40" />
-                      
-                      {/* Fork node */}
-                      <circle cx="80" cy="40" r="5" fill="#6B7280" />
-                      
-                      {/* Upper branch */}
-                      <line x1="80" y1="40" x2="120" y2="20" />
-                      <rect x="120" y="12" width="40" height="16" rx="2" />
-                      <line x1="160" y1="20" x2="200" y2="20" />
-                      
-                      {/* Lower branch */}
-                      <line x1="80" y1="40" x2="120" y2="60" />
-                      <rect x="120" y="52" width="40" height="16" rx="2" />
-                      <line x1="160" y1="60" x2="200" y2="60" />
-                      
-                      {/* Merge indicators */}
-                      <polygon points="210,20 218,20 214,26" fill="#6B7280" />
-                      <polygon points="210,60 218,60 214,54" fill="#6B7280" />
-                    </svg>
+                    {/* Pause Icon */}
+                    <div className="flex gap-[3px]">
+                      <div className="w-[3px] h-4 bg-[#70757D] rounded-sm"></div>
+                      <div className="w-[3px] h-4 bg-[#70757D] rounded-sm"></div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -298,9 +317,9 @@ export default function Dashboard({ onBack, onNavigateToPatterns, onNavigateToIn
                 </svg>
               </button>
             </div>
-            
+
             <div className="relative">
-              <select 
+              <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
                 className="appearance-none bg-[#171B21] border border-[#1F2937] rounded px-4 py-2 pr-8 text-sm text-[#9CA3AF] focus:outline-none focus:border-[#374151] cursor-pointer"
@@ -320,11 +339,11 @@ export default function Dashboard({ onBack, onNavigateToPatterns, onNavigateToIn
           {/* Project Cards - Full Width List */}
           <div className="space-y-4">
             {projects.map((project) => (
-              <div 
+              <div
                 key={project.id}
-                className="relative bg-[#2B2F38] rounded-lg overflow-hidden cursor-pointer transition-all hover:bg-[#2F333C]"
+                className="relative bg-[#2B2F38] rounded-lg overflow-hidden cursor-pointer transition-all hover:bg-[#2F333C] border border-[#374151]/50"
                 style={{
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.3)'
+                  boxShadow: '0 4px 16px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05)'
                 }}
               >
                 {/* Noise on card */}
@@ -337,7 +356,7 @@ export default function Dashboard({ onBack, onNavigateToPatterns, onNavigateToIn
                   <div className="flex-1 p-6">
                     <div className="flex items-start justify-between mb-3">
                       <h3 className="text-[#E5E7EB] font-semibold text-lg">{project.name}</h3>
-                      
+
                       {/* Status Badge */}
                       <div className="flex items-center gap-3">
                         {project.statusColor === 'success' ? (
@@ -371,15 +390,20 @@ export default function Dashboard({ onBack, onNavigateToPatterns, onNavigateToIn
                         <span className="text-[#9CA3AF] text-xs font-medium">Logic Health</span>
                       </div>
                       <div className="relative h-2.5 bg-[#1A1D24] rounded-full overflow-hidden">
-                        <div 
+                        <div
                           className="absolute left-0 top-0 h-full rounded-full transition-all"
                           style={{
                             width: `${project.logicHealth}%`,
-                            background: project.logicHealth <= 30 
-                              ? '#B91C1C' 
-                              : project.logicHealth <= 70 
-                              ? '#D97706' 
-                              : 'linear-gradient(to right, #047857 0%, #F59E0B 100%)'
+                            background: project.logicHealth <= 30
+                              ? 'linear-gradient(to right, #B22222 0%, #FF8C00 100%)'
+                              : project.logicHealth <= 70
+                                ? 'linear-gradient(to right, #FF8C00 0%, #D97706 100%)'
+                                : 'linear-gradient(to right, #32CD32 0%, #ADFF2F 100%)',
+                            boxShadow: project.logicHealth <= 30
+                              ? '0 0 8px rgba(178, 34, 34, 0.6), inset 0 1px 2px rgba(255, 255, 255, 0.3)'
+                              : project.logicHealth <= 70
+                                ? '0 0 8px rgba(255, 140, 0, 0.6), inset 0 1px 2px rgba(255, 255, 255, 0.3)'
+                                : '0 0 8px rgba(50, 205, 50, 0.6), inset 0 1px 2px rgba(255, 255, 255, 0.3)'
                           }}
                           title="Based on completeness, causal integrity, and indicator coverage."
                         ></div>
@@ -410,7 +434,7 @@ export default function Dashboard({ onBack, onNavigateToPatterns, onNavigateToIn
                             <div className="absolute left-20 top-1/2 -translate-y-1/2 w-4 h-4 bg-[#6B7280] rounded-sm"></div>
                             <div className="absolute left-24 top-1/2 -translate-y-1/2 w-16 h-px bg-[#6B7280]"></div>
                             <div className="absolute right-4 top-1/2 -translate-y-1/2 w-3 h-3 bg-[#6B7280] rounded"></div>
-                            
+
                             {/* Status indicator */}
                             <div className="absolute right-2 top-2 flex items-center gap-1 px-1.5 py-0.5 bg-[#374151] rounded text-[10px] text-[#9CA3AF]">
                               <div className="w-1.5 h-1.5 bg-[#9CA3AF] rounded-full"></div>
@@ -430,7 +454,7 @@ export default function Dashboard({ onBack, onNavigateToPatterns, onNavigateToIn
                             </div>
                             <div className="absolute left-32 top-1/2 -translate-y-1/2 w-12 h-px bg-[#6B7280]"></div>
                             <div className="absolute right-6 top-1/2 -translate-y-1/2 w-3 h-3 bg-[#6B7280] rounded"></div>
-                            
+
                             {/* Status indicator */}
                             <div className="absolute right-2 top-2 flex items-center gap-1 px-1.5 py-0.5 bg-[#B91C1C]/20 rounded text-[10px] text-[#B91C1C]">
                               <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20">
@@ -452,7 +476,7 @@ export default function Dashboard({ onBack, onNavigateToPatterns, onNavigateToIn
                             </div>
                             <div className="absolute left-32 top-1/2 -translate-y-1/2 w-12 h-px bg-[#6B7280]"></div>
                             <div className="absolute right-6 top-1/2 -translate-y-1/2 w-3 h-3 bg-[#6B7280] rounded"></div>
-                            
+
                             {/* Status indicator */}
                             <div className="absolute right-2 top-2 flex items-center gap-1 px-1.5 py-0.5 bg-[#B91C1C]/20 rounded text-[10px] text-[#B91C1C]">
                               <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20">
@@ -472,7 +496,7 @@ export default function Dashboard({ onBack, onNavigateToPatterns, onNavigateToIn
                             <div className="absolute left-40 top-1/2 -translate-y-1/2 w-4 h-4 bg-[#047857] rounded-sm"></div>
                             <div className="absolute right-6 top-1/2 -translate-y-1/2 w-8 h-px bg-[#047857]"></div>
                             <div className="absolute right-4 top-1/2 -translate-y-1/2 w-3 h-3 bg-[#047857] rounded"></div>
-                            
+
                             {/* Status indicator */}
                             <div className="absolute right-2 top-2 flex items-center gap-1 px-1.5 py-0.5 bg-[#047857]/20 rounded text-[10px] text-[#047857]">
                               <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20">
@@ -486,7 +510,7 @@ export default function Dashboard({ onBack, onNavigateToPatterns, onNavigateToIn
                     </div>
 
                     {/* Three-dot Menu */}
-                    <button 
+                    <button
                       onClick={(e) => {
                         e.stopPropagation();
                         setShowMenu(showMenu === project.id ? null : project.id);
@@ -504,7 +528,7 @@ export default function Dashboard({ onBack, onNavigateToPatterns, onNavigateToIn
                           <button className="w-full px-4 py-2 text-left text-sm text-[#E5E7EB] hover:bg-[#374151] transition-colors">
                             Duplicate
                           </button>
-                          <button 
+                          <button
                             className="w-full px-4 py-2 text-left text-sm text-[#6B7280] cursor-not-allowed"
                             disabled={project.statusColor !== 'success'}
                           >

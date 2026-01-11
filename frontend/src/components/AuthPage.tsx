@@ -59,129 +59,56 @@ export default function AuthPage({ onBack, onAuthSuccess }: AuthPageProps) {
         background: 'radial-gradient(ellipse at center, transparent 30%, rgba(0,0,0,0.4) 100%)'
       }} />
 
-      {/* Left Panel - Builder's World */}
-      <div className="w-1/2 relative overflow-hidden bg-[#0F1216]">
-        {/* Blueprint Grid */}
-        <div className="absolute inset-0 opacity-20" style={{
-          backgroundImage: `
-            linear-gradient(#171B21 1px, transparent 1px),
-            linear-gradient(90deg, #171B21 1px, transparent 1px)
-          `,
-          backgroundSize: '60px 60px',
+      {/* Left Panel - Technical Illustration */}
+      <div className="w-1/2 flex relative overflow-hidden" style={{
+        backgroundColor: '#121418'
+      }}>        {/* SVG Grid Pattern Background */}
+        <div className="absolute inset-0" style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cdefs%3E%3Cpattern id='grid' width='100' height='100' patternUnits='userSpaceOnUse'%3E%3Cpath d='M 100 0 L 0 0 0 100' fill='none' stroke='rgba(255,255,255,0.1)' stroke-width='0.5'/%3E%3Cpath d='M 0 0 L 100 100 M 100 0 L 0 100' fill='none' stroke='rgba(255,255,255,0.05)' stroke-width='0.25' stroke-dasharray='2,2'/%3E%3Ccircle cx='50' cy='50' r='1' fill='rgba(255,255,255,0.2)'/%3E%3C/pattern%3E%3C/defs%3E%3Crect width='100%25' height='100%25' fill='url(%23grid)' /%3E%3C/svg%3E")`,
+          backgroundRepeat: 'repeat'
         }}></div>
 
-        {/* Additional Perspective Grid on Floor */}
-        <div className="absolute bottom-0 left-0 right-0 h-1/2" style={{
-          backgroundImage: `
-            linear-gradient(#171B21 1px, transparent 1px),
-            linear-gradient(90deg, #171B21 1px, transparent 1px)
-          `,
-          backgroundSize: '80px 80px',
-          transform: 'perspective(600px) rotateX(45deg)',
-          transformOrigin: 'center bottom',
-          opacity: 0.15
-        }}></div>
-
-        {/* Construction Crate - Bottom Left */}
-        <div className="absolute bottom-24 left-20">
-          {/* Large crate */}
-          <div className="w-32 h-32 bg-[#1A1E26] border-l-2 border-t-2 border-[#252A34] relative">
-            <div className="absolute inset-4 border border-[#2D3340]"></div>
-            <div className="absolute top-2 right-2 w-6 h-6 border border-[#2D3340]"></div>
-          </div>
-          {/* Small stacked crate */}
-          <div className="absolute -top-12 left-10 w-20 h-12 bg-[#1F2430] border-l border-t border-[#2D3340]"></div>
+        {/* Emissive Glow Behind Crane */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div className="w-full h-full max-w-[80%] max-h-[80%]" style={{
+            background: 'radial-gradient(ellipse at center, rgba(230, 126, 34, 0.15) 0%, transparent 70%)',
+            filter: 'blur(100px)'
+          }}></div>
         </div>
 
-        {/* Construction Crate - Bottom Right */}
-        <div className="absolute bottom-32 right-28">
-          <div className="w-28 h-28 bg-[#1A1E26] border-l-2 border-t-2 border-[#252A34] relative">
-            <div className="absolute inset-3 border border-[#2D3340]"></div>
-          </div>
+        {/* Crane Image - Centered */}
+        <div className="absolute inset-0 flex items-center justify-center">
+          <img
+            src="/crane.png"
+            alt="Construction crane illustration"
+            className="w-full h-full object-cover"
+          />
         </div>
 
-        {/* Crane Structure - Left Side */}
-        <div className="absolute top-1/4 left-16">
-          {/* Vertical pole */}
-          <div className="w-2 h-40 bg-[#252A34]"></div>
-          {/* Horizontal arm */}
-          <div className="absolute top-8 left-2 w-32 h-2 bg-[#252A34]"></div>
-          {/* Cable */}
-          <div className="absolute top-10 left-24 w-0.5 h-16 bg-[#2D3340]"></div>
-          {/* Small hook/weight */}
-          <div className="absolute top-24 left-[5.75rem] w-2 h-3 bg-[#374151]"></div>
-        </div>
+        {/* Quote at Bottom Left */}
+        <div className="absolute bottom-12 left-12 flex items-start gap-4 z-20">
+          {/* Vertical Line */}
+          <div className="w-0.5 h-24 bg-white opacity-30"></div>
 
-        {/* Floating UI Node - Top Left */}
-        <div className="absolute top-1/3 left-1/4">
-          <div className="w-16 h-16 bg-[#252A34] border border-[#374151] rounded"></div>
-          {/* Connection line to intervention */}
-          <div className="absolute top-8 left-16 w-24 h-0.5 bg-[#374151]"></div>
-        </div>
-
-        {/* Floating UI Node - Top Right */}
-        <div className="absolute top-1/4 right-1/3">
-          <div className="w-14 h-14 bg-[#252A34] border border-[#374151] rounded-lg"></div>
-        </div>
-
-        {/* Central Intervention Node - HIGHLIGHTED */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-          {/* Enhanced Emissive Glow effect - multiple layers */}
-          <div className="absolute inset-0 -m-24 bg-[#FF9F43] rounded-full blur-3xl opacity-30"></div>
-          <div className="absolute inset-0 -m-16 bg-[#E67E22] rounded-full blur-2xl opacity-35"></div>
-          <div className="absolute inset-0 -m-8 bg-[#D97706] rounded-full blur-xl opacity-40"></div>
-
-          {/* Main node */}
-          <div className="relative w-44 h-28 bg-[#D97706] flex items-center justify-center">
-            <div className="text-[#0F1216] font-semibold text-base tracking-wide">INTERVENTION</div>
-          </div>
-
-          {/* Small indicator */}
-          <div className="absolute -top-3 -right-3 w-4 h-4 bg-[#D97706] rounded-full">
-            <div className="absolute inset-0 bg-[#D97706] rounded-full blur-md opacity-60"></div>
-          </div>
-        </div>
-
-        {/* UI Block - Right Side */}
-        <div className="absolute bottom-1/3 right-1/4">
-          <div className="w-10 h-10 border-2 border-[#374151] rotate-45"></div>
-        </div>
-
-        {/* Small modular elements */}
-        <div className="absolute top-2/3 left-1/3">
-          <div className="w-6 h-20 bg-[#252A34]"></div>
-        </div>
-
-        {/* Quote Overlay */}
-        <div className="absolute bottom-20 left-16 max-w-md z-20">
-          <blockquote className="text-[#9CA3AF] text-3xl italic leading-relaxed opacity-65" style={{ fontFamily: "'Playfair Display', serif" }}>
+          {/* Quote Text */}
+          <blockquote
+            className="text-white text-3xl italic leading-relaxed max-w-md"
+            style={{
+              fontFamily: "'Playfair Display', serif",
+              opacity: 0.7
+            }}
+          >
             Design the change<br />
             you wish to see.
           </blockquote>
         </div>
-
-        {/* Enhanced vignette on left panel - heavier vertical vignette */}
-        <div className="absolute inset-0 pointer-events-none" style={{
-          background: 'linear-gradient(to bottom, rgba(0,0,0,0.8) 0%, transparent 30%, transparent 70%, rgba(0,0,0,0.8) 100%)'
-        }} />
-
-        {/* Radial vignette for center focus */}
-        <div className="absolute inset-0 pointer-events-none" style={{
-          background: 'radial-gradient(ellipse at center, transparent 20%, rgba(0,0,0,0.6) 100%)'
-        }} />
-
-        {/* Localized darkness away from intervention node */}
-        <div className="absolute inset-0 pointer-events-none" style={{
-          background: 'radial-gradient(circle at 50% 50%, transparent 25%, rgba(0,0,0,0.4) 60%)'
-        }} />
       </div>
 
-      {/* Subtle Vertical Divider */}
-      <div className="absolute left-1/2 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-white/5 to-transparent pointer-events-none z-10"></div>
+      {/* Subtle Vertical Divider - Hidden on Mobile */}
+      <div className="hidden lg:block absolute left-1/2 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-white/5 to-transparent pointer-events-none z-10"></div>
 
       {/* Right Panel - Authentication Form */}
-      <div className="w-1/2 bg-[#1A1C20] relative flex items-center justify-center px-8">
-        {/* Vertical gradient */}
+      <div className="w-1/2 bg-[#1A1C20] relative flex items-center justify-center px-8">        {/* Vertical gradient */}
         <div className="absolute inset-0" style={{
           background: 'linear-gradient(180deg, rgba(15, 18, 22, 0.3) 0%, transparent 100%)'
         }} />

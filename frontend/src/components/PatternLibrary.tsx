@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { X, ChevronDown, HelpCircle } from 'lucide-react';
 
 interface PatternLibraryProps {
@@ -198,7 +198,22 @@ export default function PatternLibrary({ onBack }: PatternLibraryProps) {
     activeFilters.scale.length > 0;
 
   return (
-    <div className="min-h-screen bg-[#0F1216] text-gray-200">
+    <div className="min-h-screen bg-[#0F1216] text-gray-200 relative">
+      {/* Global Noise Layer - Kept equal */}
+      <div className="fixed inset-0 pointer-events-none opacity-[0.04]" style={{
+        backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
+      }} />
+
+      {/* Global Radial Gradient - From AuthPage */}
+      <div className="fixed inset-0 pointer-events-none" style={{
+        background: 'radial-gradient(ellipse 80% 60% at 50% 40%, rgba(23, 27, 33, 0.2) 0%, rgba(15, 18, 22, 0.4) 100%)'
+      }} />
+
+      {/* Global Vignette - From AuthPage */}
+      <div className="fixed inset-0 pointer-events-none" style={{
+        background: 'radial-gradient(ellipse at center, transparent 30%, rgba(0,0,0,0.4) 100%)'
+      }} />
+
       {/* Top Navigation */}
       <nav className="sticky top-0 z-50 bg-[#171B21] border-b border-[#1F2937]/30">
         <div className="max-w-[1920px] mx-auto px-6 py-4 flex items-center justify-between">
@@ -451,9 +466,8 @@ function FilterSection({
         <h3 className="text-[#E5E7EB] text-sm font-medium">{title}</h3>
         {collapsible && (
           <ChevronDown
-            className={`w-4 h-4 text-[#9CA3AF] transition-transform ${
-              isOpen ? '' : '-rotate-90'
-            }`}
+            className={`w-4 h-4 text-[#9CA3AF] transition-transform ${isOpen ? '' : '-rotate-90'
+              }`}
           />
         )}
       </div>
@@ -537,8 +551,18 @@ function TemplateCard({
   return (
     <div
       onClick={onClick}
-      className="bg-[#171B21] rounded-lg p-6 cursor-pointer hover:shadow-xl transition-shadow border border-[#2D3340]"
+      className="bg-[#171B21] rounded-lg p-6 cursor-pointer hover:shadow-xl transition-shadow border border-[#2D3340] relative overflow-hidden"
     >
+      {/* Vertical Grain Texture */}
+      <div className="absolute inset-0 pointer-events-none opacity-[0.12]" style={{
+        backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,0.05) 2px, rgba(255,255,255,0.05) 4px)',
+      }} />
+
+      {/* Scanlines Effect */}
+      <div className="absolute inset-0 pointer-events-none opacity-[0.08]" style={{
+        backgroundImage: 'repeating-linear-gradient(0deg, rgba(0,0,0,0.15) 0px, transparent 1px, transparent 2px)',
+        backgroundSize: '100% 3px',
+      }} />
       <div className="flex gap-6">
         {/* Mini Logic Graph */}
         <div className="w-64 h-40 bg-[#0F1216] rounded flex-shrink-0 relative overflow-hidden">
