@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { X, ChevronDown, HelpCircle } from 'lucide-react';
+import { Button } from "@/components/ui/button";
 
 interface PatternLibraryProps {
   onBack?: () => void;
@@ -198,22 +199,7 @@ export default function PatternLibrary({ onBack }: PatternLibraryProps) {
     activeFilters.scale.length > 0;
 
   return (
-    <div className="min-h-screen bg-[#0F1216] text-gray-200 relative">
-      {/* Global Noise Layer - Kept equal */}
-      <div className="fixed inset-0 pointer-events-none opacity-[0.04]" style={{
-        backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
-      }} />
-
-      {/* Global Radial Gradient - From AuthPage */}
-      <div className="fixed inset-0 pointer-events-none" style={{
-        background: 'radial-gradient(ellipse 80% 60% at 50% 40%, rgba(23, 27, 33, 0.2) 0%, rgba(15, 18, 22, 0.4) 100%)'
-      }} />
-
-      {/* Global Vignette - From AuthPage */}
-      <div className="fixed inset-0 pointer-events-none" style={{
-        background: 'radial-gradient(ellipse at center, transparent 30%, rgba(0,0,0,0.4) 100%)'
-      }} />
-
+    <div className="min-h-screen bg-[#0F1216] text-gray-200">
       {/* Top Navigation */}
       <nav className="sticky top-0 z-50 bg-[#171B21] border-b border-[#1F2937]/30">
         <div className="max-w-[1920px] mx-auto px-6 py-4 flex items-center justify-between">
@@ -226,23 +212,23 @@ export default function PatternLibrary({ onBack }: PatternLibraryProps) {
 
           {/* Right Icons */}
           <div className="flex items-center gap-3 flex-shrink-0">
-            <button className="relative w-10 h-10 flex items-center justify-center hover:bg-[#1F2937] rounded transition-colors border border-[#2D3340]">
+            <Button className="relative w-10 h-10 p-0 flex items-center justify-center hover:bg-[#1F2937] rounded transition-colors border border-[#2D3340] bg-transparent">
               <svg className="w-5 h-5 text-[#9CA3AF]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
               </svg>
               <div className="absolute top-2 right-2 w-2 h-2 bg-[#D97706] rounded-full"></div>
-            </button>
-            <button className="w-10 h-10 flex items-center justify-center hover:bg-[#1F2937] rounded transition-colors border border-[#2D3340]">
+            </Button>
+            <Button className="w-10 h-10 p-0 flex items-center justify-center hover:bg-[#1F2937] rounded transition-colors border border-[#2D3340] bg-transparent">
               <svg className="w-5 h-5 text-[#9CA3AF]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
-            </button>
-            <button className="w-10 h-10 rounded-full bg-[#374151] flex items-center justify-center border-2 border-[#2D3340]">
+            </Button>
+            <Button className="w-10 h-10 p-0 rounded-full bg-[#374151] flex items-center justify-center border-2 border-[#2D3340] hover:bg-[#4B5563]">
               <svg className="w-5 h-5 text-[#9CA3AF]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>
-            </button>
+            </Button>
           </div>
         </div>
       </nav>
@@ -251,9 +237,9 @@ export default function PatternLibrary({ onBack }: PatternLibraryProps) {
       <div className="sticky top-16 z-40 bg-[#171B21] border-b border-[#1F2937]/30">
         <div className="max-w-[1920px] mx-auto px-6 py-4 flex items-center gap-4">
           {/* Orange square icon */}
-          <button className="w-12 h-12 bg-[#D97706] rounded flex items-center justify-center flex-shrink-0 border-2 border-[#D97706]">
+          <Button className="w-12 h-12 p-0 bg-[#D97706] rounded flex items-center justify-center flex-shrink-0 border-2 border-[#D97706] hover:bg-[#B45309]">
             <div className="w-5 h-5 bg-white rounded-sm"></div>
-          </button>
+          </Button>
 
           {/* Search Bar */}
           <div className="flex-1">
@@ -403,12 +389,13 @@ export default function PatternLibrary({ onBack }: PatternLibraryProps) {
                     onRemove={() => removeFilter('scale', filter)}
                   />
                 ))}
-                <button
+                <Button
+                  variant="ghost"
                   onClick={clearAllFilters}
-                  className="text-[#D97706] text-sm hover:text-[#B45309] transition-colors"
+                  className="text-[#D97706] text-sm hover:text-[#B45309] transition-colors p-0 h-auto hover:bg-transparent"
                 >
                   Clear All
-                </button>
+                </Button>
               </div>
             )}
 
@@ -519,12 +506,13 @@ function FilterChip({ label, onRemove }: { label: string; onRemove: () => void }
   return (
     <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-[#D97706] text-[#0F1216] rounded text-sm font-medium">
       <span>{label}</span>
-      <button
+      <Button
+        variant="ghost"
         onClick={onRemove}
-        className="hover:bg-[#B45309] rounded-full transition-colors"
+        className="hover:bg-[#B45309] rounded-full transition-colors p-1 w-auto h-auto"
       >
         <X className="w-3.5 h-3.5" />
-      </button>
+      </Button>
     </div>
   );
 }
@@ -551,18 +539,8 @@ function TemplateCard({
   return (
     <div
       onClick={onClick}
-      className="bg-[#171B21] rounded-lg p-6 cursor-pointer hover:shadow-xl transition-shadow border border-[#2D3340] relative overflow-hidden"
+      className="bg-[#171B21] rounded-lg p-6 cursor-pointer hover:shadow-xl transition-shadow border border-[#2D3340]"
     >
-      {/* Vertical Grain Texture */}
-      <div className="absolute inset-0 pointer-events-none opacity-[0.12]" style={{
-        backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,0.05) 2px, rgba(255,255,255,0.05) 4px)',
-      }} />
-
-      {/* Scanlines Effect */}
-      <div className="absolute inset-0 pointer-events-none opacity-[0.08]" style={{
-        backgroundImage: 'repeating-linear-gradient(0deg, rgba(0,0,0,0.15) 0px, transparent 1px, transparent 2px)',
-        backgroundSize: '100% 3px',
-      }} />
       <div className="flex gap-6">
         {/* Mini Logic Graph */}
         <div className="w-64 h-40 bg-[#0F1216] rounded flex-shrink-0 relative overflow-hidden">
@@ -649,11 +627,11 @@ function TemplateCard({
         </div>
 
         {/* Three-dot menu */}
-        <button className="p-2 hover:bg-[#1F2937] rounded transition-colors h-fit">
+        <Button variant="ghost" className="p-2 hover:bg-[#1F2937] rounded transition-colors h-fit w-auto">
           <svg className="w-5 h-5 text-[#9CA3AF]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
           </svg>
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -673,12 +651,13 @@ function TemplatePreviewModal({
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-[#2D3340]">
           <h2 className="text-[#E5E7EB] text-xl font-semibold">{template.title}</h2>
-          <button
+          <Button
+            variant="ghost"
             onClick={onClose}
-            className="p-2 hover:bg-[#1F2937] rounded transition-colors"
+            className="p-2 hover:bg-[#1F2937] rounded transition-colors w-auto h-auto"
           >
             <X className="w-5 h-5 text-[#9CA3AF]" />
-          </button>
+          </Button>
         </div>
 
         <div className="p-6 flex gap-6">
@@ -744,21 +723,21 @@ function TemplatePreviewModal({
 
               {/* Zoom controls */}
               <div className="absolute bottom-4 left-4 flex gap-2">
-                <button className="w-8 h-8 bg-[#1F2937] rounded flex items-center justify-center hover:bg-[#374151] transition-colors">
+                <Button className="w-8 h-8 p-0 bg-[#1F2937] rounded flex items-center justify-center hover:bg-[#374151] transition-colors border-none">
                   <svg className="w-4 h-4 text-[#9CA3AF]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v6m3-3H7" />
                   </svg>
-                </button>
-                <button className="w-8 h-8 bg-[#1F2937] rounded flex items-center justify-center hover:bg-[#374151] transition-colors">
+                </Button>
+                <Button className="w-8 h-8 p-0 bg-[#1F2937] rounded flex items-center justify-center hover:bg-[#374151] transition-colors border-none">
                   <svg className="w-4 h-4 text-[#9CA3AF]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 10H7" />
                   </svg>
-                </button>
-                <button className="w-8 h-8 bg-[#1F2937] rounded flex items-center justify-center hover:bg-[#374151] transition-colors">
+                </Button>
+                <Button className="w-8 h-8 p-0 bg-[#1F2937] rounded flex items-center justify-center hover:bg-[#374151] transition-colors border-none">
                   <svg className="w-4 h-4 text-[#9CA3AF]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l5-5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
                   </svg>
-                </button>
+                </Button>
               </div>
             </div>
           </div>
@@ -802,9 +781,9 @@ function TemplatePreviewModal({
             </div>
 
             {/* Primary CTA */}
-            <button className="w-full py-3 bg-[#D97706] text-[#0F1216] rounded font-semibold hover:bg-[#B45309] transition-colors">
+            <Button className="w-full py-3 bg-[#D97706] text-[#0F1216] rounded font-semibold hover:bg-[#B45309] transition-colors h-auto">
               Fork this Logic
-            </button>
+            </Button>
             <p className="text-[#6B7280] text-xs mt-2 text-center">
               Create an editable copy and adapt it to your context.
             </p>

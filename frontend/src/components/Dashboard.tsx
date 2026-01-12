@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Plus, Book, Bell, Settings, User, MoreVertical, Search } from 'lucide-react';
+import { Button } from "@/components/ui/button";
 
 interface DashboardProps {
   onBack?: () => void;
@@ -48,41 +49,36 @@ export default function Dashboard({ onBack, onNavigateToPatterns, onNavigateToIn
     }
   ];
 
+  const getHealthColor = (health: number) => {
+    if (health <= 30) return '#B91C1C';
+    if (health <= 70) return '#F59E0B';
+    return '#047857';
+  };
+
   return (
     <div className="min-h-screen bg-[#0F1216] text-gray-200 relative">
       {/* Global Noise Layer */}
-      <div className="fixed inset-0 pointer-events-none opacity-[0.04]" style={{
-        backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
-      }} />
+      <div className="fixed inset-0 pointer-events-none opacity-[0.06]" style={{
+        backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
+      }}></div>
 
-      {/* Vertical Grain Texture */}
-      <div className="fixed inset-0 pointer-events-none opacity-[0.02]" style={{
-        backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,0.03) 2px, rgba(255,255,255,0.03) 4px)',
-      }} />
-
-      {/* Scanlines Effect */}
-      <div className="fixed inset-0 pointer-events-none opacity-[0.015]" style={{
-        backgroundImage: 'repeating-linear-gradient(0deg, rgba(0,0,0,0.15) 0px, transparent 1px, transparent 2px)',
-        backgroundSize: '100% 3px',
-      }} />
-
-      {/* Global Vignette - Enhanced */}
+      {/* Global Vignette */}
       <div className="fixed inset-0 pointer-events-none" style={{
-        background: 'radial-gradient(ellipse at center, transparent 20%, rgba(0,0,0,0.6) 100%)'
-      }} />
+        background: 'radial-gradient(ellipse at center, transparent 30%, rgba(0,0,0,0.4) 100%)'
+      }}></div>
 
       {/* Soft Radial Gradient */}
       <div className="fixed inset-0 pointer-events-none" style={{
         background: 'radial-gradient(ellipse 100% 80% at 50% 30%, rgba(23, 27, 33, 0.15) 0%, transparent 60%)'
-      }} />
+      }}></div>
 
       {/* Top Bar */}
       <nav className="sticky top-0 z-50 backdrop-blur-md border-b border-[#1F2937]/30">
         <div className="bg-[#171B21]/90 relative">
           {/* Noise on top bar */}
-          <div className="absolute inset-0 opacity-[0.03]" style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
-          }} />
+          <div className="absolute inset-0 opacity-[0.05]" style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
+          }}></div>
 
           <div className="max-w-[1920px] mx-auto px-6 py-4 flex items-center gap-6 relative">
             {/* Left: Logo */}
@@ -94,14 +90,14 @@ export default function Dashboard({ onBack, onNavigateToPatterns, onNavigateToIn
 
             {/* Left Icons */}
             <div className="flex items-center gap-2">
-              <button className="w-10 h-10 flex items-center justify-center bg-[#D97706] hover:bg-[#B45309] rounded transition-colors">
+              <Button className="w-10 h-10 p-0 flex items-center justify-center bg-[#D97706] hover:bg-[#B45309] rounded transition-colors">
                 <div className="w-4 h-4 bg-white rounded-sm"></div>
-              </button>
-              <button className="w-10 h-10 flex items-center justify-center bg-[#374151] hover:bg-[#4B5563] rounded transition-colors relative">
+              </Button>
+              <Button className="w-10 h-10 p-0 flex items-center justify-center bg-[#374151] hover:bg-[#4B5563] rounded transition-colors relative">
                 <svg className="w-5 h-5 text-[#E5E7EB]" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                 </svg>
-              </button>
+              </Button>
             </div>
 
             {/* Center: Global Search */}
@@ -145,19 +141,19 @@ export default function Dashboard({ onBack, onNavigateToPatterns, onNavigateToIn
 
             {/* Right: Utility Icons */}
             <div className="flex items-center gap-2">
-              <button className="relative w-10 h-10 flex items-center justify-center hover:bg-[#1F2937] rounded transition-colors border border-[#2D3340]">
+              <Button className="relative w-10 h-10 p-0 flex items-center justify-center hover:bg-[#1F2937] rounded transition-colors border border-[#2D3340] bg-transparent">
                 <Bell className="w-5 h-5 text-[#9CA3AF]" />
                 <div className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#D97706] rounded-full"></div>
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={onNavigateToSettings}
-                className="w-10 h-10 flex items-center justify-center hover:bg-[#1F2937] rounded transition-colors border border-[#2D3340]"
+                className="w-10 h-10 p-0 flex items-center justify-center hover:bg-[#1F2937] rounded transition-colors border border-[#2D3340] bg-transparent"
               >
                 <Settings className="w-5 h-5 text-[#9CA3AF]" />
-              </button>
-              <button className="w-10 h-10 flex items-center justify-center hover:bg-[#1F2937] rounded transition-colors border border-[#2D3340]">
+              </Button>
+              <Button className="w-10 h-10 p-0 flex items-center justify-center hover:bg-[#1F2937] rounded transition-colors border border-[#2D3340] bg-transparent">
                 <User className="w-5 h-5 text-[#9CA3AF]" />
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -173,67 +169,60 @@ export default function Dashboard({ onBack, onNavigateToPatterns, onNavigateToIn
             {/* Create New Mission Card */}
             <div
               onClick={onNavigateToInitialize}
-              className="group relative rounded-lg overflow-hidden cursor-pointer transition-all"
-              style={{
-                background: 'linear-gradient(to bottom, #1E2024 0%, #181A1E 100%)',
-                boxShadow: '0 8px 24px rgba(0,0,0,0.5), inset 1px 1px 0 rgba(74,77,82,0.4)',
-                border: '1px solid rgba(74,77,82,0.3)'
+              className="group relative bg-[#1F2329] rounded-lg overflow-hidden cursor-pointer transition-all hover:bg-[#232831] border border-[#2D3340]" style={{
+                boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
               }}>
               {/* Noise on card */}
-              <div className="absolute inset-0 rounded-lg opacity-[0.03]" style={{
-                backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
+              <div className="absolute inset-0 rounded-lg opacity-[0.04]" style={{
+                backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
               }}></div>
 
-              {/* Etched Copper Schematics Background */}
-              <div className="absolute inset-0 opacity-[0.12]">
-                <svg className="w-full h-full" viewBox="0 0 400 200" fill="none" stroke="#A0522D" strokeWidth="0.5">
-                  <line x1="50" y1="100" x2="120" y2="100" />
-                  <circle cx="120" cy="100" r="8" />
-                  <line x1="128" y1="100" x2="180" y2="60" />
-                  <line x1="128" y1="100" x2="180" y2="140" />
-                  <rect x="180" y="50" width="40" height="20" rx="2" />
-                  <rect x="180" y="130" width="40" height="20" rx="2" />
-                  <line x1="220" y1="60" x2="280" y2="60" />
-                  <line x1="220" y1="140" x2="280" y2="140" />
-                  <circle cx="280" cy="60" r="6" />
-                  <circle cx="280" cy="140" r="6" />
-                </svg>
-              </div>
-
-              <div className="relative p-8 min-h-[200px] flex flex-col justify-between">
-                <div className="flex items-start gap-6">
-                  {/* Vibrant Orange Plus Icon with Neon Glow */}
-                  <div className="relative flex-shrink-0">
-                    {/* Outer halo */}
-                    <div className="absolute inset-0 -m-2 bg-[#CC7A00] blur-lg opacity-30 rounded-full"></div>
-                    <Plus className="w-12 h-12 text-[#FF8C00] relative z-10" strokeWidth={2.5} style={{
-                      filter: 'drop-shadow(0 0 6px rgba(255, 140, 0, 0.6))'
-                    }} />
+              <div className="relative p-8">
+                <div className="flex items-start gap-4 mb-6">
+                  <div className="w-14 h-14 bg-[#D97706] rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Plus className="w-7 h-7 text-white" />
                   </div>
-
                   <div className="flex-1">
-                    <h3 className="text-white text-xl font-bold mb-2">Create New Mission</h3>
-                    <p className="text-[#8E959F] text-sm">Start from a goal, not a blank canvas.</p>
+                    <h3 className="text-[#E5E7EB] text-xl font-semibold mb-2">Create New Mission</h3>
+                    <p className="text-[#9CA3AF] text-sm">Start from a goal, not a blank canvas.</p>
                   </div>
                 </div>
 
-                {/* Decorative Icons - Bottom Right */}
-                <div className="flex justify-end items-end">
-                  <div className="flex items-center gap-3 opacity-40">
-                    {/* Levels/Slider Icon */}
-                    <div className="flex flex-col justify-center gap-[6px]">
-                      <div className="w-5 h-[2px] bg-[#70757D] relative">
-                        <div className="absolute -top-[2px] left-1 w-[2px] h-[6px] bg-[#70757D]"></div>
-                      </div>
-                      <div className="w-5 h-[2px] bg-[#70757D] relative">
-                        <div className="absolute -top-[2px] right-1 w-[2px] h-[6px] bg-[#70757D]"></div>
-                      </div>
-                    </div>
+                {/* Wireframe preview - always visible */}
+                <div className="h-24 bg-[#171B21] rounded p-4 relative overflow-hidden">
+                  {/* Grid background */}
+                  <div className="absolute inset-0 opacity-20" style={{
+                    backgroundImage: `
+                      linear-gradient(#374151 1px, transparent 1px),
+                      linear-gradient(90deg, #374151 1px, transparent 1px)
+                    `,
+                    backgroundSize: '12px 12px',
+                  }}></div>
 
-                    {/* Equals Icon */}
-                    <div className="flex flex-col gap-[4px]">
-                      <div className="w-5 h-[3px] bg-[#70757D] rounded-sm"></div>
-                      <div className="w-5 h-[3px] bg-[#70757D] rounded-sm"></div>
+                  {/* Flowchart elements */}
+                  <div className="relative w-full h-full flex items-center justify-start gap-3">
+                    {/* Input node */}
+                    <div className="w-6 h-6 border-2 border-[#6B7280] rounded-sm"></div>
+
+                    {/* Arrow */}
+                    <div className="w-8 h-px bg-[#6B7280]"></div>
+
+                    {/* Process box */}
+                    <div className="w-12 h-8 border-2 border-[#6B7280] rounded"></div>
+
+                    {/* Arrow */}
+                    <div className="w-8 h-px bg-[#6B7280]"></div>
+
+                    {/* Decision diamond */}
+                    <div className="w-7 h-7 border-2 border-[#6B7280] rotate-45"></div>
+
+                    {/* Arrow */}
+                    <div className="w-8 h-px bg-[#6B7280]"></div>
+
+                    {/* Output boxes */}
+                    <div className="flex flex-col gap-1.5">
+                      <div className="w-10 h-3 border border-[#6B7280] rounded-sm"></div>
+                      <div className="w-10 h-3 border border-[#6B7280] rounded-sm"></div>
                     </div>
                   </div>
                 </div>
@@ -243,62 +232,61 @@ export default function Dashboard({ onBack, onNavigateToPatterns, onNavigateToIn
             {/* Browse Pattern Library Card */}
             <div
               onClick={onNavigateToPatterns}
-              className="group relative rounded-lg overflow-hidden cursor-pointer transition-all"
+              className="group relative bg-[#1F2329] rounded-lg overflow-hidden cursor-pointer transition-all hover:bg-[#232831] border border-[#2D3340]"
               style={{
-                background: 'linear-gradient(to bottom, #1E2024 0%, #181A1E 100%)',
-                boxShadow: '0 8px 24px rgba(0,0,0,0.5), inset 1px 1px 0 rgba(74,77,82,0.4)',
-                border: '1px solid rgba(74,77,82,0.3)'
+                boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
               }}>
               {/* Noise on card */}
-              <div className="absolute inset-0 rounded-lg opacity-[0.03]" style={{
-                backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
+              <div className="absolute inset-0 rounded-lg opacity-[0.04]" style={{
+                backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
               }}></div>
 
-              {/* Etched Copper Schematics Background - Fork Pattern */}
-              <div className="absolute inset-0 opacity-[0.12]">
-                <svg className="w-full h-full" viewBox="0 0 400 200" fill="none" stroke="#A0522D" strokeWidth="0.5">
-                  <line x1="40" y1="100" x2="100" y2="100" />
-                  <circle cx="100" cy="100" r="8" />
-                  <line x1="108" y1="100" x2="160" y2="60" />
-                  <line x1="108" y1="100" x2="160" y2="140" />
-                  <rect x="160" y="50" width="50" height="20" rx="2" />
-                  <rect x="160" y="130" width="50" height="20" rx="2" />
-                  <line x1="210" y1="60" x2="260" y2="60" />
-                  <line x1="210" y1="140" x2="260" y2="140" />
-                  <line x1="260" y1="60" x2="300" y2="100" />
-                  <line x1="260" y1="140" x2="300" y2="100" />
-                  <circle cx="300" cy="100" r="8" />
-                </svg>
-              </div>
-
-              <div className="relative p-8 min-h-[200px] flex flex-col justify-between">
-                <div className="flex items-start gap-6">
-                  {/* Vibrant Orange Book Icon with Neon Glow */}
-                  <div className="relative flex-shrink-0">
-                    {/* Outer halo */}
-                    <div className="absolute inset-0 -m-2 bg-[#CC7A00] blur-lg opacity-30 rounded-full"></div>
-                    <Book className="w-12 h-12 text-[#FF8C00] relative z-10" strokeWidth={2.5} style={{
-                      filter: 'drop-shadow(0 0 6px rgba(255, 140, 0, 0.6))'
-                    }} />
+              <div className="relative p-8">
+                <div className="flex items-start gap-4 mb-6">
+                  <div className="w-14 h-14 bg-[#D97706] rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Book className="w-7 h-7 text-white" />
                   </div>
-
                   <div className="flex-1">
-                    <h3 className="text-white text-xl font-bold mb-2">Browse Pattern Library</h3>
-                    <p className="text-[#8E959F] text-sm">Fork proven program logic from the network.</p>
+                    <h3 className="text-[#E5E7EB] text-xl font-semibold mb-2">Browse Pattern Library</h3>
+                    <p className="text-[#9CA3AF] text-sm">Fork proven program logic from the network.</p>
                   </div>
                 </div>
 
-                {/* Decorative Icons - Bottom Right */}
-                <div className="flex justify-end items-end">
-                  <div className="flex items-center gap-3 opacity-40">
-                    {/* Play/Triangle Icon */}
-                    <div className="w-0 h-0 border-t-[6px] border-t-transparent border-l-[10px] border-l-[#70757D] border-b-[6px] border-b-transparent"></div>
+                {/* Branching preview - always visible */}
+                <div className="h-24 bg-[#171B21] rounded p-4 relative overflow-hidden">
+                  {/* Grid background */}
+                  <div className="absolute inset-0 opacity-20" style={{
+                    backgroundImage: `
+                      linear-gradient(#374151 1px, transparent 1px),
+                      linear-gradient(90deg, #374151 1px, transparent 1px)
+                    `,
+                    backgroundSize: '12px 12px',
+                  }}></div>
 
-                    {/* Pause Icon */}
-                    <div className="flex gap-[3px]">
-                      <div className="w-[3px] h-4 bg-[#70757D] rounded-sm"></div>
-                      <div className="w-[3px] h-4 bg-[#70757D] rounded-sm"></div>
-                    </div>
+                  {/* Fork/branch diagram */}
+                  <div className="relative w-full h-full">
+                    {/* Main branch */}
+                    <svg className="absolute inset-0 w-full h-full" viewBox="0 0 300 80" fill="none" stroke="#6B7280" strokeWidth="2">
+                      {/* Main line */}
+                      <line x1="20" y1="40" x2="80" y2="40" />
+
+                      {/* Fork node */}
+                      <circle cx="80" cy="40" r="5" fill="#6B7280" />
+
+                      {/* Upper branch */}
+                      <line x1="80" y1="40" x2="120" y2="20" />
+                      <rect x="120" y="12" width="40" height="16" rx="2" />
+                      <line x1="160" y1="20" x2="200" y2="20" />
+
+                      {/* Lower branch */}
+                      <line x1="80" y1="40" x2="120" y2="60" />
+                      <rect x="120" y="52" width="40" height="16" rx="2" />
+                      <line x1="160" y1="60" x2="200" y2="60" />
+
+                      {/* Merge indicators */}
+                      <polygon points="210,20 218,20 214,26" fill="#6B7280" />
+                      <polygon points="210,60 218,60 214,54" fill="#6B7280" />
+                    </svg>
                   </div>
                 </div>
               </div>
@@ -311,11 +299,11 @@ export default function Dashboard({ onBack, onNavigateToPatterns, onNavigateToIn
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-2">
               <h2 className="text-[#E5E7EB] text-xl font-semibold">My Projects</h2>
-              <button className="text-[#9CA3AF] hover:text-[#E5E7EB]">
+              <Button variant="ghost" className="text-[#9CA3AF] hover:text-[#E5E7EB] h-auto p-0 hover:bg-transparent">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
-              </button>
+              </Button>
             </div>
 
             <div className="relative">
@@ -341,9 +329,9 @@ export default function Dashboard({ onBack, onNavigateToPatterns, onNavigateToIn
             {projects.map((project) => (
               <div
                 key={project.id}
-                className="relative bg-[#2B2F38] rounded-lg overflow-hidden cursor-pointer transition-all hover:bg-[#2F333C] border border-[#374151]/50"
+                className="relative bg-[#2B2F38] rounded-lg overflow-hidden cursor-pointer transition-all hover:bg-[#2F333C]"
                 style={{
-                  boxShadow: '0 4px 16px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05)'
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.3)'
                 }}
               >
                 {/* Noise on card */}
@@ -395,15 +383,10 @@ export default function Dashboard({ onBack, onNavigateToPatterns, onNavigateToIn
                           style={{
                             width: `${project.logicHealth}%`,
                             background: project.logicHealth <= 30
-                              ? 'linear-gradient(to right, #B22222 0%, #FF8C00 100%)'
+                              ? '#B91C1C'
                               : project.logicHealth <= 70
-                                ? 'linear-gradient(to right, #FF8C00 0%, #D97706 100%)'
-                                : 'linear-gradient(to right, #32CD32 0%, #ADFF2F 100%)',
-                            boxShadow: project.logicHealth <= 30
-                              ? '0 0 8px rgba(178, 34, 34, 0.6), inset 0 1px 2px rgba(255, 255, 255, 0.3)'
-                              : project.logicHealth <= 70
-                                ? '0 0 8px rgba(255, 140, 0, 0.6), inset 0 1px 2px rgba(255, 255, 255, 0.3)'
-                                : '0 0 8px rgba(50, 205, 50, 0.6), inset 0 1px 2px rgba(255, 255, 255, 0.3)'
+                                ? '#D97706'
+                                : 'linear-gradient(to right, #047857 0%, #F59E0B 100%)'
                           }}
                           title="Based on completeness, causal integrity, and indicator coverage."
                         ></div>
@@ -510,39 +493,39 @@ export default function Dashboard({ onBack, onNavigateToPatterns, onNavigateToIn
                     </div>
 
                     {/* Three-dot Menu */}
-                    <button
+                    <Button
                       onClick={(e) => {
                         e.stopPropagation();
                         setShowMenu(showMenu === project.id ? null : project.id);
                       }}
-                      className="p-2 hover:bg-[#1F2937] rounded transition-colors relative"
+                      className="p-2 h-auto hover:bg-[#1F2937] rounded transition-colors relative bg-transparent"
                     >
                       <MoreVertical className="w-5 h-5 text-[#9CA3AF]" />
 
                       {/* Menu Dropdown */}
                       {showMenu === project.id && (
                         <div className="absolute right-0 top-10 bg-[#1F2937] rounded shadow-lg py-1 z-10 min-w-[160px]">
-                          <button className="w-full px-4 py-2 text-left text-sm text-[#E5E7EB] hover:bg-[#374151] transition-colors">
+                          <div className="w-full px-4 py-2 text-left text-sm text-[#E5E7EB] hover:bg-[#374151] transition-colors cursor-pointer">
                             Open
-                          </button>
-                          <button className="w-full px-4 py-2 text-left text-sm text-[#E5E7EB] hover:bg-[#374151] transition-colors">
+                          </div>
+                          <div className="w-full px-4 py-2 text-left text-sm text-[#E5E7EB] hover:bg-[#374151] transition-colors cursor-pointer">
                             Duplicate
-                          </button>
+                          </div>
                           <button
-                            className="w-full px-4 py-2 text-left text-sm text-[#6B7280] cursor-not-allowed"
+                            className="w-full px-4 py-2 text-left text-sm text-[#6B7280] cursor-not-allowed bg-transparent border-none"
                             disabled={project.statusColor !== 'success'}
                           >
                             Export
                           </button>
-                          <button className="w-full px-4 py-2 text-left text-sm text-[#E5E7EB] hover:bg-[#374151] transition-colors">
+                          <div className="w-full px-4 py-2 text-left text-sm text-[#E5E7EB] hover:bg-[#374151] transition-colors cursor-pointer">
                             Manage Team
-                          </button>
-                          <button className="w-full px-4 py-2 text-left text-sm text-[#E5E7EB] hover:bg-[#374151] transition-colors">
+                          </div>
+                          <div className="w-full px-4 py-2 text-left text-sm text-[#E5E7EB] hover:bg-[#374151] transition-colors cursor-pointer">
                             Archive
-                          </button>
+                          </div>
                         </div>
                       )}
-                    </button>
+                    </Button>
                   </div>
                 </div>
               </div>

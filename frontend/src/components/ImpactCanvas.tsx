@@ -44,6 +44,7 @@ import {
   RefreshCw,
   HelpCircle,
 } from 'lucide-react';
+import { Button } from './ui/button';
 
 interface ImpactCanvasProps {
   projectName?: string;
@@ -95,10 +96,10 @@ export default function ImpactCanvas({ projectName = 'FLN Improvement – Bihar 
   const onConnect = useCallback(
     (params: Connection) => {
       // Add edge with better styling
-      setEdges((eds) => 
-        addEdge({ 
-          ...params, 
-          type: 'smoothstep', 
+      setEdges((eds) =>
+        addEdge({
+          ...params,
+          type: 'smoothstep',
           animated: true,
           style: { stroke: '#6B7280', strokeWidth: 2 },
           markerEnd: {
@@ -194,31 +195,32 @@ export default function ImpactCanvas({ projectName = 'FLN Improvement – Bihar 
               className="px-3 py-1 bg-[#0F1216] border border-[#374151] rounded text-[#E5E7EB] focus:outline-none focus:border-[#D97706]"
             />
           ) : (
-            <button
+            <Button
+              variant="ghost"
               onClick={() => setEditingProjectName(true)}
-              className="px-3 py-1 text-[#9CA3AF] hover:text-[#E5E7EB] transition-colors"
+              className="px-3 py-1 text-[#9CA3AF] hover:text-[#E5E7EB] transition-colors h-auto font-normal"
             >
               {currentProjectName}
-            </button>
+            </Button>
           )}
         </div>
 
         {/* Center Controls */}
         <div className="flex items-center gap-2">
-          <button className="w-10 h-10 flex items-center justify-center hover:bg-[#1F2937] rounded transition-colors border border-[#2D3340]">
+          <Button variant="ghost" size="icon" className="w-10 h-10 hover:bg-[#1F2937] border border-[#2D3340]">
             <Undo2 className="w-5 h-5 text-[#9CA3AF]" />
-          </button>
-          <button className="w-10 h-10 flex items-center justify-center hover:bg-[#1F2937] rounded transition-colors border border-[#2D3340]">
+          </Button>
+          <Button variant="ghost" size="icon" className="w-10 h-10 hover:bg-[#1F2937] border border-[#2D3340]">
             <Redo2 className="w-5 h-5 text-[#9CA3AF]" />
-          </button>
+          </Button>
           <div className="w-px h-8 bg-[#374151] mx-2"></div>
-          <button className="w-10 h-10 flex items-center justify-center hover:bg-[#1F2937] rounded transition-colors border border-[#2D3340]">
+          <Button variant="ghost" size="icon" className="w-10 h-10 hover:bg-[#1F2937] border border-[#2D3340]">
             <ZoomOut className="w-5 h-5 text-[#9CA3AF]" />
-          </button>
+          </Button>
           <span className="text-[#9CA3AF] text-sm min-w-[60px] text-center">60%</span>
-          <button className="w-10 h-10 flex items-center justify-center hover:bg-[#1F2937] rounded transition-colors border border-[#2D3340]">
+          <Button variant="ghost" size="icon" className="w-10 h-10 hover:bg-[#1F2937] border border-[#2D3340]">
             <ZoomIn className="w-5 h-5 text-[#9CA3AF]" />
-          </button>
+          </Button>
         </div>
 
         {/* Right - Collaborators & Actions */}
@@ -236,26 +238,25 @@ export default function ImpactCanvas({ projectName = 'FLN Improvement – Bihar 
             </div>
           </div>
 
-          <button className="w-10 h-10 flex items-center justify-center hover:bg-[#1F2937] rounded transition-colors border border-[#2D3340]">
+          <Button variant="ghost" size="icon" className="w-10 h-10 hover:bg-[#1F2937] border border-[#2D3340]">
             <Settings className="w-5 h-5 text-[#9CA3AF]" />
-          </button>
-          <button className="w-10 h-10 flex items-center justify-center hover:bg-[#1F2937] rounded transition-colors border border-[#2D3340]">
+          </Button>
+          <Button variant="ghost" size="icon" className="w-10 h-10 hover:bg-[#1F2937] border border-[#2D3340]">
             <UserIcon className="w-5 h-5 text-[#9CA3AF]" />
-          </button>
+          </Button>
 
           {/* Run Simulation */}
-          <button
+          <Button
             onClick={handleRunSimulation}
             disabled={isSimulating}
-            className={`px-6 py-2 rounded font-semibold transition-colors flex items-center gap-2 ${
-              isSimulating
+            className={`px-6 py-2 rounded font-semibold transition-colors flex items-center gap-2 h-auto border-none shadow-none ${isSimulating
                 ? 'bg-[#374151] text-[#6B7280] cursor-not-allowed'
                 : 'bg-[#D97706] text-[#0F1216] hover:bg-[#B45309]'
-            }`}
+              }`}
           >
             <Play className="w-4 h-4" />
             {isSimulating ? 'Running...' : 'Run Simulation'}
-          </button>
+          </Button>
         </div>
       </header>
 
@@ -360,7 +361,7 @@ function CustomNode({ data }: { data: any }) {
         position={Position.Right}
         className="w-3 h-3 !bg-[#9CA3AF] !border-2 !border-[#E5E7EB]"
       />
-      
+
       <div className="text-[#E5E7EB] text-sm font-medium text-center">{data.label}</div>
     </div>
   );
@@ -396,13 +397,15 @@ function LogicToolbox({ collapsed, onToggleCollapse }: { collapsed: boolean; onT
     return (
       <div className="relative">
         <aside className="w-12 bg-[#171B21] border-r border-[#1F2937] flex flex-col items-center py-4">
-          <button
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={onToggleCollapse}
-            className="w-8 h-8 flex items-center justify-center hover:bg-[#1F2937] rounded transition-colors mb-4"
+            className="w-8 h-8 hover:bg-[#1F2937] mb-4"
             title="Expand Toolbox"
           >
             <ChevronRight className="w-5 h-5 text-[#9CA3AF]" />
-          </button>
+          </Button>
           <div className="w-2 h-2 bg-[#D97706] rounded-full"></div>
         </aside>
       </div>
@@ -417,13 +420,15 @@ function LogicToolbox({ collapsed, onToggleCollapse }: { collapsed: boolean; onT
             <div className="w-2 h-2 bg-[#D97706] rounded-full"></div>
             <h2 className="text-[#E5E7EB] font-medium">Logic Toolbox</h2>
           </div>
-          <button
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={onToggleCollapse}
-            className="w-8 h-8 flex items-center justify-center hover:bg-[#1F2937] rounded transition-colors"
+            className="w-8 h-8 hover:bg-[#1F2937]"
             title="Collapse Toolbox"
           >
             <ChevronLeft className="w-4 h-4 text-[#9CA3AF]" />
-          </button>
+          </Button>
         </div>
 
         {/* Stakeholders */}
@@ -468,15 +473,16 @@ function ToolboxSection({
 }) {
   return (
     <div className="mb-4">
-      <button
+      <Button
+        variant="ghost"
         onClick={onToggle}
-        className="flex items-center justify-between w-full text-[#9CA3AF] hover:text-[#E5E7EB] transition-colors mb-2"
+        className="flex items-center justify-between w-full text-[#9CA3AF] hover:text-[#E5E7EB] hover:bg-transparent transition-colors mb-2 h-auto font-normal p-0"
       >
         <span className="font-medium text-sm">{title}</span>
         <ChevronDown
           className={`w-4 h-4 transition-transform ${expanded ? '' : '-rotate-90'}`}
         />
-      </button>
+      </Button>
 
       {expanded && (
         <div className="grid grid-cols-3 gap-2">
@@ -527,12 +533,14 @@ function InspectorPanel({
       <div className="p-6">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-[#E5E7EB] font-medium">Inspector</h2>
-          <button
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center hover:bg-[#1F2937] rounded transition-colors"
+            className="w-8 h-8 hover:bg-[#1F2937]"
           >
             <X className="w-4 h-4 text-[#9CA3AF]" />
-          </button>
+          </Button>
         </div>
 
         {selectedNode && (
@@ -624,12 +632,14 @@ function AICompanionWidget({ show, onToggle }: { show: boolean; onToggle: () => 
               <Bot className="w-5 h-5 text-[#22D3EE]" />
               <span className="text-[#E5E7EB] font-medium">AI Companion</span>
             </div>
-            <button
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={onToggle}
-              className="w-8 h-8 flex items-center justify-center hover:bg-[#1F2937] rounded transition-colors"
+              className="w-8 h-8 hover:bg-[#1F2937]"
             >
               <X className="w-4 h-4 text-[#9CA3AF]" />
-            </button>
+            </Button>
           </div>
 
           <div className="p-4 max-h-96 overflow-y-auto">
@@ -646,12 +656,12 @@ function AICompanionWidget({ show, onToggle }: { show: boolean; onToggle: () => 
                     You added a Teacher node but no intervention. Similar programs struggle without clear activities.
                   </p>
                   <div className="flex gap-2 mt-3">
-                    <button className="px-3 py-1 bg-[#22D3EE] text-[#0F1216] rounded text-xs font-medium hover:bg-[#22D3EE]/80 transition-colors">
+                    <Button className="px-3 py-1 bg-[#22D3EE] text-[#0F1216] rounded text-xs font-medium hover:bg-[#22D3EE]/80 transition-colors h-auto border-none shadow-none">
                       Add Intervention
-                    </button>
-                    <button className="px-3 py-1 bg-[#374151] text-[#E5E7EB] rounded text-xs font-medium hover:bg-[#4B5563] transition-colors">
+                    </Button>
+                    <Button variant="secondary" className="px-3 py-1 bg-[#374151] text-[#E5E7EB] rounded text-xs font-medium hover:bg-[#4B5563] transition-colors h-auto border-none shadow-none">
                       Dismiss
-                    </button>
+                    </Button>
                   </div>
                 </div>
               </div>
@@ -667,12 +677,12 @@ function AICompanionWidget({ show, onToggle }: { show: boolean; onToggle: () => 
           </div>
         </div>
       ) : (
-        <button
+        <Button
           onClick={onToggle}
-          className="w-14 h-14 bg-[#22D3EE] rounded-full flex items-center justify-center shadow-lg hover:bg-[#22D3EE]/80 transition-colors animate-pulse"
+          className="w-14 h-14 bg-[#22D3EE] rounded-full flex items-center justify-center shadow-lg hover:bg-[#22D3EE]/80 transition-colors animate-pulse p-0 h-14"
         >
           <Bot className="w-7 h-7 text-[#0F1216]" />
-        </button>
+        </Button>
       )}
     </div>
   );
@@ -689,12 +699,14 @@ function SimulationResultsModal({ onClose }: { onClose: () => void }) {
               <h2 className="text-[#E5E7EB] text-xl font-semibold mb-2">Simulation Failed</h2>
               <p className="text-[#B91C1C] text-sm">2 Critical Errors Found</p>
             </div>
-            <button
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={onClose}
-              className="w-8 h-8 flex items-center justify-center hover:bg-[#1F2937] rounded transition-colors"
+              className="w-8 h-8 hover:bg-[#1F2937]"
             >
               <X className="w-4 h-4 text-[#9CA3AF]" />
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -726,12 +738,12 @@ function SimulationResultsModal({ onClose }: { onClose: () => void }) {
           <p className="text-[#6B7280] text-sm mb-4">
             Export remains locked until all critical errors are resolved.
           </p>
-          <button
+          <Button
             onClick={onClose}
-            className="w-full py-3 bg-[#D97706] text-[#0F1216] rounded font-semibold hover:bg-[#B45309] transition-colors"
+            className="w-full py-3 bg-[#D97706] text-[#0F1216] rounded font-semibold hover:bg-[#B45309] transition-colors h-auto border-none shadow-none"
           >
             Return to Canvas
-          </button>
+          </Button>
         </div>
       </div>
     </div>

@@ -10,6 +10,7 @@ import {
   AlertCircle,
   Trash2,
 } from 'lucide-react';
+import { Button } from './ui/button';
 
 interface SettingsProps {
   onNavigateToDashboard?: () => void;
@@ -67,24 +68,28 @@ export default function Settings({
         </div>
 
         <nav className="flex lg:flex-col p-2 lg:p-4 gap-1 lg:gap-0 overflow-x-auto lg:overflow-visible">
-          <button
+          <Button
+            variant="ghost"
             onClick={onNavigateToDashboard}
-            className="flex items-center gap-2 lg:gap-3 px-3 lg:px-4 py-2 lg:py-3 text-[#9CA3AF] hover:bg-[#1F2937] rounded transition-colors whitespace-nowrap lg:w-full text-sm lg:text-base mb-0 lg:mb-2"
+            className="flex items-center justify-start gap-2 lg:gap-3 px-3 lg:px-4 py-2 lg:py-3 text-[#9CA3AF] hover:bg-[#1F2937] hover:text-[#9CA3AF] rounded transition-colors whitespace-nowrap lg:w-full text-sm lg:text-base mb-0 lg:mb-2 h-auto font-normal"
           >
             <LayoutDashboard className="w-4 h-4 lg:w-5 lg:h-5" />
             <span>Dashboard</span>
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="ghost"
             onClick={onNavigateToPatterns}
-            className="flex items-center gap-2 lg:gap-3 px-3 lg:px-4 py-2 lg:py-3 text-[#9CA3AF] hover:bg-[#1F2937] rounded transition-colors whitespace-nowrap lg:w-full text-sm lg:text-base mb-0 lg:mb-2"
+            className="flex items-center justify-start gap-2 lg:gap-3 px-3 lg:px-4 py-2 lg:py-3 text-[#9CA3AF] hover:bg-[#1F2937] hover:text-[#9CA3AF] rounded transition-colors whitespace-nowrap lg:w-full text-sm lg:text-base mb-0 lg:mb-2 h-auto font-normal"
           >
             <Book className="w-4 h-4 lg:w-5 lg:h-5" />
             <span>Pattern Library</span>
-          </button>
-          <button className="flex items-center gap-2 lg:gap-3 px-3 lg:px-4 py-2 lg:py-3 text-[#D97706] bg-[#D97706]/10 rounded transition-colors whitespace-nowrap lg:w-full text-sm lg:text-base">
+          </Button>
+          <Button
+            className="flex items-center justify-start gap-2 lg:gap-3 px-3 lg:px-4 py-2 lg:py-3 text-[#D97706] bg-[#D97706]/10 hover:bg-[#D97706]/20 rounded transition-colors whitespace-nowrap lg:w-full text-sm lg:text-base h-auto font-medium border-none shadow-none"
+          >
             <SettingsIcon className="w-4 h-4 lg:w-5 lg:h-5" />
-            <span className="font-medium">Settings</span>
-          </button>
+            <span>Settings</span>
+          </Button>
         </nav>
       </aside>
 
@@ -130,12 +135,13 @@ export default function Settings({
                     )}
                   </div>
                   <div className="flex-1">
-                    <button
+                    <Button
+                      variant="outline"
                       onClick={() => setLogoUploaded(true)}
-                      className="px-4 py-2 bg-[#1F2937] text-[#E5E7EB] border border-[#2D3340] rounded hover:bg-[#2D3340] transition-colors text-sm"
+                      className="px-4 py-2 bg-[#1F2937] text-[#E5E7EB] border border-[#2D3340] rounded hover:bg-[#2D3340] transition-colors text-sm h-auto"
                     >
                       Upload Logo
-                    </button>
+                    </Button>
                     <p className="text-[#6B7280] text-xs mt-2">
                       PNG or SVG. Max 2MB. This logo appears on all exported documents.
                     </p>
@@ -241,19 +247,22 @@ export default function Settings({
                         </td>
                         <td className="px-4 py-4">
                           <span
-                            className={`px-2 py-1 rounded text-xs font-medium ${
-                              member.status === 'Active'
+                            className={`px-2 py-1 rounded text-xs font-medium ${member.status === 'Active'
                                 ? 'bg-[#047857]/10 text-[#047857]'
                                 : 'bg-[#F59E0B]/10 text-[#F59E0B]'
-                            }`}
+                              }`}
                           >
                             {member.status}
                           </span>
                         </td>
                         <td className="px-4 py-4">
-                          <button className="text-[#B91C1C] hover:text-[#DC2626] transition-colors">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-[#B91C1C] hover:text-[#DC2626] hover:bg-transparent transition-colors h-8 w-8"
+                          >
                             <Trash2 className="w-4 h-4" />
-                          </button>
+                          </Button>
                         </td>
                       </tr>
                     ))}
@@ -278,9 +287,9 @@ export default function Settings({
               </div>
 
               {/* Add Member Button */}
-              <button className="mt-4 px-4 py-2 bg-[#D97706] text-[#0F1216] rounded font-medium hover:bg-[#B45309] transition-colors text-sm">
+              <Button className="mt-4 px-4 py-2 bg-[#D97706] text-[#0F1216] rounded font-medium hover:bg-[#B45309] transition-colors text-sm h-auto">
                 Add Team Member
-              </button>
+              </Button>
             </section>
 
             {/* Section 3: Preferences */}

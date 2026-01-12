@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { X, Check, AlertTriangle, Bot } from 'lucide-react';
+import { Button } from "./ui/button";
+import { Ripple } from "./ui/ripple";
 
 interface MissionInitializeProps {
   onClose: () => void;
@@ -75,12 +77,13 @@ export default function MissionInitialize({ onClose, onComplete }: MissionInitia
             <h1 className="text-[#E5E7EB] font-semibold text-xl">
               Niti<span className="text-[#E5E7EB]">Nirmaan</span>
             </h1>
-            <button
+            <Button
+              variant="ghost"
               onClick={onClose}
-              className="w-10 h-10 flex items-center justify-center hover:bg-[#1F2937] rounded transition-colors"
+              className="w-10 h-10 p-0 flex items-center justify-center hover:bg-[#1F2937] rounded transition-colors"
             >
               <X className="w-5 h-5 text-[#9CA3AF]" />
-            </button>
+            </Button>
           </div>
         </header>
 
@@ -96,13 +99,12 @@ export default function MissionInitialize({ onClose, onComplete }: MissionInitia
           <div className="relative overflow-hidden">
             {/* Step 1: Context */}
             <div
-              className={`transition-all duration-300 ${
-                currentStep === 1
-                  ? 'opacity-100 translate-x-0'
-                  : currentStep > 1
+              className={`transition-all duration-300 ${currentStep === 1
+                ? 'opacity-100 translate-x-0'
+                : currentStep > 1
                   ? 'opacity-0 -translate-x-8 absolute inset-0 pointer-events-none'
                   : 'opacity-0 translate-x-8 absolute inset-0 pointer-events-none'
-              }`}
+                }`}
             >
               <ContextStep
                 missionData={missionData}
@@ -114,13 +116,12 @@ export default function MissionInitialize({ onClose, onComplete }: MissionInitia
 
             {/* Step 2: Outcome */}
             <div
-              className={`transition-all duration-300 ${
-                currentStep === 2
-                  ? 'opacity-100 translate-x-0'
-                  : currentStep > 2
+              className={`transition-all duration-300 ${currentStep === 2
+                ? 'opacity-100 translate-x-0'
+                : currentStep > 2
                   ? 'opacity-0 -translate-x-8 absolute inset-0 pointer-events-none'
                   : 'opacity-0 translate-x-8 absolute inset-0 pointer-events-none'
-              }`}
+                }`}
             >
               <OutcomeStep
                 missionData={missionData}
@@ -137,11 +138,10 @@ export default function MissionInitialize({ onClose, onComplete }: MissionInitia
 
             {/* Step 3: Companion */}
             <div
-              className={`transition-all duration-300 ${
-                currentStep === 3
-                  ? 'opacity-100 translate-x-0'
-                  : 'opacity-0 translate-x-8 absolute inset-0 pointer-events-none'
-              }`}
+              className={`transition-all duration-300 ${currentStep === 3
+                ? 'opacity-100 translate-x-0'
+                : 'opacity-0 translate-x-8 absolute inset-0 pointer-events-none'
+                }`}
             >
               <CompanionStep
                 missionData={missionData}
@@ -172,13 +172,12 @@ function StepIndicator({ currentStep }: { currentStep: 1 | 2 | 3 }) {
           <div className="flex items-center gap-3">
             {/* Step indicator */}
             <div
-              className={`flex items-center gap-3 px-6 py-3 rounded ${
-                step.number === currentStep
-                  ? 'bg-[#D97706] text-[#0F1216]'
-                  : step.number < currentStep
+              className={`flex items-center gap-3 px-6 py-3 rounded ${step.number === currentStep
+                ? 'bg-[#D97706] text-[#0F1216]'
+                : step.number < currentStep
                   ? 'bg-[#047857]/20 text-[#047857]'
                   : 'bg-[#374151]/30 text-[#6B7280]'
-              } transition-all`}
+                } transition-all`}
             >
               {step.number < currentStep ? (
                 <Check className="w-4 h-4" />
@@ -318,17 +317,16 @@ function ContextStep({
 
           {/* Footer */}
           <div className="mt-8 pt-6 border-t border-[#2D3340]">
-            <button
+            <Button
               onClick={onNext}
               disabled={!isValid}
-              className={`w-full py-3 rounded font-semibold transition-colors ${
-                isValid
-                  ? 'bg-[#D97706] text-[#0F1216] hover:bg-[#B45309]'
-                  : 'bg-[#374151] text-[#6B7280] cursor-not-allowed'
-              }`}
+              className={`w-full py-3 rounded font-semibold transition-colors h-auto ${isValid
+                ? 'bg-[#D97706] text-[#0F1216] hover:bg-[#B45309]'
+                : 'bg-[#374151] text-[#6B7280] cursor-not-allowed'
+                }`}
             >
               Next
-            </button>
+            </Button>
             <p className="text-[#6B7280] text-center text-sm mt-3">Step 1 of 3</p>
           </div>
         </div>
@@ -429,23 +427,22 @@ function OutcomeStep({
 
           {/* Footer */}
           <div className="flex items-center justify-between pt-6 border-t border-[#2D3340]">
-            <button
+            <Button
               onClick={onBack}
-              className="px-6 py-2.5 bg-[#374151] text-[#E5E7EB] rounded font-medium hover:bg-[#4B5563] transition-colors"
+              className="px-6 py-2.5 bg-[#374151] text-[#E5E7EB] rounded font-medium hover:bg-[#4B5563] transition-colors h-auto"
             >
               Back
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={onNext}
               disabled={!isValid}
-              className={`px-8 py-2.5 rounded font-semibold transition-colors ${
-                isValid
-                  ? 'bg-[#D97706] text-[#0F1216] hover:bg-[#B45309]'
-                  : 'bg-[#374151] text-[#6B7280] cursor-not-allowed'
-              }`}
+              className={`px-8 py-2.5 rounded font-semibold transition-colors h-auto ${isValid
+                ? 'bg-[#D97706] text-[#0F1216] hover:bg-[#B45309]'
+                : 'bg-[#374151] text-[#6B7280] cursor-not-allowed'
+                }`}
             >
               Next
-            </button>
+            </Button>
           </div>
           <p className="text-[#6B7280] text-center text-sm mt-3">Step 2 of 3</p>
         </div>
@@ -491,11 +488,10 @@ function CompanionStep({
           {/* Supportive Mentor Card */}
           <button
             onClick={() => setMissionData({ ...missionData, aiCompanion: 'supportive' })}
-            className={`relative bg-[#171B21] rounded-lg p-6 text-left transition-all border-2 ${
-              missionData.aiCompanion === 'supportive'
-                ? 'border-[#22D3EE] shadow-lg shadow-[#22D3EE]/20'
-                : 'border-[#22D3EE]/30 hover:border-[#22D3EE]/60'
-            }`}
+            className={`relative bg-[#171B21] rounded-lg p-6 text-left transition-all border-2 ${missionData.aiCompanion === 'supportive'
+              ? 'border-[#22D3EE] shadow-lg shadow-[#22D3EE]/20'
+              : 'border-[#22D3EE]/30 hover:border-[#22D3EE]/60'
+              }`}
           >
             {missionData.aiCompanion === 'supportive' && (
               <div className="absolute top-4 right-4 w-6 h-6 bg-[#22D3EE] rounded-full flex items-center justify-center">
@@ -523,16 +519,16 @@ function CompanionStep({
                 <span>Optimizes for learning and confidence</span>
               </li>
             </ul>
+            <Ripple />
           </button>
 
           {/* Critical Funder Card */}
           <button
             onClick={() => setMissionData({ ...missionData, aiCompanion: 'critical' })}
-            className={`relative bg-[#171B21] rounded-lg p-6 text-left transition-all border-2 ${
-              missionData.aiCompanion === 'critical'
-                ? 'border-[#D97706] shadow-lg shadow-[#D97706]/20'
-                : 'border-[#D97706]/30 hover:border-[#D97706]/60'
-            }`}
+            className={`relative bg-[#171B21] rounded-lg p-6 text-left transition-all border-2 ${missionData.aiCompanion === 'critical'
+              ? 'border-[#D97706] shadow-lg shadow-[#D97706]/20'
+              : 'border-[#D97706]/30 hover:border-[#D97706]/60'
+              }`}
           >
             {missionData.aiCompanion === 'critical' && (
               <div className="absolute top-4 right-4 w-6 h-6 bg-[#D97706] rounded-full flex items-center justify-center">
@@ -560,6 +556,7 @@ function CompanionStep({
                 <span>Optimizes for funder-ready rigor</span>
               </li>
             </ul>
+            <Ripple />
           </button>
         </div>
 
@@ -570,23 +567,22 @@ function CompanionStep({
         {/* Footer */}
         <div className="bg-[#171B21] rounded-lg p-6 border border-[#2D3340]">
           <div className="flex items-center justify-between mb-2">
-            <button
+            <Button
               onClick={onBack}
-              className="px-6 py-2.5 bg-[#374151] text-[#E5E7EB] rounded font-medium hover:bg-[#4B5563] transition-colors"
+              className="px-6 py-2.5 bg-[#374151] text-[#E5E7EB] rounded font-medium hover:bg-[#4B5563] transition-colors h-auto"
             >
               Back
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={onInitialize}
               disabled={!missionData.aiCompanion}
-              className={`px-8 py-2.5 rounded font-semibold transition-colors ${
-                missionData.aiCompanion
-                  ? 'bg-[#D97706] text-[#0F1216] hover:bg-[#B45309]'
-                  : 'bg-[#374151] text-[#6B7280] cursor-not-allowed'
-              }`}
+              className={`px-8 py-2.5 rounded font-semibold transition-colors h-auto ${missionData.aiCompanion
+                ? 'bg-[#D97706] text-[#0F1216] hover:bg-[#B45309]'
+                : 'bg-[#374151] text-[#6B7280] cursor-not-allowed'
+                }`}
             >
               Initialize Workspace
-            </button>
+            </Button>
           </div>
           <p className="text-[#6B7280] text-center text-sm">
             Setting up your system...

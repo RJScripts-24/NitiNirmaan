@@ -12,6 +12,7 @@ import {
   ChevronDown,
   Presentation,
 } from 'lucide-react';
+import { Button } from './ui/button';
 
 interface LogicPreviewProps {
   projectName?: string;
@@ -41,12 +42,12 @@ export default function LogicPreview({
           <p className="text-[#9CA3AF] mb-6">
             Your system must pass simulation before export.
           </p>
-          <button
+          <Button
             onClick={onBack}
-            className="px-6 py-2 bg-[#D97706] text-[#0F1216] rounded font-semibold hover:bg-[#B45309] transition-colors"
+            className="px-6 py-2 bg-[#D97706] text-[#0F1216] rounded font-semibold hover:bg-[#B45309] transition-colors h-auto"
           >
             Return to Canvas
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -98,12 +99,12 @@ export default function LogicPreview({
               </div>
             </div>
 
-            <button className="w-9 h-9 flex items-center justify-center hover:bg-[#1F2937] rounded transition-colors">
+            <Button variant="ghost" size="icon" className="w-9 h-9 flex items-center justify-center hover:bg-[#1F2937] rounded transition-colors">
               <Settings className="w-4 h-4 text-[#6B7280]" />
-            </button>
-            <button className="w-9 h-9 flex items-center justify-center hover:bg-[#1F2937] rounded transition-colors">
+            </Button>
+            <Button variant="ghost" size="icon" className="w-9 h-9 flex items-center justify-center hover:bg-[#1F2937] rounded transition-colors">
               <User className="w-4 h-4 text-[#6B7280]" />
-            </button>
+            </Button>
           </div>
         </div>
       </header>
@@ -143,10 +144,10 @@ export default function LogicPreview({
           <div className="px-6 py-4 border-b border-[#D1D5DB] bg-white">
             <div className="flex items-center justify-between">
               <h2 className="text-[#1F2937] font-medium">Live LFA Document Preview</h2>
-              <button className="flex items-center gap-2 text-[#6B7280] hover:text-[#1F2937] text-sm">
+              <Button variant="ghost" className="flex items-center gap-2 text-[#6B7280] hover:text-[#1F2937] text-sm h-auto font-normal">
                 <span>Preview</span>
                 <ChevronDown className="w-4 h-4" />
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -161,18 +162,18 @@ export default function LogicPreview({
           {/* Export Actions - Bottom Right */}
           <div className="px-8 py-4 bg-white border-t border-[#D1D5DB]">
             <div className="flex items-center gap-3">
-              <button className="flex items-center gap-2 px-4 py-2 bg-[#D97706] text-white rounded font-medium hover:bg-[#B45309] transition-colors">
+              <Button className="flex items-center gap-2 px-4 py-2 bg-[#D97706] text-white rounded font-medium hover:bg-[#B45309] transition-colors h-auto border-none shadow-none">
                 <Download className="w-4 h-4" />
                 Export to PDF
-              </button>
-              <button className="flex items-center gap-2 px-4 py-2 bg-white text-[#1F2937] border border-[#D1D5DB] rounded font-medium hover:bg-[#F9FAFB] transition-colors">
+              </Button>
+              <Button variant="outline" className="flex items-center gap-2 px-4 py-2 bg-white text-[#1F2937] border border-[#D1D5DB] rounded font-medium hover:bg-[#F9FAFB] transition-colors h-auto shadow-none">
                 <FileText className="w-4 h-4" />
                 Export to Word
-              </button>
-              <button className="flex items-center gap-2 px-4 py-2 bg-white text-[#1F2937] border border-[#D1D5DB] rounded font-medium hover:bg-[#F9FAFB] transition-colors">
+              </Button>
+              <Button variant="outline" className="flex items-center gap-2 px-4 py-2 bg-white text-[#1F2937] border border-[#D1D5DB] rounded font-medium hover:bg-[#F9FAFB] transition-colors h-auto shadow-none">
                 <Presentation className="w-4 h-4" />
                 Generate Deck
-              </button>
+              </Button>
             </div>
           </div>
         </div>
