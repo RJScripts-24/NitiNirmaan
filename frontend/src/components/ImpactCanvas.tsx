@@ -45,6 +45,7 @@ import {
   HelpCircle,
 } from 'lucide-react';
 import { Button } from './ui/button';
+import NoiseBackground from './NoiseBackground';
 
 interface ImpactCanvasProps {
   projectName?: string;
@@ -173,9 +174,7 @@ export default function ImpactCanvas({ projectName = 'FLN Improvement – Bihar 
   return (
     <div className="h-screen bg-[#0F1216] text-gray-200 flex flex-col">
       {/* Subtle noise texture overlay */}
-      <div className="fixed inset-0 pointer-events-none opacity-[0.04] z-0" style={{
-        backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
-      }}></div>
+      <NoiseBackground />
 
       {/* Top Toolbar */}
       <header className="bg-[#171B21] border-b border-[#1F2937] px-6 py-4 flex items-center justify-between z-10">
@@ -250,8 +249,8 @@ export default function ImpactCanvas({ projectName = 'FLN Improvement – Bihar 
             onClick={handleRunSimulation}
             disabled={isSimulating}
             className={`px-6 py-2 rounded font-semibold transition-colors flex items-center gap-2 h-auto border-none shadow-none ${isSimulating
-                ? 'bg-[#374151] text-[#6B7280] cursor-not-allowed'
-                : 'bg-[#D97706] text-[#0F1216] hover:bg-[#B45309]'
+              ? 'bg-[#374151] text-[#6B7280] cursor-not-allowed'
+              : 'bg-[#D97706] text-[#0F1216] hover:bg-[#B45309]'
               }`}
           >
             <Play className="w-4 h-4" />

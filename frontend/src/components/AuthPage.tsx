@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import { Button } from "./ui/button";
+import NoiseBackground from './NoiseBackground';
 
 interface AuthPageProps {
   onBack?: () => void;
@@ -35,9 +36,7 @@ export default function AuthPage({ onBack, onAuthSuccess }: AuthPageProps) {
   return (
     <div className="min-h-screen bg-[#0F1216] relative overflow-hidden flex">
       {/* Global Noise Layer */}
-      <div className="fixed inset-0 pointer-events-none opacity-[0.07]" style={{
-        backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
-      }}></div>
+      <NoiseBackground />
 
       {/* Global Radial Gradient */}
       <div className="fixed inset-0 pointer-events-none" style={{

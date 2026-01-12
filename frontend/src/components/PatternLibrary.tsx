@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { X, ChevronDown, HelpCircle } from 'lucide-react';
 import { Button } from "@/components/ui/button";
+import NoiseBackground from './NoiseBackground';
 
 interface PatternLibraryProps {
   onBack?: () => void;
@@ -200,6 +201,7 @@ export default function PatternLibrary({ onBack }: PatternLibraryProps) {
 
   return (
     <div className="min-h-screen bg-[#0F1216] text-gray-200">
+      <NoiseBackground />
       {/* Top Navigation */}
       <nav className="sticky top-0 z-50 bg-[#171B21] border-b border-[#1F2937]/30">
         <div className="max-w-[1920px] mx-auto px-6 py-4 flex items-center justify-between">

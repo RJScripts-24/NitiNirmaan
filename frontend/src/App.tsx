@@ -6,7 +6,7 @@ import PatternLibrary from './components/PatternLibrary';
 import MissionInitialize from './components/MissionInitialize';
 import ImpactCanvas from './components/ImpactCanvas';
 import LogicPreview from './components/LogicPreview';
-import HeroGrid3D from './components/HeroGrid3D';
+import HeroGridWarp from './components/HeroGridWarp';
 import Settings from './components/Settings';
 import { Button } from './components/ui/button';
 
@@ -107,20 +107,8 @@ export default function App() {
 
       {/* Hero Section */}
       <section className="relative w-full px-4 md:px-6 pt-12 md:pt-20 pb-12 md:pb-16 overflow-hidden">
-        {/* Grid background covering entire hero section */}
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            backgroundImage: `
-              linear-gradient(#171B21 1px, transparent 1px),
-              linear-gradient(90deg, #171B21 1px, transparent 1px)
-            `,
-            backgroundSize: '40px 40px'
-          }}
-        ></div>
-
-        {/* 3D Hover Effect */}
-        <HeroGrid3D />
+        {/* Three.js Interactive Grid */}
+        <HeroGridWarp />
 
         <div className="text-center mb-8 md:mb-12 relative z-10 max-w-7xl mx-auto">
           {/* Headline */}
@@ -367,6 +355,6 @@ export default function App() {
 
       {/* Footer Spacing */}
       <div className="h-12 md:h-20"></div>
-    </div>
+    </div >
   );
 }

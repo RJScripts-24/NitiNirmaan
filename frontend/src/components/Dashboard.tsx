@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Plus, Book, Bell, Settings, User, MoreVertical, Search } from 'lucide-react';
 import { Button } from "@/components/ui/button";
+import NoiseBackground from './NoiseBackground';
 
 interface DashboardProps {
   onBack?: () => void;
@@ -58,9 +59,7 @@ export default function Dashboard({ onBack, onNavigateToPatterns, onNavigateToIn
   return (
     <div className="min-h-screen bg-[#0F1216] text-gray-200 relative">
       {/* Global Noise Layer */}
-      <div className="fixed inset-0 pointer-events-none opacity-[0.06]" style={{
-        backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
-      }}></div>
+      <NoiseBackground />
 
       {/* Global Vignette */}
       <div className="fixed inset-0 pointer-events-none" style={{

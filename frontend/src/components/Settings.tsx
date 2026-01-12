@@ -11,6 +11,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import { Button } from './ui/button';
+import NoiseBackground from './NoiseBackground';
 
 interface SettingsProps {
   onNavigateToDashboard?: () => void;
@@ -59,6 +60,7 @@ export default function Settings({
 
   return (
     <div className="min-h-screen bg-[#0F1216] text-gray-200 flex flex-col lg:flex-row">
+      <NoiseBackground />
       {/* Left Sidebar Navigation */}
       <aside className="w-full lg:w-64 bg-[#171B21] border-b lg:border-b-0 lg:border-r border-[#1F2937] flex flex-col">
         <div className="p-4 lg:p-6 border-b border-[#1F2937]">
@@ -248,8 +250,8 @@ export default function Settings({
                         <td className="px-4 py-4">
                           <span
                             className={`px-2 py-1 rounded text-xs font-medium ${member.status === 'Active'
-                                ? 'bg-[#047857]/10 text-[#047857]'
-                                : 'bg-[#F59E0B]/10 text-[#F59E0B]'
+                              ? 'bg-[#047857]/10 text-[#047857]'
+                              : 'bg-[#F59E0B]/10 text-[#F59E0B]'
                               }`}
                           >
                             {member.status}
