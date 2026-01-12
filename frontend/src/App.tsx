@@ -134,54 +134,7 @@ export default function App() {
           <p className="text-[#9CA3AF] text-xs md:text-sm">See your program before you run it.</p>
         </div>
 
-        {/* Hero Visual */}
-        <div className="relative bg-[#0F1216] border border-[#1F2937] rounded-lg p-6 md:p-12 mt-8 md:mt-16 z-10 max-w-7xl mx-auto">
-          <div className="relative h-48 md:h-64 flex items-center justify-center overflow-x-auto md:overflow-visible">
-            {/* Teacher Node */}
-            <div className="absolute left-4 md:left-20 top-1/2 -translate-y-1/2 bg-[#6B7280] px-3 py-1.5 md:px-4 md:py-2 rounded flex items-center gap-1.5 md:gap-2 text-xs md:text-sm whitespace-nowrap">
-              <User className="w-3 h-3 md:w-4 md:h-4" />
-              <span>Teacher</span>
-            </div>
 
-            {/* Connection Line from Teacher to Activity */}
-            <svg className="absolute left-16 md:left-36 top-1/2 w-20 md:w-32 h-1 -translate-y-1/2" style={{ marginLeft: '30px' }}>
-              <path d="M 0 0 Q 60 -20, 120 0" stroke="#6B7280" strokeWidth="2" fill="none" />
-            </svg>
-
-            {/* Activity Needed Node */}
-            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-[#D97706] px-3 py-1.5 md:px-5 md:py-2 rounded flex items-center gap-1.5 md:gap-2 shadow-lg whitespace-nowrap">
-              <Activity className="w-3 h-3 md:w-4 md:h-4" />
-              <span className="font-medium text-xs md:text-base">Activity Needed!</span>
-            </div>
-
-            {/* Connection Line from Activity to Student */}
-            <svg className="absolute right-16 md:right-36 top-1/2 w-20 md:w-32 h-1 -translate-y-1/2" style={{ marginRight: '30px' }}>
-              <path d="M 0 0 Q 60 20, 120 0" stroke="#6B7280" strokeWidth="2" fill="none" />
-            </svg>
-
-            {/* Student Node */}
-            <div className="absolute right-4 md:right-20 top-1/2 -translate-y-1/2 bg-[#6B7280] px-3 py-1.5 md:px-4 md:py-2 rounded flex items-center gap-1.5 md:gap-2 text-xs md:text-sm whitespace-nowrap">
-              <User className="w-3 h-3 md:w-4 md:h-4" />
-              <span>Student</span>
-            </div>
-          </div>
-
-          {/* Toolbar Icons */}
-          <div className="absolute bottom-4 md:bottom-6 left-4 md:left-6 flex gap-2 md:gap-3">
-            <div className="w-6 h-6 md:w-8 md:h-8 bg-[#1F2937] rounded flex items-center justify-center">
-              <div className="w-2 h-2 md:w-3 md:h-3 bg-[#6B7280] rounded"></div>
-            </div>
-            <div className="w-6 h-6 md:w-8 md:h-8 bg-[#1F2937] rounded flex items-center justify-center">
-              <div className="w-2 h-2 md:w-3 md:h-3 bg-[#6B7280] rounded-sm"></div>
-            </div>
-            <div className="w-6 h-6 md:w-8 md:h-8 bg-[#1F2937] rounded flex items-center justify-center">
-              <div className="w-2 h-2 md:w-3 md:h-3 border-2 border-[#6B7280] rounded-full"></div>
-            </div>
-            <div className="w-6 h-6 md:w-8 md:h-8 bg-[#1F2937] rounded flex items-center justify-center">
-              <Network className="w-3 h-3 md:w-4 md:h-4 text-[#6B7280]" />
-            </div>
-          </div>
-        </div>
       </section>
 
       {/* Key Features Grid */}

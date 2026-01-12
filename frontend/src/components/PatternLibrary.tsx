@@ -266,86 +266,89 @@ export default function PatternLibrary({ onBack }: PatternLibraryProps) {
           <div className="p-6">
             <h2 className="text-[#E5E7EB] font-semibold mb-6">Filters</h2>
 
-            {/* Theme Filter */}
-            <FilterSection title="Theme">
+            {/* Primary Domain Filter */}
+            <FilterSection title="1. Primary Domain">
               <FilterCheckbox
                 label="FLN (Foundational Literacy & Numeracy)"
                 checked={activeFilters.theme.includes('FLN')}
                 onChange={() => toggleFilter('theme', 'FLN')}
-                tooltip="Foundational skills in reading, writing, and basic math"
               />
               <FilterCheckbox
-                label="Leadership"
-                checked={activeFilters.theme.includes('Leadership')}
-                onChange={() => toggleFilter('theme', 'Leadership')}
-              />
-              <FilterCheckbox
-                label="STEM"
-                checked={activeFilters.theme.includes('STEM')}
-                onChange={() => toggleFilter('theme', 'STEM')}
-              />
-              <FilterCheckbox
-                label="Teacher Professional Development"
-                checked={activeFilters.theme.includes('Teacher Professional Development')}
-                onChange={() => toggleFilter('theme', 'Teacher Professional Development')}
-              />
-              <FilterCheckbox
-                label="Governance & Systems Reform"
-                checked={activeFilters.theme.includes('Governance & Systems Reform')}
-                onChange={() => toggleFilter('theme', 'Governance & Systems Reform')}
+                label="School-to-Work (Career Readiness / Secondary Ed)"
+                checked={activeFilters.theme.includes('School-to-Work')}
+                onChange={() => toggleFilter('theme', 'School-to-Work')}
               />
             </FilterSection>
 
-            {/* Geography Filter */}
-            <FilterSection title="Geography" collapsible>
+            {/* Intervention Lever Filter */}
+            <FilterSection title="2. Intervention Lever" collapsible>
+              <FilterCheckbox
+                label="Pedagogy / Capacity Building"
+                checked={activeFilters.theme.includes('Pedagogy')}
+                onChange={() => toggleFilter('theme', 'Pedagogy')}
+              />
+              <FilterCheckbox
+                label="Governance & Leadership"
+                checked={activeFilters.theme.includes('Governance')}
+                onChange={() => toggleFilter('theme', 'Governance')}
+              />
+              <FilterCheckbox
+                label="Community Engagement"
+                checked={activeFilters.theme.includes('Community')}
+                onChange={() => toggleFilter('theme', 'Community')}
+              />
+              <FilterCheckbox
+                label="EdTech / Digital Infrastructure"
+                checked={activeFilters.theme.includes('EdTech')}
+                onChange={() => toggleFilter('theme', 'EdTech')}
+              />
+              <FilterCheckbox
+                label="TLM Provisioning"
+                checked={activeFilters.theme.includes('TLM')}
+                onChange={() => toggleFilter('theme', 'TLM')}
+              />
+            </FilterSection>
+
+            {/* Context & Geography Filter */}
+            <FilterSection title="3. Context & Geography" collapsible>
               <FilterCheckbox
                 label="Rural"
                 checked={activeFilters.geography.includes('Rural')}
                 onChange={() => toggleFilter('geography', 'Rural')}
               />
               <FilterCheckbox
-                label="Urban"
+                label="Urban / Peri-urban"
                 checked={activeFilters.geography.includes('Urban')}
                 onChange={() => toggleFilter('geography', 'Urban')}
               />
               <FilterCheckbox
                 label="Aspirational Districts"
-                checked={activeFilters.geography.includes('Aspirational Districts')}
-                onChange={() => toggleFilter('geography', 'Aspirational Districts')}
+                checked={activeFilters.geography.includes('Aspirational')}
+                onChange={() => toggleFilter('geography', 'Aspirational')}
               />
               <FilterCheckbox
-                label="Mixed Contexts"
-                checked={activeFilters.geography.includes('Mixed Contexts')}
-                onChange={() => toggleFilter('geography', 'Mixed Contexts')}
+                label="Tribal / Remote"
+                checked={activeFilters.geography.includes('Tribal')}
+                onChange={() => toggleFilter('geography', 'Tribal')}
               />
             </FilterSection>
 
             {/* Scale Filter */}
-            <FilterSection title="Scale" collapsible>
+            <FilterSection title="4. Scale" collapsible>
               <FilterCheckbox
-                label="School"
+                label="School Level"
                 checked={activeFilters.scale.includes('School')}
                 onChange={() => toggleFilter('scale', 'School')}
               />
               <FilterCheckbox
-                label="Cluster"
+                label="Cluster/Block"
                 checked={activeFilters.scale.includes('Cluster')}
                 onChange={() => toggleFilter('scale', 'Cluster')}
               />
               <FilterCheckbox
-                label="Block"
-                checked={activeFilters.scale.includes('Block')}
-                onChange={() => toggleFilter('scale', 'Block')}
-              />
-              <FilterCheckbox
-                label="District"
+                label="District/State"
                 checked={activeFilters.scale.includes('District')}
                 onChange={() => toggleFilter('scale', 'District')}
-              />
-              <FilterCheckbox
-                label="State Pilot"
-                checked={activeFilters.scale.includes('State Pilot')}
-                onChange={() => toggleFilter('scale', 'State Pilot')}
               />
             </FilterSection>
           </div>

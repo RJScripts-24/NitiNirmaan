@@ -299,10 +299,8 @@ function ContextStep({
                 className="w-full px-4 py-3 bg-[#0F1216] border border-[#374151] rounded text-[#E5E7EB] focus:outline-none focus:border-[#D97706] transition-colors"
               >
                 <option value="">Select Domain</option>
-                <option value="FLN">FLN (Foundational Literacy & Numeracy)</option>
-                <option value="STEM">STEM Education</option>
-                <option value="Leadership">School Leadership</option>
-                <option value="Teacher Dev">Teacher Professional Development</option>
+                <option value="FLN">FLN (Foundational Literacy & Numeracy - Grades 1-5)</option>
+                <option value="Career Readiness">Career Readiness / School-to-Work (or STEM/Secondary Ed - Grades 6-12)</option>
               </select>
 
               <div className="flex items-start gap-2 mt-3">
