@@ -15,6 +15,7 @@ import BeeBackground from './components/BeeBackground';
 import ScrollReveal from './components/ScrollReveal';
 import { Button } from './components/ui/button';
 import Loader from './components/Loader';
+import { checkBackEndHealth } from './lib/api';
 
 type PageType = 'landing' | 'auth' | 'dashboard' | 'patterns' | 'initialize' | 'builder' | 'preview' | 'settings';
 
@@ -33,7 +34,7 @@ export default function App() {
   useGSAP(() => {
     if (currentPage === 'landing') {
       const timeline = gsap.timeline();
-      
+
       timeline
         .fromTo(
           headlineRef.current,
@@ -60,6 +61,18 @@ export default function App() {
         );
     }
   }, [currentPage]);
+
+  // Backend Health Check
+  useEffect(() => {
+    checkBackEndHealth().then((data: any) => {
+      if (data && data.status === 'ok') {
+        console.log('%c Backend Integrated Successfully ', 'background: #222; color: #bada55');
+        console.log('Backend Status:', data);
+      } else {
+        console.log('%c Backend Connection Failed ', 'background: #222; color: #ff0000');
+      }
+    });
+  }, []);
 
   // Initialize state from URL hash
   useEffect(() => {
@@ -307,35 +320,35 @@ export default function App() {
                   backgroundSize: '20px 20px',
                   backgroundPosition: 'center'
                 }}>
-                <div className="relative z-10 bg-[#171B21] p-2 -m-2">
-                  <Activity className="w-8 h-8 md:w-10 md:h-10 text-[#047857] mb-3 md:mb-4" />
-                  <h3 className="text-[#E5E7EB] text-lg md:text-xl font-semibold mb-2 md:mb-3">
-                    Pre-Mortem Simulator
-                    <div className="h-1 w-12 md:w-16 bg-[#047857] mt-2"></div>
-                  </h3>
-                  <p className="text-[#9CA3AF] mb-3 md:mb-4 text-sm md:text-base">
-                    Simulation & Pre-Mortem
-                  </p>
+                  <div className="relative z-10 bg-[#171B21] p-2 -m-2">
+                    <Activity className="w-8 h-8 md:w-10 md:h-10 text-[#047857] mb-3 md:mb-4" />
+                    <h3 className="text-[#E5E7EB] text-lg md:text-xl font-semibold mb-2 md:mb-3">
+                      Pre-Mortem Simulator
+                      <div className="h-1 w-12 md:w-16 bg-[#047857] mt-2"></div>
+                    </h3>
+                    <p className="text-[#9CA3AF] mb-3 md:mb-4 text-sm md:text-base">
+                      Simulation & Pre-Mortem
+                    </p>
 
-                  {/* Mini Visual */}
-                  <div className="my-4 md:my-6 grid grid-cols-4 gap-2">
-                    <div className="aspect-square bg-[#1F2937] rounded"></div>
-                    <div className="aspect-square bg-[#1F2937] rounded"></div>
-                    <div className="aspect-square bg-[#6B7280] rounded"></div>
-                    <div className="aspect-square bg-[#1F2937] rounded"></div>
-                    <div className="col-span-4 h-6 md:h-8 bg-[#D97706] rounded flex items-center justify-center gap-1">
-                      <div className="w-1.5 h-1.5 md:w-2 md:h-2 bg-[#0F1216] rounded"></div>
-                      <div className="w-1.5 h-1.5 md:w-2 md:h-2 bg-[#0F1216] rounded"></div>
-                      <div className="w-1.5 h-1.5 md:w-2 md:h-2 bg-[#0F1216] rounded"></div>
-                      <div className="w-1.5 h-1.5 md:w-2 md:h-2 bg-[#0F1216] rounded"></div>
+                    {/* Mini Visual */}
+                    <div className="my-4 md:my-6 grid grid-cols-4 gap-2">
+                      <div className="aspect-square bg-[#1F2937] rounded"></div>
+                      <div className="aspect-square bg-[#1F2937] rounded"></div>
+                      <div className="aspect-square bg-[#6B7280] rounded"></div>
+                      <div className="aspect-square bg-[#1F2937] rounded"></div>
+                      <div className="col-span-4 h-6 md:h-8 bg-[#D97706] rounded flex items-center justify-center gap-1">
+                        <div className="w-1.5 h-1.5 md:w-2 md:h-2 bg-[#0F1216] rounded"></div>
+                        <div className="w-1.5 h-1.5 md:w-2 md:h-2 bg-[#0F1216] rounded"></div>
+                        <div className="w-1.5 h-1.5 md:w-2 md:h-2 bg-[#0F1216] rounded"></div>
+                        <div className="w-1.5 h-1.5 md:w-2 md:h-2 bg-[#0F1216] rounded"></div>
+                      </div>
                     </div>
-                  </div>
 
-                  <p className="text-[#6B7280] text-xs md:text-sm italic">
-                    "Find out what breaks — before the field does."
-                  </p>
+                    <p className="text-[#6B7280] text-xs md:text-sm italic">
+                      "Find out what breaks — before the field does."
+                    </p>
+                  </div>
                 </div>
-              </div>
               </ScrollReveal>
 
               {/* Card 3 - AI That Challenges Your Logic */}
@@ -348,44 +361,44 @@ export default function App() {
                   backgroundSize: '20px 20px',
                   backgroundPosition: 'center'
                 }}>
-                <div className="relative z-10 bg-[#171B21] p-2 -m-2">
-                  <Bot className="w-8 h-8 md:w-10 md:h-10 text-[#22D3EE] mb-3 md:mb-4" />
-                  <h3 className="text-[#E5E7EB] text-lg md:text-xl font-semibold mb-2 md:mb-3">
-                    AI That Challenges Your Logic
-                    <div className="h-1 w-12 md:w-16 bg-[#22D3EE] mt-2"></div>
-                  </h3>
-                  <p className="text-[#9CA3AF] mb-3 md:mb-4 text-sm md:text-base">
-                    Adversarial AI Coach
-                  </p>
+                  <div className="relative z-10 bg-[#171B21] p-2 -m-2">
+                    <Bot className="w-8 h-8 md:w-10 md:h-10 text-[#22D3EE] mb-3 md:mb-4" />
+                    <h3 className="text-[#E5E7EB] text-lg md:text-xl font-semibold mb-2 md:mb-3">
+                      AI That Challenges Your Logic
+                      <div className="h-1 w-12 md:w-16 bg-[#22D3EE] mt-2"></div>
+                    </h3>
+                    <p className="text-[#9CA3AF] mb-3 md:mb-4 text-sm md:text-base">
+                      Adversarial AI Coach
+                    </p>
 
-                  {/* Mini Visual */}
-                  <div className="my-4 md:my-6 space-y-2">
-                    <div className="flex gap-2">
-                      <div className="w-6 h-6 md:w-8 md:h-8 bg-[#22D3EE] rounded-full flex items-center justify-center flex-shrink-0">
-                        <Bot className="w-3 h-3 md:w-4 md:h-4 text-[#0F1216]" />
+                    {/* Mini Visual */}
+                    <div className="my-4 md:my-6 space-y-2">
+                      <div className="flex gap-2">
+                        <div className="w-6 h-6 md:w-8 md:h-8 bg-[#22D3EE] rounded-full flex items-center justify-center flex-shrink-0">
+                          <Bot className="w-3 h-3 md:w-4 md:h-4 text-[#0F1216]" />
+                        </div>
+                        <div className="flex-1 space-y-1">
+                          <div className="h-1.5 md:h-2 bg-[#1F2937] rounded w-3/4"></div>
+                          <div className="h-1.5 md:h-2 bg-[#1F2937] rounded w-1/2"></div>
+                        </div>
                       </div>
-                      <div className="flex-1 space-y-1">
-                        <div className="h-1.5 md:h-2 bg-[#1F2937] rounded w-3/4"></div>
-                        <div className="h-1.5 md:h-2 bg-[#1F2937] rounded w-1/2"></div>
+                      <div className="flex gap-2">
+                        <div className="w-6 h-6 md:w-8 md:h-8 bg-[#D97706] rounded flex items-center justify-center flex-shrink-0">
+                          <User className="w-3 h-3 md:w-4 md:h-4 text-[#0F1216]" />
+                        </div>
+                        <div className="flex-1 bg-[#6B7280] rounded h-5 md:h-6"></div>
+                      </div>
+                      <div className="flex gap-2 justify-end">
+                        <div className="w-5 h-5 md:w-6 md:h-6 bg-[#047857] rounded"></div>
+                        <div className="w-5 h-5 md:w-6 md:h-6 bg-[#DC2626] rounded"></div>
                       </div>
                     </div>
-                    <div className="flex gap-2">
-                      <div className="w-6 h-6 md:w-8 md:h-8 bg-[#D97706] rounded flex items-center justify-center flex-shrink-0">
-                        <User className="w-3 h-3 md:w-4 md:h-4 text-[#0F1216]" />
-                      </div>
-                      <div className="flex-1 bg-[#6B7280] rounded h-5 md:h-6"></div>
-                    </div>
-                    <div className="flex gap-2 justify-end">
-                      <div className="w-5 h-5 md:w-6 md:h-6 bg-[#047857] rounded"></div>
-                      <div className="w-5 h-5 md:w-6 md:h-6 bg-[#DC2626] rounded"></div>
-                    </div>
+
+                    <p className="text-[#6B7280] text-xs md:text-sm italic">
+                      "Designed to disagree with you — productively."
+                    </p>
                   </div>
-
-                  <p className="text-[#6B7280] text-xs md:text-sm italic">
-                    "Designed to disagree with you — productively."
-                  </p>
                 </div>
-              </div>
               </ScrollReveal>
             </div>
           </div>
