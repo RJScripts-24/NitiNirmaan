@@ -18,7 +18,7 @@ import { inviteRouter } from './routes/invite.js';
 import { authRouter } from './routes/auth.js';
 import { projectsRouter } from './routes/projects.js';
 import { simulationRouter } from './routes/simulation.js';
-import { templatesRouter } from './routes/templates.js';
+import { patternsRouter } from './routes/patterns.js';
 import { usersRouter } from './routes/users.js';
 
 const app = express();
@@ -44,8 +44,8 @@ app.use('/api/invite', inviteRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/projects', projectsRouter);
 app.use('/api/simulation', simulationRouter);
-app.use('/api/templates', templatesRouter);
-app.use('/api/users', usersRouter);
+app.use('/api/patterns', patternsRouter);
+app.use('/api/user', usersRouter);
 
 // Error handling middleware
 app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {

@@ -10,10 +10,10 @@ const upload = multer({
     limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
 });
 
-// --- GET USER PROFILE ---
-usersRouter.get('/profile', authMiddleware, async (req, res) => {
+// --- GET USER PROFILE (ME) ---
+usersRouter.get('/me', authMiddleware, async (req, res) => {
     try {
-        const supabase = req.supabaseClient!;
+        const supabase = req.supabaseClient! as any;
         const user = req.user!;
 
         const { data: profile, error } = await supabase
@@ -24,10 +24,33 @@ usersRouter.get('/profile', authMiddleware, async (req, res) => {
 
         if (error) {
             console.error('Fetch Profile Error:', error);
-            return res.status(404).json({ error: 'Profile not found' });
+            // Return basic user info from auth middleware if profile missing or error
+            return res.json({
+                id: user.id,
+                email: user.email,
+                name: user.user_metadata?.full_name || 'User',
+                avatarUrl: '', // Default or null
+                level: {
+                    levelNumber: 1,
+                    title: 'Novice'
+                },
+                organization: ''
+            });
         }
 
-        res.json(profile);
+        const profileData = profile as any;
+
+        res.json({
+            id: user.id,
+            email: user.email,
+            name: profileData.full_name,
+            avatarUrl: profileData.avatar_url || '',
+            level: {
+                levelNumber: 1, // Mock or derived from gamification_level string
+                title: profileData.gamification_level || 'Novice'
+            },
+            organization: profileData.org_name
+        });
 
     } catch (error) {
         console.error('Get Profile Error:', error);
@@ -38,7 +61,7 @@ usersRouter.get('/profile', authMiddleware, async (req, res) => {
 // --- UPDATE PROFILE ---
 usersRouter.put('/profile', authMiddleware, upload.single('logo'), async (req, res) => {
     try {
-        const supabase = req.supabaseClient!;
+        const supabase = req.supabaseClient! as any;
         const user = req.user!;
 
         const { fullName, orgName, website } = req.body;
@@ -106,14 +129,14 @@ usersRouter.put('/profile', authMiddleware, upload.single('logo'), async (req, r
 // --- GET TEAM MEMBERS ---
 usersRouter.get('/team', authMiddleware, async (req, res) => {
     try {
-        const supabase = req.supabaseClient!;
+        const supabase = req.supabaseClient! as any;
         const user = req.user!;
 
         // Get Current User's Org
         const { data: userProfile } = await supabase
             .from('profiles')
             .select('org_name')
-            .eq('id', user.id)
+            .eq('id', user.id as any)
             .single();
 
         if (!userProfile?.org_name) {
@@ -124,8 +147,8 @@ usersRouter.get('/team', authMiddleware, async (req, res) => {
         const { data: team, error } = await supabase
             .from('profiles')
             .select('id, full_name, email, avatar_url, gamification_level')
-            .eq('org_name', userProfile.org_name)
-            .neq('id', user.id); // Exclude self
+            .eq('org_name', userProfile.org_name as any)
+            .neq('id', user.id as any); // Exclude self
 
         if (error) {
             return res.json([]);
@@ -142,14 +165,14 @@ usersRouter.get('/team', authMiddleware, async (req, res) => {
 // --- REMOVE TEAM MEMBER ---
 usersRouter.delete('/team/:userId', authMiddleware, async (req, res) => {
     try {
-        const supabase = req.supabaseClient!;
+        const supabase = req.supabaseClient! as any;
         const userIdToRemove = req.params.userId;
 
         // For MVP: We just set their Org Name to null, effectively kicking them out
         const { error } = await supabase
             .from('profiles')
             .update({ org_name: null })
-            .eq('id', userIdToRemove);
+            .eq('id', userIdToRemove as any);
 
         if (error) {
             return res.status(500).json({ error: 'Failed to remove member.' });

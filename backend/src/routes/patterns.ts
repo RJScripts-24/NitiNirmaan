@@ -3,27 +3,58 @@ import { supabase } from '../lib/supabase.js';
 import { generateEmbedding } from '../lib/ai/embeddings.js';
 import { authMiddleware } from '../middleware/auth.js';
 
-export const templatesRouter = Router();
+export const patternsRouter = Router();
 
 // --- GET ALL TEMPLATES ---
-templatesRouter.get('/', async (req, res) => {
+patternsRouter.get('/', async (req: any, res: any) => {
     try {
         const filter = req.query.filter as string;
 
         let query = supabase.from('templates').select('*');
 
         if (filter && filter !== 'all') {
-            query = query.eq('domain', filter); // Filter by 'FLN', 'Career', 'Leadership'
+            query = query.eq('theme', filter);
+        }
+
+        const geography = req.query.geography as string;
+        if (geography) {
+            query = query.contains('geography', [geography]);
+        }
+
+        const scale = req.query.scale as string;
+        if (scale) {
+            query = query.contains('scale', [scale]);
         }
 
         const { data, error } = await query;
+        const templates = data as any[] || [];
 
         if (error) {
-            console.error('Fetch Templates Error:', error);
-            return res.status(500).json({ error: 'Failed to fetch templates' });
+            console.error('Fetch Patterns Error:', error);
+            return res.status(500).json({ error: 'Failed to fetch patterns' });
         }
 
-        res.json(data || []);
+        // Map to OpenAPI Pattern schema
+        const patterns = templates.map(p => ({
+            id: p.id,
+            title: p.title,
+            institution: p.institution || 'NitiNirmaan',
+            forkedCount: p.forked_count || 0,
+            successRate: 'High', // Mocked based on logic_health_score or random
+            theme: Array.isArray(p.theme) ? p.theme : [p.theme],
+            geography: p.geography || [],
+            scale: p.scale || [],
+            nodes: p.nodes || [],
+            connections: p.edges || [], // mapping edges to connections
+            metadata: {
+                geography: p.metadata?.geography,
+                operatingScale: p.metadata?.operatingScale,
+                stakeholders: p.metadata?.stakeholders || [],
+                constraints: p.metadata?.constraints || []
+            }
+        }));
+
+        res.json(patterns);
 
     } catch (error) {
         console.error('Get Templates Error:', error);
@@ -32,7 +63,7 @@ templatesRouter.get('/', async (req, res) => {
 });
 
 // --- AI VECTOR SEARCH ---
-templatesRouter.post('/search', async (req, res) => {
+patternsRouter.post('/search', async (req, res) => {
     try {
         const { userGoal } = req.body;
 
@@ -67,7 +98,7 @@ templatesRouter.post('/search', async (req, res) => {
 });
 
 // --- FORK TEMPLATE ---
-templatesRouter.post('/:id/fork', authMiddleware, async (req, res) => {
+patternsRouter.post('/:id/fork', authMiddleware, async (req: any, res: any) => {
     try {
         const supabaseClient = req.supabaseClient!;
         const user = req.user!;
@@ -85,16 +116,18 @@ templatesRouter.post('/:id/fork', authMiddleware, async (req, res) => {
             return res.status(404).json({ error: 'Template not found' });
         }
 
+        const templateData = template as any;
+
         // 2. Create New Project
         const { data: newProject, error: pError } = await supabaseClient
             .from('projects')
             .insert({
                 user_id: user.id,
-                title: projectTitle || `Copy of ${template.title}`,
-                description: `Forked from ${template.title} model.`,
+                title: projectTitle || `Copy of ${templateData.title}`,
+                description: `Forked from ${templateData.title} model.`,
                 status: 'draft',
                 logic_health_score: 80, // Starts high because it's a proven model
-                theme: template.domain,
+                theme: templateData.domain,
             })
             .select('id')
             .single();

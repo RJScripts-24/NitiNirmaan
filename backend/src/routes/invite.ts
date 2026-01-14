@@ -11,7 +11,7 @@ inviteRouter.post('/', authMiddleware, async (req, res) => {
             return res.status(400).json({ error: 'Missing email or projectId' });
         }
 
-        const supabase = req.supabaseClient!;
+        const supabase = req.supabaseClient! as any;
         const user = req.user!;
 
         // 1. Check if user making request is OWNER

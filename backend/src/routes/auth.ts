@@ -35,7 +35,7 @@ authRouter.post('/signup', async (req, res) => {
             return res.json({
                 message: 'Signup successful',
                 user: data.user,
-                session: data.session,
+                token: data.session.access_token, // Map session.access_token -> token
             });
         }
 
@@ -69,7 +69,7 @@ authRouter.post('/login', async (req, res) => {
         res.json({
             message: 'Login successful',
             user: data.user,
-            session: data.session,
+            token: data.session.access_token, // Map session.access_token -> token
         });
 
     } catch (error) {
@@ -134,7 +134,7 @@ authRouter.post('/google', async (req, res) => {
             return res.status(400).json({ error: error.message });
         }
 
-        res.json({ url: data.url });
+        res.json({ url: data.url }); // This remains as is, frontend follows URL
 
     } catch (error) {
         console.error('Google OAuth Error:', error);
@@ -158,7 +158,7 @@ authRouter.post('/refresh', async (req, res) => {
         }
 
         res.json({
-            session: data.session,
+            token: data.session?.access_token,
             user: data.user,
         });
 

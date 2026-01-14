@@ -11,7 +11,7 @@ const MAX_INTERVENTIONS_PER_TEACHER = 3; // Hard limit for "Burden" check
 // --- RUN SIMULATION ---
 simulationRouter.post('/:projectId', authMiddleware, async (req, res) => {
     try {
-        const supabase = req.supabaseClient!;
+        const supabase = req.supabaseClient! as any;
         const projectId = req.params.projectId;
         const { nodes, edges } = req.body as { nodes: Node[], edges: Edge[] };
 
@@ -119,7 +119,7 @@ simulationRouter.post('/:projectId', authMiddleware, async (req, res) => {
         // --- UPDATE DATABASE (Gamification) ---
         await supabase
             .from('projects')
-            .update({ logic_health_score: Math.max(0, score) })
+            .update({ logic_health_score: Math.max(0, score) } as any)
             .eq('id', projectId);
 
         const result: SimulationResult = {
