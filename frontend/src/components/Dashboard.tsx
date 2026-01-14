@@ -93,21 +93,19 @@ export default function Dashboard({ onBack, onNavigateToPatterns, onNavigateToIn
         <div className="max-w-[1920px] mx-auto px-6 py-4 flex items-center gap-6 relative" style={{ zIndex: 10, pointerEvents: 'none' }}>
           {/* Left: Logo */}
           <div className="flex items-center gap-4">
-            <h1 className="text-[#E5E7EB] font-semibold text-xl whitespace-nowrap">
-              Niti<span className="text-[#E5E7EB]">Nirmaan</span>
-            </h1>
+            <img
+              src="/logo-2.png"
+              alt="NitiNirmaan Logo"
+              title="Build programs, not paperwork."
+              style={{ height: '2.8rem', width: 'auto', maxWidth: '150px', objectFit: 'contain' }}
+              className="block"
+            />
           </div>
 
           {/* Left Icons */}
           <div className="flex items-center gap-2" style={{ pointerEvents: 'auto' }}>
-            <Button className="w-10 h-10 p-0 flex items-center justify-center bg-[#D97706] hover:bg-[#B45309] rounded transition-colors">
-              <div className="w-4 h-4 bg-white rounded-sm"></div>
-            </Button>
-            <Button className="w-10 h-10 p-0 flex items-center justify-center bg-[#374151] hover:bg-[#4B5563] rounded transition-colors relative">
-              <svg className="w-5 h-5 text-[#E5E7EB]" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-              </svg>
-            </Button>
+            {/* Removed orange button with white square icon */}
+            {/* Removed dark button with warning triangle icon */}
           </div>
 
           {/* Center: Global Search */}
@@ -151,19 +149,14 @@ export default function Dashboard({ onBack, onNavigateToPatterns, onNavigateToIn
 
           {/* Right: Utility Icons */}
           <div className="flex items-center gap-2" style={{ pointerEvents: 'auto' }}>
-            <Button className="relative w-10 h-10 p-0 flex items-center justify-center hover:bg-[#1F2937] rounded transition-colors border border-[#2D3340] bg-transparent">
-              <Bell className="w-5 h-5 text-[#9CA3AF]" />
-              <div className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#D97706] rounded-full"></div>
-            </Button>
+            
             <Button
               onClick={onNavigateToSettings}
               className="w-10 h-10 p-0 flex items-center justify-center hover:bg-[#1F2937] rounded transition-colors border border-[#2D3340] bg-transparent"
             >
               <Settings className="w-5 h-5 text-[#9CA3AF]" />
             </Button>
-            <Button className="w-10 h-10 p-0 flex items-center justify-center hover:bg-[#1F2937] rounded transition-colors border border-[#2D3340] bg-transparent">
-              <User className="w-5 h-5 text-[#9CA3AF]" />
-            </Button>
+            {/* Removed User icon button */}
           </div>
         </div>
       </nav>

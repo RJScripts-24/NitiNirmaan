@@ -75,9 +75,11 @@ export default function Settings({
         </div>
 
         <div className="p-4 lg:p-6 border-b border-[#1F2937] relative" style={{ zIndex: 10, pointerEvents: 'none' }}>
-          <h1 className="text-[#E5E7EB] font-semibold text-lg lg:text-xl">
-            Niti<span className="text-[#E5E7EB]">Nirmaan</span>
-          </h1>
+          <img 
+            src="/logo-2.png" 
+            alt="NitiNirmaan" 
+            className="h-10 lg:h-14 w-auto object-contain"
+          />
         </div>
 
         <nav className="flex lg:flex-col p-2 lg:p-4 gap-1 lg:gap-0 overflow-x-auto lg:overflow-visible relative" style={{ zIndex: 10, pointerEvents: 'none' }}>

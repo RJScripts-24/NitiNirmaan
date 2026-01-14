@@ -8,7 +8,6 @@ import {
   FileText,
   Download,
   Settings,
-  User,
   ChevronDown,
   Presentation,
 } from 'lucide-react';
@@ -20,12 +19,14 @@ interface LogicPreviewProps {
   projectName?: string;
   onBack?: () => void;
   simulationPassed?: boolean;
+  onSettings?: () => void;
 }
 
 export default function LogicPreview({
   projectName = 'FLN Improvement – Bihar (2026)',
   onBack,
   simulationPassed = true,
+  onSettings,
 }: LogicPreviewProps) {
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
   const [hoveredSection, setHoveredSection] = useState<string | null>(null);
@@ -75,9 +76,11 @@ export default function LogicPreview({
         <div className="flex items-center justify-between relative" style={{ zIndex: 10, pointerEvents: 'none' }}>
           {/* Left - Branding & Project */}
           <div className="flex items-center gap-6">
-            <h1 className="text-[#E5E7EB] font-semibold text-lg">
-              Niti<span className="text-[#E5E7EB]">Nirmaan</span>
-            </h1>
+            <img 
+              src="/logo-2.png" 
+              alt="NitiNirmaan" 
+              className="h-12 w-auto object-contain"
+            />
             <span className="text-[#9CA3AF] text-sm">{projectName}</span>
           </div>
 
@@ -106,11 +109,8 @@ export default function LogicPreview({
               </div>
             </div>
 
-            <Button variant="ghost" size="icon" className="w-9 h-9 flex items-center justify-center hover:bg-[#1F2937] rounded transition-colors">
+            <Button variant="ghost" size="icon" className="w-9 h-9 flex items-center justify-center hover:bg-[#1F2937] rounded transition-colors" onClick={onSettings}>
               <Settings className="w-4 h-4 text-[#6B7280]" />
-            </Button>
-            <Button variant="ghost" size="icon" className="w-9 h-9 flex items-center justify-center hover:bg-[#1F2937] rounded transition-colors">
-              <User className="w-4 h-4 text-[#6B7280]" />
             </Button>
           </div>
         </div>

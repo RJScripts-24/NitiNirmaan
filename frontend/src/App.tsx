@@ -9,6 +9,7 @@ import LogicPreview from './components/LogicPreview';
 import HeroGridWarp from './components/HeroGridWarp';
 import Settings from './components/Settings';
 import HexagonBackground from './components/HexagonBackground';
+import BeeBackground from './components/BeeBackground';
 import { Button } from './components/ui/button';
 import Loader from './components/Loader';
 
@@ -61,14 +62,14 @@ export default function App() {
   }
 
   if (currentPage === 'preview') {
-    return <LogicPreview simulationPassed={simulationPassed} onBack={() => navigateTo('builder')} />;
+    return <LogicPreview simulationPassed={simulationPassed} onBack={() => navigateTo('builder')} onSettings={() => navigateTo('settings')} />;
   }
 
   if (currentPage === 'builder') {
     return <ImpactCanvas onBack={() => navigateTo('dashboard')} onSimulationComplete={() => {
       setSimulationPassed(true);
       navigateTo('preview');
-    }} />;
+    }} onSettings={() => navigateTo('settings')} />;
   }
 
   if (currentPage === 'initialize') {
@@ -95,6 +96,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-[#0F1216] text-gray-200 relative overflow-x-hidden">
       {isLoading && <Loader />}
+      <BeeBackground />
       {/* Subtle noise texture overlay */}
       <div className="fixed inset-0 pointer-events-none opacity-[0.03]" style={{
         backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
@@ -122,9 +124,13 @@ export default function App() {
             <div className="flex items-center justify-between h-14 md:h-16">
               {/* Logo */}
               <div className="flex-shrink-0">
-                <h1 className="text-[#E5E7EB] font-semibold text-lg md:text-xl" title="Build programs, not paperwork.">
-                  Niti<span className="text-[#E5E7EB]">Nirmaan</span>
-                </h1>
+                <img
+                  src="/logo-2.png"
+                  alt="NitiNirmaan Logo"
+                  title="Build programs, not paperwork."
+                  style={{ height: '2.8rem', width: 'auto', maxWidth: '150px', objectFit: 'contain' }}
+                  className="block"
+                />
               </div>
 
               {/* Center Nav Links */}
@@ -336,43 +342,6 @@ export default function App() {
                 </div>
               </div>
             </div>
-          </div>
-        </section>
-
-        {/* Social Proof Section */}
-        <section className="w-full px-4 md:px-6 py-12 md:py-20">
-          <div className="max-w-7xl mx-auto">
-            <h3 className="text-[#E5E7EB] text-xl md:text-2xl text-center mb-8 md:mb-12">
-              Trusted by 150+ Education Organizations
-            </h3>
-
-            <div className="flex flex-wrap items-center justify-center gap-6 md:gap-12 opacity-40">
-              {/* Logo placeholders - grayscale rectangles representing logos */}
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => (
-                <div
-                  key={i}
-                  className="w-16 h-12 md:w-24 md:h-16 bg-[#6B7280] rounded opacity-50 hover:opacity-100 transition-opacity cursor-pointer"
-                  title={`Program model forked ${Math.floor(Math.random() * 50) + 10} times`}
-                ></div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* Closing Section */}
-        <section className="w-full px-4 md:px-6 py-12 md:py-20 text-center">
-          <div className="max-w-7xl mx-auto">
-            <p className="text-[#9CA3AF] text-lg md:text-xl xl:text-2xl mb-6 md:mb-8 leading-relaxed max-w-2xl mx-auto px-4">
-              Your program already exists as a system.<br />
-              NitiNirmaan just makes it visible.
-            </p>
-
-            <Button
-              onClick={() => handlePageTransition('auth')}
-              className="px-6 py-2.5 md:px-8 md:py-3 bg-[#D97706] text-[#0F1216] rounded font-semibold text-base md:text-lg hover:bg-[#B45309] transition-colors inline-flex items-center gap-2 h-auto border-none shadow-none"
-            >
-              Start Building <ArrowRight className="w-4 h-4 md:w-5 md:h-5" />
-            </Button>
           </div>
         </section>
 

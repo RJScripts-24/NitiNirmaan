@@ -22,7 +22,6 @@ import {
   ZoomOut,
   Play,
   Settings,
-  User as UserIcon,
   X,
   ChevronDown,
   Menu,
@@ -70,6 +69,7 @@ interface ImpactCanvasProps {
   projectName?: string;
   onBack?: () => void;
   onSimulationComplete?: () => void;
+  onSettings?: () => void;
 }
 
 // Node type colors
@@ -120,7 +120,7 @@ const nodeTypes = {
   customNode: CustomNode,
 };
 
-export default function ImpactCanvas({ projectName = 'FLN Improvement – Bihar (2026)', onBack, onSimulationComplete }: ImpactCanvasProps) {
+export default function ImpactCanvas({ projectName = 'FLN Improvement – Bihar (2026)', onBack, onSimulationComplete, onSettings }: ImpactCanvasProps) {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
@@ -271,9 +271,11 @@ export default function ImpactCanvas({ projectName = 'FLN Improvement – Bihar 
 
         {/* Left - Project Name */}
         <div className="flex items-center gap-4 relative" style={{ zIndex: 10, pointerEvents: 'none' }}>
-          <h1 className="text-[#E5E7EB] font-semibold text-lg">
-            Niti<span className="text-[#E5E7EB]">Nirmaan</span>
-          </h1>
+          <img 
+            src="/logo-2.png" 
+            alt="NitiNirmaan" 
+            className="h-12 w-auto object-contain"
+          />
           {editingProjectName ? (
             <input
               type="text"
@@ -330,11 +332,8 @@ export default function ImpactCanvas({ projectName = 'FLN Improvement – Bihar 
             </div>
           </div>
 
-          <Button variant="ghost" size="icon" className="w-10 h-10 hover:bg-[#1F2937] border border-[#2D3340]">
+          <Button variant="ghost" size="icon" className="w-10 h-10 hover:bg-[#1F2937] border border-[#2D3340]" onClick={onSettings}>
             <Settings className="w-5 h-5 text-[#9CA3AF]" />
-          </Button>
-          <Button variant="ghost" size="icon" className="w-10 h-10 hover:bg-[#1F2937] border border-[#2D3340]">
-            <UserIcon className="w-5 h-5 text-[#9CA3AF]" />
           </Button>
 
           {/* Share Button */}
@@ -1106,11 +1105,11 @@ function AICompanionWidget({ show, onToggle }: { show: boolean; onToggle: () => 
   return (
     <div className="fixed bottom-6 right-6 z-30">
       {show ? (
-        <div className="bg-[#171B21] border border-[#22D3EE] rounded-lg shadow-xl w-80">
-          <div className="p-4 border-b border-[#22D3EE]/30 flex items-center justify-between">
+        <div className="bg-[#0F1216] border border-[#D97706] rounded-lg shadow-xl w-80">
+          <div className="p-4 border-b border-[#D97706]/30 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Bot className="w-5 h-5 text-[#22D3EE]" />
-              <span className="text-[#E5E7EB] font-medium">AI Companion</span>
+              <Bot className="w-5 h-5 text-[#D97706]" />
+              <span className="text-[#E5E7EB] font-medium">Ask Bee Bot</span>
             </div>
             <Button
               variant="ghost"
@@ -1125,18 +1124,18 @@ function AICompanionWidget({ show, onToggle }: { show: boolean; onToggle: () => 
           <div className="p-4 max-h-96 overflow-y-auto">
             <div className="space-y-4">
               <div className="flex items-start gap-3">
-                <div className="w-8 h-8 bg-[#22D3EE]/20 rounded-full flex items-center justify-center flex-shrink-0">
-                  <Bot className="w-4 h-4 text-[#22D3EE]" />
+                <div className="w-8 h-8 bg-[#D97706]/20 rounded-full flex items-center justify-center flex-shrink-0">
+                  <Bot className="w-4 h-4 text-[#D97706]" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-[#22D3EE] text-sm">
+                  <p className="text-[#D97706] text-sm">
                     Your logic looks incomplete. May I assist you?
                   </p>
                   <p className="text-[#9CA3AF] text-xs mt-2">
                     You added a Teacher node but no intervention. Similar programs struggle without clear activities.
                   </p>
                   <div className="flex gap-2 mt-3">
-                    <Button className="px-3 py-1 bg-[#22D3EE] text-[#0F1216] rounded text-xs font-medium hover:bg-[#22D3EE]/80 transition-colors h-auto border-none shadow-none">
+                    <Button className="px-3 py-1 bg-[#D97706] text-[#0F1216] rounded text-xs font-medium hover:bg-[#B45309] transition-colors h-auto border-none shadow-none">
                       Add Intervention
                     </Button>
                     <Button variant="secondary" className="px-3 py-1 bg-[#374151] text-[#E5E7EB] rounded text-xs font-medium hover:bg-[#4B5563] transition-colors h-auto border-none shadow-none">
@@ -1152,17 +1151,25 @@ function AICompanionWidget({ show, onToggle }: { show: boolean; onToggle: () => 
             <input
               type="text"
               placeholder="Ask me anything..."
-              className="w-full px-3 py-2 bg-[#0F1216] border border-[#374151] rounded text-[#E5E7EB] placeholder-[#6B7280] focus:outline-none focus:border-[#22D3EE] text-sm"
+              className="w-full px-3 py-2 bg-[#0F1216] border border-[#374151] rounded text-[#E5E7EB] placeholder-[#6B7280] focus:outline-none focus:border-[#D97706] text-sm"
             />
           </div>
         </div>
       ) : (
-        <Button
+        <button
           onClick={onToggle}
-          className="w-14 h-14 bg-[#22D3EE] rounded-full flex items-center justify-center shadow-lg hover:bg-[#22D3EE]/80 transition-colors animate-pulse p-0 h-14"
+          className="w-16 h-16 rounded-full flex items-center justify-center shadow-lg hover:opacity-80 transition-all animate-pulse p-0 overflow-hidden relative cursor-pointer border-0"
         >
-          <Bot className="w-7 h-7 text-[#0F1216]" />
-        </Button>
+          <video
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="w-full h-full object-cover rounded-full"
+          >
+            <source src="/BeeBot.mp4" type="video/mp4" />
+          </video>
+        </button>
       )}
     </div>
   );
