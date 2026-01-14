@@ -1,5 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Network, Activity, Bot, ArrowRight, User } from 'lucide-react';
+import { gsap } from 'gsap';
+import { useGSAP } from '@gsap/react';
 import AuthPage from './components/AuthPage';
 import Dashboard from './components/Dashboard';
 import PatternLibrary from './components/PatternLibrary';
@@ -10,6 +12,7 @@ import HeroGridWarp from './components/HeroGridWarp';
 import Settings from './components/Settings';
 import HexagonBackground from './components/HexagonBackground';
 import BeeBackground from './components/BeeBackground';
+import ScrollReveal from './components/ScrollReveal';
 import { Button } from './components/ui/button';
 import Loader from './components/Loader';
 
@@ -19,6 +22,44 @@ export default function App() {
   const [currentPage, setCurrentPage] = useState<PageType>('landing');
   const [simulationPassed, setSimulationPassed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Refs for hero text animations
+  const headlineRef = useRef<HTMLHeadingElement>(null);
+  const subheadlineRef = useRef<HTMLParagraphElement>(null);
+  const ctaRef = useRef<HTMLDivElement>(null);
+  const taglineRef = useRef<HTMLParagraphElement>(null);
+
+  // Hero text fade-in animation from center
+  useGSAP(() => {
+    if (currentPage === 'landing') {
+      const timeline = gsap.timeline();
+      
+      timeline
+        .fromTo(
+          headlineRef.current,
+          { opacity: 0, scale: 0.8, y: -20 },
+          { opacity: 1, scale: 1, y: 0, duration: 0.8, ease: 'power3.out' }
+        )
+        .fromTo(
+          subheadlineRef.current,
+          { opacity: 0, scale: 0.8 },
+          { opacity: 1, scale: 1, duration: 0.6, ease: 'power3.out' },
+          '-=0.4'
+        )
+        .fromTo(
+          ctaRef.current,
+          { opacity: 0, scale: 0.8, y: 20 },
+          { opacity: 1, scale: 1, y: 0, duration: 0.6, ease: 'power3.out' },
+          '-=0.3'
+        )
+        .fromTo(
+          taglineRef.current,
+          { opacity: 0 },
+          { opacity: 1, duration: 0.4, ease: 'power2.out' },
+          '-=0.2'
+        );
+    }
+  }, [currentPage]);
 
   // Initialize state from URL hash
   useEffect(() => {
@@ -95,7 +136,6 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#0F1216] text-gray-200 relative overflow-x-hidden">
-      {isLoading && <Loader />}
       <BeeBackground />
       {/* Subtle noise texture overlay */}
       <div className="fixed inset-0 pointer-events-none opacity-[0.03]" style={{
@@ -176,18 +216,18 @@ export default function App() {
 
         <div className="text-center mb-8 md:mb-12 relative z-10 max-w-7xl mx-auto">
           {/* Headline */}
-          <h2 className="text-3xl md:text-5xl xl:text-6xl font-bold mb-4 md:mb-6 leading-tight px-4">
+          <h2 ref={headlineRef} className="text-3xl md:text-5xl xl:text-6xl font-bold mb-4 md:mb-6 leading-tight px-4">
             <span className="text-[#E5E7EB]">Stop Writing Documents. </span>
             <span className="text-[#D97706]">Start Building Systems.</span>
           </h2>
 
           {/* Subheadline */}
-          <p className="text-[#9CA3AF] text-base md:text-lg xl:text-xl max-w-3xl mx-auto mb-6 md:mb-8 leading-relaxed px-4">
+          <p ref={subheadlineRef} className="text-[#9CA3AF] text-base md:text-lg xl:text-xl max-w-3xl mx-auto mb-6 md:mb-8 leading-relaxed px-4">
             The first gamified Logical Framework Architect for the Shikshagraha network. Turn your program design into a living, breathing simulation.
           </p>
 
           {/* Primary CTA */}
-          <div className="mb-3">
+          <div ref={ctaRef} className="mb-3">
             <Button
               onClick={() => handlePageTransition('auth')}
               className="px-6 py-2.5 md:px-8 md:py-3 bg-[#D97706] text-[#0F1216] rounded font-semibold text-base md:text-lg hover:bg-[#B45309] transition-colors inline-flex items-center gap-2 h-auto border-none shadow-none"
@@ -195,7 +235,7 @@ export default function App() {
               Start Building <ArrowRight className="w-4 h-4 md:w-5 md:h-5" />
             </Button>
           </div>
-          <p className="text-[#9CA3AF] text-xs md:text-sm">See your program before you run it.</p>
+          <p ref={taglineRef} className="text-[#9CA3AF] text-xs md:text-sm">See your program before you run it.</p>
         </div>
 
 
@@ -218,52 +258,55 @@ export default function App() {
           <div className="max-w-7xl mx-auto">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
               {/* Card 1 - Drag-and-Drop LFA Builder */}
-              <div className="bg-[#171B21] border border-[#1F2937] rounded-lg p-6 md:p-8 relative" style={{
-                backgroundImage: `
-                linear-gradient(#1F2937 1px, transparent 1px),
-                linear-gradient(90deg, #1F2937 1px, transparent 1px)
-              `,
-                backgroundSize: '20px 20px',
-                backgroundPosition: 'center'
-              }}>
-                <div className="relative z-10 bg-[#171B21] p-2 -m-2">
-                  <Network className="w-8 h-8 md:w-10 md:h-10 text-[#D97706] mb-3 md:mb-4" />
-                  <h3 className="text-[#E5E7EB] text-lg md:text-xl font-semibold mb-2 md:mb-3">
-                    Drag-and-Drop LFA Builder
-                    <div className="h-1 w-12 md:w-16 bg-[#D97706] mt-2"></div>
-                  </h3>
-                  <p className="text-[#9CA3AF] mb-3 md:mb-4 text-sm md:text-base">
-                    Visual Logic Construction
-                  </p>
+              <ScrollReveal delay={0}>
+                <div className="bg-[#171B21] border border-[#1F2937] rounded-lg p-6 md:p-8 relative" style={{
+                  backgroundImage: `
+                  linear-gradient(#1F2937 1px, transparent 1px),
+                  linear-gradient(90deg, #1F2937 1px, transparent 1px)
+                `,
+                  backgroundSize: '20px 20px',
+                  backgroundPosition: 'center'
+                }}>
+                  <div className="relative z-10 bg-[#171B21] p-2 -m-2">
+                    <Network className="w-8 h-8 md:w-10 md:h-10 text-[#D97706] mb-3 md:mb-4" />
+                    <h3 className="text-[#E5E7EB] text-lg md:text-xl font-semibold mb-2 md:mb-3">
+                      Drag-and-Drop LFA Builder
+                      <div className="h-1 w-12 md:w-16 bg-[#D97706] mt-2"></div>
+                    </h3>
+                    <p className="text-[#9CA3AF] mb-3 md:mb-4 text-sm md:text-base">
+                      Visual Logic Construction
+                    </p>
 
-                  {/* Mini Visual */}
-                  <div className="my-4 md:my-6 flex items-center gap-2 md:gap-3">
-                    <div className="bg-[#6B7280] px-2 py-1.5 md:px-3 md:py-2 rounded text-xs flex items-center gap-1">
-                      <User className="w-3 h-3" />
-                      Teacher
+                    {/* Mini Visual */}
+                    <div className="my-4 md:my-6 flex items-center gap-2 md:gap-3">
+                      <div className="bg-[#6B7280] px-2 py-1.5 md:px-3 md:py-2 rounded text-xs flex items-center gap-1">
+                        <User className="w-3 h-3" />
+                        Teacher
+                      </div>
+                      <div className="flex-1 h-px bg-[#6B7280]"></div>
+                      <div className="bg-[#D97706] px-2 py-1.5 md:px-3 md:py-2 rounded text-xs flex items-center gap-1">
+                        <Activity className="w-3 h-3" />
+                        Student
+                      </div>
                     </div>
-                    <div className="flex-1 h-px bg-[#6B7280]"></div>
-                    <div className="bg-[#D97706] px-2 py-1.5 md:px-3 md:py-2 rounded text-xs flex items-center gap-1">
-                      <Activity className="w-3 h-3" />
-                      Student
-                    </div>
+
+                    <p className="text-[#6B7280] text-xs md:text-sm italic">
+                      "No orphan activities. Ever."
+                    </p>
                   </div>
-
-                  <p className="text-[#6B7280] text-xs md:text-sm italic">
-                    "No orphan activities. Ever."
-                  </p>
                 </div>
-              </div>
+              </ScrollReveal>
 
               {/* Card 2 - Pre-Mortem Simulator */}
-              <div className="bg-[#171B21] border border-[#1F2937] rounded-lg p-6 md:p-8 relative" style={{
-                backgroundImage: `
-                linear-gradient(#1F2937 1px, transparent 1px),
-                linear-gradient(90deg, #1F2937 1px, transparent 1px)
-              `,
-                backgroundSize: '20px 20px',
-                backgroundPosition: 'center'
-              }}>
+              <ScrollReveal delay={0.2}>
+                <div className="bg-[#171B21] border border-[#1F2937] rounded-lg p-6 md:p-8 relative" style={{
+                  backgroundImage: `
+                  linear-gradient(#1F2937 1px, transparent 1px),
+                  linear-gradient(90deg, #1F2937 1px, transparent 1px)
+                `,
+                  backgroundSize: '20px 20px',
+                  backgroundPosition: 'center'
+                }}>
                 <div className="relative z-10 bg-[#171B21] p-2 -m-2">
                   <Activity className="w-8 h-8 md:w-10 md:h-10 text-[#047857] mb-3 md:mb-4" />
                   <h3 className="text-[#E5E7EB] text-lg md:text-xl font-semibold mb-2 md:mb-3">
@@ -293,16 +336,18 @@ export default function App() {
                   </p>
                 </div>
               </div>
+              </ScrollReveal>
 
               {/* Card 3 - AI That Challenges Your Logic */}
-              <div className="bg-[#171B21] border border-[#1F2937] rounded-lg p-6 md:p-8 relative" style={{
-                backgroundImage: `
-                linear-gradient(#1F2937 1px, transparent 1px),
-                linear-gradient(90deg, #1F2937 1px, transparent 1px)
-              `,
-                backgroundSize: '20px 20px',
-                backgroundPosition: 'center'
-              }}>
+              <ScrollReveal delay={0.4}>
+                <div className="bg-[#171B21] border border-[#1F2937] rounded-lg p-6 md:p-8 relative" style={{
+                  backgroundImage: `
+                  linear-gradient(#1F2937 1px, transparent 1px),
+                  linear-gradient(90deg, #1F2937 1px, transparent 1px)
+                `,
+                  backgroundSize: '20px 20px',
+                  backgroundPosition: 'center'
+                }}>
                 <div className="relative z-10 bg-[#171B21] p-2 -m-2">
                   <Bot className="w-8 h-8 md:w-10 md:h-10 text-[#22D3EE] mb-3 md:mb-4" />
                   <h3 className="text-[#E5E7EB] text-lg md:text-xl font-semibold mb-2 md:mb-3">
@@ -341,6 +386,7 @@ export default function App() {
                   </p>
                 </div>
               </div>
+              </ScrollReveal>
             </div>
           </div>
         </section>

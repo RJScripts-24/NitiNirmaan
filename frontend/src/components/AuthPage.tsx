@@ -1,5 +1,7 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
+import { gsap } from 'gsap';
+import { useGSAP } from '@gsap/react';
 import { Button } from "./ui/button";
 import NoiseBackground from './NoiseBackground';
 import HexagonBackground from './HexagonBackground';
@@ -17,6 +19,28 @@ export default function AuthPage({ onBack, onAuthSuccess }: AuthPageProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [orgName, setOrgName] = useState('');
+
+  // Refs for animations
+  const leftPanelRef = useRef<HTMLDivElement>(null);
+  const formContainerRef = useRef<HTMLDivElement>(null);
+
+  // Fade-in animations on page load
+  useGSAP(() => {
+    const timeline = gsap.timeline();
+    
+    timeline
+      .fromTo(
+        leftPanelRef.current,
+        { opacity: 0, x: -50 },
+        { opacity: 1, x: 0, duration: 0.8, ease: 'power3.out' }
+      )
+      .fromTo(
+        formContainerRef.current,
+        { opacity: 0, scale: 0.9, y: 20 },
+        { opacity: 1, scale: 1, y: 0, duration: 0.8, ease: 'power3.out' },
+        '-=0.5'
+      );
+  }, []);
 
   const handleAuth = (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,7 +75,7 @@ export default function AuthPage({ onBack, onAuthSuccess }: AuthPageProps) {
       }}></div>
 
       {/* Left Panel - Builder's World */}
-      <div className="w-1/2 relative overflow-hidden bg-[#0F1216]">
+      <div ref={leftPanelRef} className="w-1/2 relative overflow-hidden bg-[#0F1216]">
         {/* Blueprint Grid */}
         <div className="absolute inset-0 opacity-20" style={{
           backgroundImage: `
@@ -180,7 +204,7 @@ export default function AuthPage({ onBack, onAuthSuccess }: AuthPageProps) {
         }}></div>
 
         {/* Form Container */}
-        <div className="w-full max-w-md relative z-10">
+        <div ref={formContainerRef} className="w-full max-w-md relative z-10">
           <div className="bg-[#1B2028] rounded-lg p-10 relative" style={{
             boxShadow: '0 20px 60px rgba(0,0,0,0.3)'
           }}>
