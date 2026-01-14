@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Network, Activity, Bot, ArrowRight, User } from 'lucide-react';
 import AuthPage from './components/AuthPage';
 import Dashboard from './components/Dashboard';
@@ -8,45 +8,93 @@ import ImpactCanvas from './components/ImpactCanvas';
 import LogicPreview from './components/LogicPreview';
 import HeroGridWarp from './components/HeroGridWarp';
 import Settings from './components/Settings';
+import HexagonBackground from './components/HexagonBackground';
 import { Button } from './components/ui/button';
+import Loader from './components/Loader';
+
+type PageType = 'landing' | 'auth' | 'dashboard' | 'patterns' | 'initialize' | 'builder' | 'preview' | 'settings';
 
 export default function App() {
-  const [currentPage, setCurrentPage] = useState<'landing' | 'auth' | 'dashboard' | 'patterns' | 'initialize' | 'builder' | 'preview' | 'settings'>('landing');
+  const [currentPage, setCurrentPage] = useState<PageType>('landing');
   const [simulationPassed, setSimulationPassed] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Initialize state from URL hash
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.slice(1) as PageType; // Remove #
+      if (hash && hash !== currentPage) {
+        // Validate hash is a valid PageType, otherwise default to landing
+        const validPages: PageType[] = ['landing', 'auth', 'dashboard', 'patterns', 'initialize', 'builder', 'preview', 'settings'];
+        if (validPages.includes(hash)) {
+          setCurrentPage(hash);
+        } else {
+          setCurrentPage('landing');
+        }
+      } else if (!hash) {
+        setCurrentPage('landing');
+      }
+    };
+
+    // Set initial page from hash
+    handleHashChange();
+
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
+  // Wrapper to update URL hash instead of direct state
+  const navigateTo = (page: PageType) => {
+    window.location.hash = page;
+  };
+
+  const handlePageTransition = (targetPage: 'landing' | 'auth') => {
+    setIsLoading(true);
+    setTimeout(() => {
+      navigateTo(targetPage);
+      setIsLoading(false);
+    }, 1500);
+  };
 
   if (currentPage === 'settings') {
-    return <Settings onNavigateToDashboard={() => setCurrentPage('dashboard')} onNavigateToPatterns={() => setCurrentPage('patterns')} />;
+    return <Settings onNavigateToDashboard={() => navigateTo('dashboard')} onNavigateToPatterns={() => navigateTo('patterns')} />;
   }
 
   if (currentPage === 'preview') {
-    return <LogicPreview simulationPassed={simulationPassed} onBack={() => setCurrentPage('builder')} />;
+    return <LogicPreview simulationPassed={simulationPassed} onBack={() => navigateTo('builder')} />;
   }
 
   if (currentPage === 'builder') {
-    return <ImpactCanvas onBack={() => setCurrentPage('dashboard')} onSimulationComplete={() => {
+    return <ImpactCanvas onBack={() => navigateTo('dashboard')} onSimulationComplete={() => {
       setSimulationPassed(true);
-      setCurrentPage('preview');
+      navigateTo('preview');
     }} />;
   }
 
   if (currentPage === 'initialize') {
-    return <MissionInitialize onClose={() => setCurrentPage('dashboard')} onComplete={() => setCurrentPage('builder')} />;
+    return <MissionInitialize onClose={() => navigateTo('dashboard')} onComplete={() => navigateTo('builder')} />;
   }
 
   if (currentPage === 'patterns') {
-    return <PatternLibrary onBack={() => setCurrentPage('dashboard')} />;
+    return <PatternLibrary onBack={() => navigateTo('dashboard')} />;
   }
 
   if (currentPage === 'dashboard') {
-    return <Dashboard onNavigateToPatterns={() => setCurrentPage('patterns')} onNavigateToInitialize={() => setCurrentPage('initialize')} onNavigateToSettings={() => setCurrentPage('settings')} />;
+    return <Dashboard onNavigateToPatterns={() => navigateTo('patterns')} onNavigateToInitialize={() => navigateTo('initialize')} onNavigateToSettings={() => navigateTo('settings')} />;
   }
 
   if (currentPage === 'auth') {
-    return <AuthPage onBack={() => setCurrentPage('landing')} onAuthSuccess={() => setCurrentPage('dashboard')} />;
+    return (
+      <>
+        {isLoading && <Loader />}
+        <AuthPage onBack={() => handlePageTransition('landing')} onAuthSuccess={() => navigateTo('dashboard')} />
+      </>
+    );
   }
 
   return (
     <div className="min-h-screen bg-[#0F1216] text-gray-200 relative overflow-x-hidden">
+      {isLoading && <Loader />}
       {/* Subtle noise texture overlay */}
       <div className="fixed inset-0 pointer-events-none opacity-[0.03]" style={{
         backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
@@ -59,8 +107,18 @@ export default function App() {
 
       {/* Sticky Navbar */}
       <nav className="sticky top-0 z-50 backdrop-blur-sm">
-        <div className="bg-[#171B21]/85 border-b border-[#171B21]">
-          <div className="w-full px-4 md:px-6">
+        <div className="bg-[#171B21]/85 border-b border-[#171B21] relative overflow-hidden">
+          {/* Hexagon Background */}
+          <div className="absolute inset-0" style={{ zIndex: 0 }}>
+            <HexagonBackground
+              className="w-full h-full"
+              hexagonSize={28}
+              hexagonMargin={2}
+              glowMode="none"
+            />
+          </div>
+
+          <div className="w-full px-4 md:px-6 relative" style={{ zIndex: 10 }}>
             <div className="flex items-center justify-between h-14 md:h-16">
               {/* Logo */}
               <div className="flex-shrink-0">
@@ -86,13 +144,13 @@ export default function App() {
               <div className="flex items-center space-x-2 md:space-x-4">
                 <Button
                   variant="outline"
-                  onClick={() => setCurrentPage('auth')}
+                  onClick={() => handlePageTransition('auth')}
                   className="px-3 py-1.5 md:px-4 md:py-2 border border-[#6B7280] text-[#E5E7EB] rounded hover:bg-[#171B21] transition-colors text-sm h-auto"
                 >
                   Log In
                 </Button>
                 <Button
-                  onClick={() => setCurrentPage('auth')}
+                  onClick={() => handlePageTransition('auth')}
                   className="px-3 py-1.5 md:px-5 md:py-2 bg-[#D97706] text-[#0F1216] rounded font-medium hover:bg-[#B45309] transition-colors text-sm h-auto border-none shadow-none"
                   title="No blank documents. Start with a system."
                 >
@@ -125,7 +183,7 @@ export default function App() {
           {/* Primary CTA */}
           <div className="mb-3">
             <Button
-              onClick={() => setCurrentPage('auth')}
+              onClick={() => handlePageTransition('auth')}
               className="px-6 py-2.5 md:px-8 md:py-3 bg-[#D97706] text-[#0F1216] rounded font-semibold text-base md:text-lg hover:bg-[#B45309] transition-colors inline-flex items-center gap-2 h-auto border-none shadow-none"
             >
               Start Building <ArrowRight className="w-4 h-4 md:w-5 md:h-5" />
@@ -137,177 +195,190 @@ export default function App() {
 
       </section>
 
-      {/* Key Features Grid */}
-      <section className="w-full px-4 md:px-6 py-12 md:py-20">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
-            {/* Card 1 - Drag-and-Drop LFA Builder */}
-            <div className="bg-[#171B21] border border-[#1F2937] rounded-lg p-6 md:p-8 relative" style={{
-              backgroundImage: `
+      {/* Content Below Hero - Wrapped in Hexagon Background */}
+      <div className="relative w-full overflow-hidden">
+        {/* Hexagon Background covering everything below hero */}
+        <div className="absolute inset-0" style={{ zIndex: 0 }}>
+          <HexagonBackground
+            className="w-full h-full"
+            hexagonSize={28}
+            hexagonMargin={2}
+            glowMode="none"
+          />
+        </div>
+
+        {/* Key Features Grid */}
+        <section className="w-full px-4 md:px-6 py-12 md:py-20 relative" style={{ zIndex: 10 }}>
+          <div className="max-w-7xl mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+              {/* Card 1 - Drag-and-Drop LFA Builder */}
+              <div className="bg-[#171B21] border border-[#1F2937] rounded-lg p-6 md:p-8 relative" style={{
+                backgroundImage: `
                 linear-gradient(#1F2937 1px, transparent 1px),
                 linear-gradient(90deg, #1F2937 1px, transparent 1px)
               `,
-              backgroundSize: '20px 20px',
-              backgroundPosition: 'center'
-            }}>
-              <div className="relative z-10 bg-[#171B21] p-2 -m-2">
-                <Network className="w-8 h-8 md:w-10 md:h-10 text-[#D97706] mb-3 md:mb-4" />
-                <h3 className="text-[#E5E7EB] text-lg md:text-xl font-semibold mb-2 md:mb-3">
-                  Drag-and-Drop LFA Builder
-                  <div className="h-1 w-12 md:w-16 bg-[#D97706] mt-2"></div>
-                </h3>
-                <p className="text-[#9CA3AF] mb-3 md:mb-4 text-sm md:text-base">
-                  Visual Logic Construction
-                </p>
+                backgroundSize: '20px 20px',
+                backgroundPosition: 'center'
+              }}>
+                <div className="relative z-10 bg-[#171B21] p-2 -m-2">
+                  <Network className="w-8 h-8 md:w-10 md:h-10 text-[#D97706] mb-3 md:mb-4" />
+                  <h3 className="text-[#E5E7EB] text-lg md:text-xl font-semibold mb-2 md:mb-3">
+                    Drag-and-Drop LFA Builder
+                    <div className="h-1 w-12 md:w-16 bg-[#D97706] mt-2"></div>
+                  </h3>
+                  <p className="text-[#9CA3AF] mb-3 md:mb-4 text-sm md:text-base">
+                    Visual Logic Construction
+                  </p>
 
-                {/* Mini Visual */}
-                <div className="my-4 md:my-6 flex items-center gap-2 md:gap-3">
-                  <div className="bg-[#6B7280] px-2 py-1.5 md:px-3 md:py-2 rounded text-xs flex items-center gap-1">
-                    <User className="w-3 h-3" />
-                    Teacher
+                  {/* Mini Visual */}
+                  <div className="my-4 md:my-6 flex items-center gap-2 md:gap-3">
+                    <div className="bg-[#6B7280] px-2 py-1.5 md:px-3 md:py-2 rounded text-xs flex items-center gap-1">
+                      <User className="w-3 h-3" />
+                      Teacher
+                    </div>
+                    <div className="flex-1 h-px bg-[#6B7280]"></div>
+                    <div className="bg-[#D97706] px-2 py-1.5 md:px-3 md:py-2 rounded text-xs flex items-center gap-1">
+                      <Activity className="w-3 h-3" />
+                      Student
+                    </div>
                   </div>
-                  <div className="flex-1 h-px bg-[#6B7280]"></div>
-                  <div className="bg-[#D97706] px-2 py-1.5 md:px-3 md:py-2 rounded text-xs flex items-center gap-1">
-                    <Activity className="w-3 h-3" />
-                    Student
-                  </div>
+
+                  <p className="text-[#6B7280] text-xs md:text-sm italic">
+                    "No orphan activities. Ever."
+                  </p>
                 </div>
-
-                <p className="text-[#6B7280] text-xs md:text-sm italic">
-                  "No orphan activities. Ever."
-                </p>
               </div>
-            </div>
 
-            {/* Card 2 - Pre-Mortem Simulator */}
-            <div className="bg-[#171B21] border border-[#1F2937] rounded-lg p-6 md:p-8 relative" style={{
-              backgroundImage: `
+              {/* Card 2 - Pre-Mortem Simulator */}
+              <div className="bg-[#171B21] border border-[#1F2937] rounded-lg p-6 md:p-8 relative" style={{
+                backgroundImage: `
                 linear-gradient(#1F2937 1px, transparent 1px),
                 linear-gradient(90deg, #1F2937 1px, transparent 1px)
               `,
-              backgroundSize: '20px 20px',
-              backgroundPosition: 'center'
-            }}>
-              <div className="relative z-10 bg-[#171B21] p-2 -m-2">
-                <Activity className="w-8 h-8 md:w-10 md:h-10 text-[#047857] mb-3 md:mb-4" />
-                <h3 className="text-[#E5E7EB] text-lg md:text-xl font-semibold mb-2 md:mb-3">
-                  Pre-Mortem Simulator
-                  <div className="h-1 w-12 md:w-16 bg-[#047857] mt-2"></div>
-                </h3>
-                <p className="text-[#9CA3AF] mb-3 md:mb-4 text-sm md:text-base">
-                  Simulation & Pre-Mortem
-                </p>
+                backgroundSize: '20px 20px',
+                backgroundPosition: 'center'
+              }}>
+                <div className="relative z-10 bg-[#171B21] p-2 -m-2">
+                  <Activity className="w-8 h-8 md:w-10 md:h-10 text-[#047857] mb-3 md:mb-4" />
+                  <h3 className="text-[#E5E7EB] text-lg md:text-xl font-semibold mb-2 md:mb-3">
+                    Pre-Mortem Simulator
+                    <div className="h-1 w-12 md:w-16 bg-[#047857] mt-2"></div>
+                  </h3>
+                  <p className="text-[#9CA3AF] mb-3 md:mb-4 text-sm md:text-base">
+                    Simulation & Pre-Mortem
+                  </p>
 
-                {/* Mini Visual */}
-                <div className="my-4 md:my-6 grid grid-cols-4 gap-2">
-                  <div className="aspect-square bg-[#1F2937] rounded"></div>
-                  <div className="aspect-square bg-[#1F2937] rounded"></div>
-                  <div className="aspect-square bg-[#6B7280] rounded"></div>
-                  <div className="aspect-square bg-[#1F2937] rounded"></div>
-                  <div className="col-span-4 h-6 md:h-8 bg-[#D97706] rounded flex items-center justify-center gap-1">
-                    <div className="w-1.5 h-1.5 md:w-2 md:h-2 bg-[#0F1216] rounded"></div>
-                    <div className="w-1.5 h-1.5 md:w-2 md:h-2 bg-[#0F1216] rounded"></div>
-                    <div className="w-1.5 h-1.5 md:w-2 md:h-2 bg-[#0F1216] rounded"></div>
-                    <div className="w-1.5 h-1.5 md:w-2 md:h-2 bg-[#0F1216] rounded"></div>
+                  {/* Mini Visual */}
+                  <div className="my-4 md:my-6 grid grid-cols-4 gap-2">
+                    <div className="aspect-square bg-[#1F2937] rounded"></div>
+                    <div className="aspect-square bg-[#1F2937] rounded"></div>
+                    <div className="aspect-square bg-[#6B7280] rounded"></div>
+                    <div className="aspect-square bg-[#1F2937] rounded"></div>
+                    <div className="col-span-4 h-6 md:h-8 bg-[#D97706] rounded flex items-center justify-center gap-1">
+                      <div className="w-1.5 h-1.5 md:w-2 md:h-2 bg-[#0F1216] rounded"></div>
+                      <div className="w-1.5 h-1.5 md:w-2 md:h-2 bg-[#0F1216] rounded"></div>
+                      <div className="w-1.5 h-1.5 md:w-2 md:h-2 bg-[#0F1216] rounded"></div>
+                      <div className="w-1.5 h-1.5 md:w-2 md:h-2 bg-[#0F1216] rounded"></div>
+                    </div>
                   </div>
-                </div>
 
-                <p className="text-[#6B7280] text-xs md:text-sm italic">
-                  "Find out what breaks — before the field does."
-                </p>
+                  <p className="text-[#6B7280] text-xs md:text-sm italic">
+                    "Find out what breaks — before the field does."
+                  </p>
+                </div>
               </div>
-            </div>
 
-            {/* Card 3 - AI That Challenges Your Logic */}
-            <div className="bg-[#171B21] border border-[#1F2937] rounded-lg p-6 md:p-8 relative" style={{
-              backgroundImage: `
+              {/* Card 3 - AI That Challenges Your Logic */}
+              <div className="bg-[#171B21] border border-[#1F2937] rounded-lg p-6 md:p-8 relative" style={{
+                backgroundImage: `
                 linear-gradient(#1F2937 1px, transparent 1px),
                 linear-gradient(90deg, #1F2937 1px, transparent 1px)
               `,
-              backgroundSize: '20px 20px',
-              backgroundPosition: 'center'
-            }}>
-              <div className="relative z-10 bg-[#171B21] p-2 -m-2">
-                <Bot className="w-8 h-8 md:w-10 md:h-10 text-[#22D3EE] mb-3 md:mb-4" />
-                <h3 className="text-[#E5E7EB] text-lg md:text-xl font-semibold mb-2 md:mb-3">
-                  AI That Challenges Your Logic
-                  <div className="h-1 w-12 md:w-16 bg-[#22D3EE] mt-2"></div>
-                </h3>
-                <p className="text-[#9CA3AF] mb-3 md:mb-4 text-sm md:text-base">
-                  Adversarial AI Coach
-                </p>
+                backgroundSize: '20px 20px',
+                backgroundPosition: 'center'
+              }}>
+                <div className="relative z-10 bg-[#171B21] p-2 -m-2">
+                  <Bot className="w-8 h-8 md:w-10 md:h-10 text-[#22D3EE] mb-3 md:mb-4" />
+                  <h3 className="text-[#E5E7EB] text-lg md:text-xl font-semibold mb-2 md:mb-3">
+                    AI That Challenges Your Logic
+                    <div className="h-1 w-12 md:w-16 bg-[#22D3EE] mt-2"></div>
+                  </h3>
+                  <p className="text-[#9CA3AF] mb-3 md:mb-4 text-sm md:text-base">
+                    Adversarial AI Coach
+                  </p>
 
-                {/* Mini Visual */}
-                <div className="my-4 md:my-6 space-y-2">
-                  <div className="flex gap-2">
-                    <div className="w-6 h-6 md:w-8 md:h-8 bg-[#22D3EE] rounded-full flex items-center justify-center flex-shrink-0">
-                      <Bot className="w-3 h-3 md:w-4 md:h-4 text-[#0F1216]" />
+                  {/* Mini Visual */}
+                  <div className="my-4 md:my-6 space-y-2">
+                    <div className="flex gap-2">
+                      <div className="w-6 h-6 md:w-8 md:h-8 bg-[#22D3EE] rounded-full flex items-center justify-center flex-shrink-0">
+                        <Bot className="w-3 h-3 md:w-4 md:h-4 text-[#0F1216]" />
+                      </div>
+                      <div className="flex-1 space-y-1">
+                        <div className="h-1.5 md:h-2 bg-[#1F2937] rounded w-3/4"></div>
+                        <div className="h-1.5 md:h-2 bg-[#1F2937] rounded w-1/2"></div>
+                      </div>
                     </div>
-                    <div className="flex-1 space-y-1">
-                      <div className="h-1.5 md:h-2 bg-[#1F2937] rounded w-3/4"></div>
-                      <div className="h-1.5 md:h-2 bg-[#1F2937] rounded w-1/2"></div>
+                    <div className="flex gap-2">
+                      <div className="w-6 h-6 md:w-8 md:h-8 bg-[#D97706] rounded flex items-center justify-center flex-shrink-0">
+                        <User className="w-3 h-3 md:w-4 md:h-4 text-[#0F1216]" />
+                      </div>
+                      <div className="flex-1 bg-[#6B7280] rounded h-5 md:h-6"></div>
+                    </div>
+                    <div className="flex gap-2 justify-end">
+                      <div className="w-5 h-5 md:w-6 md:h-6 bg-[#047857] rounded"></div>
+                      <div className="w-5 h-5 md:w-6 md:h-6 bg-[#DC2626] rounded"></div>
                     </div>
                   </div>
-                  <div className="flex gap-2">
-                    <div className="w-6 h-6 md:w-8 md:h-8 bg-[#D97706] rounded flex items-center justify-center flex-shrink-0">
-                      <User className="w-3 h-3 md:w-4 md:h-4 text-[#0F1216]" />
-                    </div>
-                    <div className="flex-1 bg-[#6B7280] rounded h-5 md:h-6"></div>
-                  </div>
-                  <div className="flex gap-2 justify-end">
-                    <div className="w-5 h-5 md:w-6 md:h-6 bg-[#047857] rounded"></div>
-                    <div className="w-5 h-5 md:w-6 md:h-6 bg-[#DC2626] rounded"></div>
-                  </div>
+
+                  <p className="text-[#6B7280] text-xs md:text-sm italic">
+                    "Designed to disagree with you — productively."
+                  </p>
                 </div>
-
-                <p className="text-[#6B7280] text-xs md:text-sm italic">
-                  "Designed to disagree with you — productively."
-                </p>
               </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Social Proof Section */}
-      <section className="w-full px-4 md:px-6 py-12 md:py-20">
-        <div className="max-w-7xl mx-auto">
-          <h3 className="text-[#E5E7EB] text-xl md:text-2xl text-center mb-8 md:mb-12">
-            Trusted by 150+ Education Organizations
-          </h3>
+        {/* Social Proof Section */}
+        <section className="w-full px-4 md:px-6 py-12 md:py-20">
+          <div className="max-w-7xl mx-auto">
+            <h3 className="text-[#E5E7EB] text-xl md:text-2xl text-center mb-8 md:mb-12">
+              Trusted by 150+ Education Organizations
+            </h3>
 
-          <div className="flex flex-wrap items-center justify-center gap-6 md:gap-12 opacity-40">
-            {/* Logo placeholders - grayscale rectangles representing logos */}
-            {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => (
-              <div
-                key={i}
-                className="w-16 h-12 md:w-24 md:h-16 bg-[#6B7280] rounded opacity-50 hover:opacity-100 transition-opacity cursor-pointer"
-                title={`Program model forked ${Math.floor(Math.random() * 50) + 10} times`}
-              ></div>
-            ))}
+            <div className="flex flex-wrap items-center justify-center gap-6 md:gap-12 opacity-40">
+              {/* Logo placeholders - grayscale rectangles representing logos */}
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => (
+                <div
+                  key={i}
+                  className="w-16 h-12 md:w-24 md:h-16 bg-[#6B7280] rounded opacity-50 hover:opacity-100 transition-opacity cursor-pointer"
+                  title={`Program model forked ${Math.floor(Math.random() * 50) + 10} times`}
+                ></div>
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Closing Section */}
-      <section className="w-full px-4 md:px-6 py-12 md:py-20 text-center">
-        <div className="max-w-7xl mx-auto">
-          <p className="text-[#9CA3AF] text-lg md:text-xl xl:text-2xl mb-6 md:mb-8 leading-relaxed max-w-2xl mx-auto px-4">
-            Your program already exists as a system.<br />
-            NitiNirmaan just makes it visible.
-          </p>
+        {/* Closing Section */}
+        <section className="w-full px-4 md:px-6 py-12 md:py-20 text-center">
+          <div className="max-w-7xl mx-auto">
+            <p className="text-[#9CA3AF] text-lg md:text-xl xl:text-2xl mb-6 md:mb-8 leading-relaxed max-w-2xl mx-auto px-4">
+              Your program already exists as a system.<br />
+              NitiNirmaan just makes it visible.
+            </p>
 
-          <Button
-            onClick={() => setCurrentPage('auth')}
-            className="px-6 py-2.5 md:px-8 md:py-3 bg-[#D97706] text-[#0F1216] rounded font-semibold text-base md:text-lg hover:bg-[#B45309] transition-colors inline-flex items-center gap-2 h-auto border-none shadow-none"
-          >
-            Start Building <ArrowRight className="w-4 h-4 md:w-5 md:h-5" />
-          </Button>
-        </div>
-      </section>
+            <Button
+              onClick={() => handlePageTransition('auth')}
+              className="px-6 py-2.5 md:px-8 md:py-3 bg-[#D97706] text-[#0F1216] rounded font-semibold text-base md:text-lg hover:bg-[#B45309] transition-colors inline-flex items-center gap-2 h-auto border-none shadow-none"
+            >
+              Start Building <ArrowRight className="w-4 h-4 md:w-5 md:h-5" />
+            </Button>
+          </div>
+        </section>
 
-      {/* Footer Spacing */}
-      <div className="h-12 md:h-20"></div>
+        {/* Footer Spacing */}
+        <div className="h-12 md:h-20"></div>
+      </div>
     </div >
   );
 }

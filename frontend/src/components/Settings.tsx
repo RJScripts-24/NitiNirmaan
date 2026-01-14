@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { Button } from './ui/button';
 import NoiseBackground from './NoiseBackground';
+import HexagonBackground from './HexagonBackground';
 
 interface SettingsProps {
   onNavigateToDashboard?: () => void;
@@ -62,18 +63,29 @@ export default function Settings({
     <div className="min-h-screen bg-[#0F1216] text-gray-200 flex flex-col lg:flex-row">
       <NoiseBackground />
       {/* Left Sidebar Navigation */}
-      <aside className="w-full lg:w-64 bg-[#171B21] border-b lg:border-b-0 lg:border-r border-[#1F2937] flex flex-col">
-        <div className="p-4 lg:p-6 border-b border-[#1F2937]">
+      <aside className="w-full lg:w-64 bg-[#171B21] border-b lg:border-b-0 lg:border-r border-[#1F2937] flex flex-col relative overflow-hidden">
+        {/* Hexagon Background */}
+        <div className="absolute inset-0" style={{ zIndex: 0 }}>
+          <HexagonBackground
+            className="w-full h-full"
+            hexagonSize={28}
+            hexagonMargin={2}
+            glowMode="hover"
+          />
+        </div>
+
+        <div className="p-4 lg:p-6 border-b border-[#1F2937] relative" style={{ zIndex: 10, pointerEvents: 'none' }}>
           <h1 className="text-[#E5E7EB] font-semibold text-lg lg:text-xl">
             Niti<span className="text-[#E5E7EB]">Nirmaan</span>
           </h1>
         </div>
 
-        <nav className="flex lg:flex-col p-2 lg:p-4 gap-1 lg:gap-0 overflow-x-auto lg:overflow-visible">
+        <nav className="flex lg:flex-col p-2 lg:p-4 gap-1 lg:gap-0 overflow-x-auto lg:overflow-visible relative" style={{ zIndex: 10, pointerEvents: 'none' }}>
           <Button
             variant="ghost"
             onClick={onNavigateToDashboard}
             className="flex items-center justify-start gap-2 lg:gap-3 px-3 lg:px-4 py-2 lg:py-3 text-[#9CA3AF] hover:bg-[#1F2937] hover:text-[#9CA3AF] rounded transition-colors whitespace-nowrap lg:w-full text-sm lg:text-base mb-0 lg:mb-2 h-auto font-normal"
+            style={{ pointerEvents: 'auto' }}
           >
             <LayoutDashboard className="w-4 h-4 lg:w-5 lg:h-5" />
             <span>Dashboard</span>
@@ -82,12 +94,14 @@ export default function Settings({
             variant="ghost"
             onClick={onNavigateToPatterns}
             className="flex items-center justify-start gap-2 lg:gap-3 px-3 lg:px-4 py-2 lg:py-3 text-[#9CA3AF] hover:bg-[#1F2937] hover:text-[#9CA3AF] rounded transition-colors whitespace-nowrap lg:w-full text-sm lg:text-base mb-0 lg:mb-2 h-auto font-normal"
+            style={{ pointerEvents: 'auto' }}
           >
             <Book className="w-4 h-4 lg:w-5 lg:h-5" />
             <span>Pattern Library</span>
           </Button>
           <Button
             className="flex items-center justify-start gap-2 lg:gap-3 px-3 lg:px-4 py-2 lg:py-3 text-[#D97706] bg-[#D97706]/10 hover:bg-[#D97706]/20 rounded transition-colors whitespace-nowrap lg:w-full text-sm lg:text-base h-auto font-medium border-none shadow-none"
+            style={{ pointerEvents: 'auto' }}
           >
             <SettingsIcon className="w-4 h-4 lg:w-5 lg:h-5" />
             <span>Settings</span>

@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import { Button } from "./ui/button";
 import NoiseBackground from './NoiseBackground';
+import HexagonBackground from './HexagonBackground';
+
 
 interface AuthPageProps {
   onBack?: () => void;
@@ -182,6 +184,15 @@ export default function AuthPage({ onBack, onAuthSuccess }: AuthPageProps) {
           <div className="bg-[#1B2028] rounded-lg p-10 relative" style={{
             boxShadow: '0 20px 60px rgba(0,0,0,0.3)'
           }}>
+            {/* Hexagon Background Effect */}
+            <div className="absolute inset-0 rounded-lg overflow-hidden" style={{ zIndex: 0 }}>
+              <HexagonBackground
+                className="w-full h-full"
+                hexagonSize={25}
+                hexagonMargin={2}
+                glowMode="none"
+              />
+            </div>
             {/* Subtle inner gradient */}
             <div className="absolute inset-0 rounded-lg pointer-events-none" style={{
               background: 'linear-gradient(180deg, rgba(23, 27, 33, 0.2) 0%, transparent 100%)'
@@ -191,6 +202,7 @@ export default function AuthPage({ onBack, onAuthSuccess }: AuthPageProps) {
             <div className="absolute inset-0 rounded-lg opacity-[0.03]" style={{
               backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
             }}></div>
+
 
             <div className="relative">
               {/* Form Header */}

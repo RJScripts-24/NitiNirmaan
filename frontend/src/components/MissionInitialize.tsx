@@ -3,6 +3,7 @@ import { X, Check, AlertTriangle, Bot } from 'lucide-react';
 import { Button } from "./ui/button";
 import { Ripple } from "./ui/ripple";
 import NoiseBackground from './NoiseBackground';
+import HexagonBackground from './HexagonBackground';
 
 interface MissionInitializeProps {
   onClose: () => void;
@@ -71,8 +72,18 @@ export default function MissionInitialize({ onClose, onComplete }: MissionInitia
       {/* Content */}
       <div className="relative">
         {/* Header */}
-        <header className="border-b border-[#1F2937] bg-[#171B21]/90 backdrop-blur-sm">
-          <div className="max-w-5xl mx-auto px-8 py-6 flex items-center justify-between">
+        <header className="border-b border-[#1F2937] bg-[#171B21]/90 backdrop-blur-sm relative overflow-hidden">
+          {/* Hexagon Background */}
+          <div className="absolute inset-0" style={{ zIndex: 0 }}>
+            <HexagonBackground
+              className="w-full h-full"
+              hexagonSize={28}
+              hexagonMargin={2}
+              glowMode="hover"
+            />
+          </div>
+
+          <div className="max-w-5xl mx-auto px-8 py-6 flex items-center justify-between relative" style={{ zIndex: 10, pointerEvents: 'none' }}>
             <h1 className="text-[#E5E7EB] font-semibold text-xl">
               Niti<span className="text-[#E5E7EB]">Nirmaan</span>
             </h1>
@@ -80,6 +91,7 @@ export default function MissionInitialize({ onClose, onComplete }: MissionInitia
               variant="ghost"
               onClick={onClose}
               className="w-10 h-10 p-0 flex items-center justify-center hover:bg-[#1F2937] rounded transition-colors"
+              style={{ pointerEvents: 'auto' }}
             >
               <X className="w-5 h-5 text-[#9CA3AF]" />
             </Button>

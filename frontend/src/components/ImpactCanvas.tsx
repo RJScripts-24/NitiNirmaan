@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useMemo, useEffect } from 'react';
 import ReactFlow, {
   Background,
   Controls,
@@ -12,6 +12,7 @@ import ReactFlow, {
   MarkerType,
   Handle,
   Position,
+  ConnectionMode,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import {
@@ -43,9 +44,27 @@ import {
   ChevronRight,
   RefreshCw,
   HelpCircle,
+  Share,
+  Flag,
+  Target,
+  Home,
+  Handshake,
+  Briefcase,
+  Scale,
+  Megaphone,
+  FileCheck,
+  ArrowRightCircle,
+  TrendingUp,
+  BarChart3,
+  Coins,
+  Dice1,
+  Lock,
+  Save,
+  Trash2,
 } from 'lucide-react';
 import { Button } from './ui/button';
-import NoiseBackground from './NoiseBackground';
+
+import HexagonBackground from './HexagonBackground';
 
 interface ImpactCanvasProps {
   projectName?: string;
@@ -55,10 +74,23 @@ interface ImpactCanvasProps {
 
 // Node type colors
 const NODE_COLORS = {
-  stakeholder: '#6B7280',
+  // Foundations (Red)
+  problemStatement: '#EF4444',
+  vision: '#EF4444',
+  // Stakeholders (Indigo)
+  stakeholder: '#6366F1',
+  // Interventions (Amber)
   intervention: '#D97706',
+  // Logic Bridge (Teal)
+  output: '#0D9488',
   practiceChange: '#0D9488',
+  intermediateOutcome: '#0D9488',
+  indicator: '#0D9488',
   outcome: '#047857',
+  // Simulation Modifiers (Purple)
+  resourceCost: '#8B5CF6',
+  assumption: '#8B5CF6',
+  risk: '#8B5CF6',
   resource: '#475569',
 };
 
@@ -69,16 +101,24 @@ const initialNodes: Node[] = [
     type: 'customNode',
     data: { label: 'Students can read grade 3 texts', type: 'outcome' },
     position: { x: 600, y: 300 },
+    draggable: true,
   },
   {
     id: 'stakeholder-1',
     type: 'customNode',
     data: { label: 'Teacher', type: 'stakeholder' },
     position: { x: 200, y: 200 },
+    draggable: true,
   },
 ];
 
 const initialEdges: Edge[] = [];
+
+// Define nodeTypes OUTSIDE the component to prevent re-creation on every render
+// This is critical for ReactFlow drag functionality to work properly
+const nodeTypes = {
+  customNode: CustomNode,
+};
 
 export default function ImpactCanvas({ projectName = 'FLN Improvement – Bihar (2026)', onBack, onSimulationComplete }: ImpactCanvasProps) {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
@@ -91,8 +131,12 @@ export default function ImpactCanvas({ projectName = 'FLN Improvement – Bihar 
   const [editingProjectName, setEditingProjectName] = useState(false);
   const [currentProjectName, setCurrentProjectName] = useState(projectName);
   const [toolboxCollapsed, setToolboxCollapsed] = useState(false);
+  const [showInspector, setShowInspector] = useState(false);
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
+
+  // Check if Problem Statement has been placed on canvas
+  const hasProblemStatement = nodes.some(node => node.data.type === 'problemStatement');
 
   const onConnect = useCallback(
     (params: Connection) => {
@@ -106,8 +150,8 @@ export default function ImpactCanvas({ projectName = 'FLN Improvement – Bihar 
           markerEnd: {
             type: MarkerType.ArrowClosed,
             color: '#6B7280',
-            width: 20,
-            height: 20,
+            width: 30,
+            height: 30,
           },
         }, eds)
       );
@@ -120,10 +164,36 @@ export default function ImpactCanvas({ projectName = 'FLN Improvement – Bihar 
     setSelectedEdge(null);
   }, []);
 
+  const onNodeDoubleClick = useCallback((_: any, node: Node) => {
+    setSelectedNode(node);
+    setSelectedEdge(null);
+    setShowInspector(true);
+  }, []);
+
   const onEdgeClick = useCallback((_: any, edge: Edge) => {
     setSelectedEdge(edge);
     setSelectedNode(null);
   }, []);
+
+  // Update node data
+  const updateNodeData = useCallback((nodeId: string, newData: any) => {
+    setNodes((nds) =>
+      nds.map((node) => {
+        if (node.id === nodeId) {
+          return { ...node, data: { ...node.data, ...newData } };
+        }
+        return node;
+      })
+    );
+  }, [setNodes]);
+
+  // Delete node
+  const deleteNode = useCallback((nodeId: string) => {
+    setNodes((nds) => nds.filter((node) => node.id !== nodeId));
+    setEdges((eds) => eds.filter((edge) => edge.source !== nodeId && edge.target !== nodeId));
+    setSelectedNode(null);
+    setShowInspector(false);
+  }, [setNodes, setEdges]);
 
   const handleRunSimulation = () => {
     setIsSimulating(true);
@@ -154,16 +224,18 @@ export default function ImpactCanvas({ projectName = 'FLN Improvement – Bihar 
         return;
       }
 
+      // Get position from ReactFlow instance, or use fallback
       const position = reactFlowInstance?.screenToFlowPosition({
         x: event.clientX,
         y: event.clientY,
-      });
+      }) || { x: 100, y: 100 };
 
       const newNode: Node = {
         id: `${type}-${Date.now()}`,
         type: 'customNode',
         position,
         data: { label, type: nodeType },
+        draggable: true,
       };
 
       setNodes((nds) => nds.concat(newNode));
@@ -172,14 +244,33 @@ export default function ImpactCanvas({ projectName = 'FLN Improvement – Bihar 
   );
 
   return (
-    <div className="h-screen bg-[#0F1216] text-gray-200 flex flex-col">
-      {/* Subtle noise texture overlay */}
-      <NoiseBackground />
+    <div
+      className="h-screen text-gray-200 flex flex-col"
+      style={{
+        backgroundColor: '#111111',
+        backgroundImage: `
+          radial-gradient(circle at 50% 50%, transparent 0%, rgba(0,0,0,0.6) 100%),
+          repeating-linear-gradient(45deg, rgba(255,255,255,0.02) 0px, rgba(255,255,255,0.02) 1px, transparent 1px, transparent 4px),
+          repeating-linear-gradient(-45deg, rgba(255,255,255,0.02) 0px, rgba(255,255,255,0.02) 1px, transparent 1px, transparent 4px)
+        `
+      }}
+    >
+      {/* Texture applied via inline styles above */}
 
       {/* Top Toolbar */}
-      <header className="bg-[#171B21] border-b border-[#1F2937] px-6 py-4 flex items-center justify-between z-10">
+      <header className="bg-[#171B21] border-b border-[#1F2937] px-6 py-4 flex items-center justify-between z-10 relative overflow-hidden">
+        {/* Hexagon Background */}
+        <div className="absolute inset-0" style={{ zIndex: 0 }}>
+          <HexagonBackground
+            className="w-full h-full"
+            hexagonSize={28}
+            hexagonMargin={2}
+            glowMode="hover"
+          />
+        </div>
+
         {/* Left - Project Name */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 relative" style={{ zIndex: 10, pointerEvents: 'none' }}>
           <h1 className="text-[#E5E7EB] font-semibold text-lg">
             Niti<span className="text-[#E5E7EB]">Nirmaan</span>
           </h1>
@@ -192,12 +283,14 @@ export default function ImpactCanvas({ projectName = 'FLN Improvement – Bihar 
               onKeyDown={(e) => e.key === 'Enter' && setEditingProjectName(false)}
               autoFocus
               className="px-3 py-1 bg-[#0F1216] border border-[#374151] rounded text-[#E5E7EB] focus:outline-none focus:border-[#D97706]"
+              style={{ pointerEvents: 'auto' }}
             />
           ) : (
             <Button
               variant="ghost"
               onClick={() => setEditingProjectName(true)}
               className="px-3 py-1 text-[#9CA3AF] hover:text-[#E5E7EB] transition-colors h-auto font-normal"
+              style={{ pointerEvents: 'auto' }}
             >
               {currentProjectName}
             </Button>
@@ -205,7 +298,7 @@ export default function ImpactCanvas({ projectName = 'FLN Improvement – Bihar 
         </div>
 
         {/* Center Controls */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 relative" style={{ zIndex: 10, pointerEvents: 'auto' }}>
           <Button variant="ghost" size="icon" className="w-10 h-10 hover:bg-[#1F2937] border border-[#2D3340]">
             <Undo2 className="w-5 h-5 text-[#9CA3AF]" />
           </Button>
@@ -223,7 +316,7 @@ export default function ImpactCanvas({ projectName = 'FLN Improvement – Bihar 
         </div>
 
         {/* Right - Collaborators & Actions */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 relative" style={{ zIndex: 10, pointerEvents: 'auto' }}>
           {/* Collaborators */}
           <div className="flex items-center -space-x-2">
             <div className="w-8 h-8 rounded-full bg-[#D97706] border-2 border-[#171B21] flex items-center justify-center">
@@ -244,6 +337,14 @@ export default function ImpactCanvas({ projectName = 'FLN Improvement – Bihar 
             <UserIcon className="w-5 h-5 text-[#9CA3AF]" />
           </Button>
 
+          {/* Share Button */}
+          <Button
+            className="px-4 py-2 bg-[#1F2937] hover:bg-[#374151] text-[#E5E7EB] rounded font-medium transition-colors flex items-center gap-2 h-auto border border-[#2D3340]"
+          >
+            <Share className="w-4 h-4" />
+            Share
+          </Button>
+
           {/* Run Simulation */}
           <Button
             onClick={handleRunSimulation}
@@ -262,30 +363,39 @@ export default function ImpactCanvas({ projectName = 'FLN Improvement – Bihar 
       {/* Main Content Area */}
       <div className="flex flex-1 overflow-hidden relative">
         {/* Left Sidebar - Logic Toolbox */}
-        <LogicToolbox collapsed={toolboxCollapsed} onToggleCollapse={() => setToolboxCollapsed(!toolboxCollapsed)} />
+        <LogicToolbox
+          collapsed={toolboxCollapsed}
+          onToggleCollapse={() => setToolboxCollapsed(!toolboxCollapsed)}
+          isUnlocked={hasProblemStatement}
+        />
 
         {/* Canvas */}
         <div className="flex-1 relative" ref={reactFlowWrapper} onDragOver={onDragOver} onDrop={onDrop}>
           <ReactFlow
             nodes={nodes}
             edges={edges}
+            connectionMode={ConnectionMode.Loose}
+            nodesDraggable={true}
+            nodesConnectable={true}
+            selectNodesOnDrag={false}
+            panOnDrag={[1, 2]}
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             onConnect={onConnect}
             onNodeClick={onNodeClick}
+            onNodeDoubleClick={onNodeDoubleClick}
             onEdgeClick={onEdgeClick}
-            nodeTypes={{
-              customNode: CustomNode,
-            }}
+            nodeTypes={nodeTypes}
             fitView
-            className="bg-[#0F1216]"
+            className="bg-transparent"
             onInit={setReactFlowInstance}
           >
             <Background
-              color="#1F2937"
+              color="#333"
               variant={BackgroundVariant.Dots}
-              gap={20}
+              gap={24}
               size={1}
+              className="opacity-20"
             />
             <Controls
               className="bg-[#171B21] border border-[#2D3340] rounded"
@@ -309,10 +419,14 @@ export default function ImpactCanvas({ projectName = 'FLN Improvement – Bihar 
         <InspectorPanel
           selectedNode={selectedNode}
           selectedEdge={selectedEdge}
+          show={showInspector}
           onClose={() => {
             setSelectedNode(null);
             setSelectedEdge(null);
+            setShowInspector(false);
           }}
+          onUpdateNode={updateNodeData}
+          onDeleteNode={deleteNode}
         />
 
         {/* AI Companion */}
@@ -336,60 +450,136 @@ function CustomNode({ data }: { data: any }) {
 
   return (
     <div
-      className="px-4 py-3 rounded-lg border-2 border-transparent hover:border-[#D97706] transition-all shadow-lg min-w-[120px] relative"
+      className="group px-4 py-3 rounded-lg border-2 border-transparent hover:border-[#D97706] transition-all shadow-lg min-w-[120px] relative cursor-grab active:cursor-grabbing"
       style={{ backgroundColor }}
     >
-      {/* Connection Handles */}
+      {/* Connection Handles - smaller and visible on hover */}
       <Handle
-        type="target"
+        type="source"
         position={Position.Top}
-        className="w-3 h-3 !bg-[#9CA3AF] !border-2 !border-[#E5E7EB]"
+        id="top"
+        className="!w-2 !h-2 !bg-[#9CA3AF] !border !border-[#E5E7EB] opacity-0 group-hover:opacity-100 transition-opacity"
       />
       <Handle
         type="source"
         position={Position.Bottom}
-        className="w-3 h-3 !bg-[#9CA3AF] !border-2 !border-[#E5E7EB]"
+        id="bottom"
+        className="!w-2 !h-2 !bg-[#9CA3AF] !border !border-[#E5E7EB] opacity-0 group-hover:opacity-100 transition-opacity"
       />
       <Handle
-        type="target"
+        type="source"
         position={Position.Left}
-        className="w-3 h-3 !bg-[#9CA3AF] !border-2 !border-[#E5E7EB]"
+        id="left"
+        className="!w-2 !h-2 !bg-[#9CA3AF] !border !border-[#E5E7EB] opacity-0 group-hover:opacity-100 transition-opacity"
       />
       <Handle
         type="source"
         position={Position.Right}
-        className="w-3 h-3 !bg-[#9CA3AF] !border-2 !border-[#E5E7EB]"
+        id="right"
+        className="!w-2 !h-2 !bg-[#9CA3AF] !border !border-[#E5E7EB] opacity-0 group-hover:opacity-100 transition-opacity"
       />
 
-      <div className="text-[#E5E7EB] text-sm font-medium text-center">{data.label}</div>
+      <div className="text-[#E5E7EB] text-sm font-medium text-center select-none">{data.label}</div>
     </div>
   );
 }
 
 // Logic Toolbox Component
-function LogicToolbox({ collapsed, onToggleCollapse }: { collapsed: boolean; onToggleCollapse: () => void }) {
-  const [expandedSection, setExpandedSection] = useState<string>('stakeholders');
+function LogicToolbox({
+  collapsed,
+  onToggleCollapse,
+  isUnlocked
+}: {
+  collapsed: boolean;
+  onToggleCollapse: () => void;
+  isUnlocked: boolean;
+}) {
+  const [expandedSections, setExpandedSections] = useState<string[]>(['foundations']);
+  const [expandedSubSections, setExpandedSubSections] = useState<string[]>(['school']);
 
-  const stakeholders = [
-    { id: 'teacher', label: 'Teacher', Icon: GraduationCap, type: 'stakeholder' },
-    { id: 'headmaster', label: 'Headmaster', Icon: Building2, type: 'stakeholder' },
-    { id: 'student', label: 'Student', Icon: Users, type: 'stakeholder' },
-    { id: 'crp', label: 'CRP', Icon: School, type: 'stakeholder' },
-    { id: 'beo', label: 'BEO', Icon: ClipboardList, type: 'stakeholder' },
-    { id: 'diet', label: 'DIET Official', Icon: BookMarked, type: 'stakeholder' },
+  const toggleSection = (section: string) => {
+    setExpandedSections(prev =>
+      prev.includes(section)
+        ? prev.filter(s => s !== section)
+        : [...prev, section]
+    );
+  };
+
+  const toggleSubSection = (subSection: string) => {
+    setExpandedSubSections(prev =>
+      prev.includes(subSection)
+        ? prev.filter(s => s !== subSection)
+        : [...prev, subSection]
+    );
+  };
+
+  // Category colors
+  const CATEGORY_COLORS = {
+    foundations: '#EF4444',
+    stakeholders: '#6366F1',
+    interventions: '#D97706',
+    logicBridge: '#0D9488',
+    modifiers: '#8B5CF6',
+  };
+
+  // Foundations (Anchors)
+  const foundations = [
+    { id: 'problem-statement', label: 'Problem Statement', Icon: Flag, type: 'problemStatement' },
+    { id: 'vision', label: 'Vision / Impact', Icon: Target, type: 'vision' },
   ];
 
+  // Stakeholders organized by level
+  const stakeholderLevels = {
+    school: {
+      title: 'School Level',
+      items: [
+        { id: 'student', label: 'Student', Icon: GraduationCap, type: 'stakeholder' },
+        { id: 'teacher', label: 'Teacher', Icon: BookOpen, type: 'stakeholder' },
+        { id: 'headmaster', label: 'Headmaster (HM)', Icon: Building2, type: 'stakeholder' },
+        { id: 'smc-parent', label: 'SMC / Parent', Icon: Home, type: 'stakeholder' },
+      ],
+    },
+    clusterBlock: {
+      title: 'Cluster & Block Level',
+      items: [
+        { id: 'crp', label: 'CRP / CRCC', Icon: Handshake, type: 'stakeholder' },
+        { id: 'beo', label: 'BEO', Icon: ClipboardList, type: 'stakeholder' },
+        { id: 'brp', label: 'BRP', Icon: BookMarked, type: 'stakeholder' },
+      ],
+    },
+    district: {
+      title: 'District Level',
+      items: [
+        { id: 'deo', label: 'DEO', Icon: Briefcase, type: 'stakeholder' },
+        { id: 'diet', label: 'DIET Official', Icon: School, type: 'stakeholder' },
+        { id: 'dm', label: 'District Magistrate', Icon: Scale, type: 'stakeholder' },
+      ],
+    },
+  };
+
+  // Interventions (Actions)
   const interventions = [
-    { id: 'training', label: 'Training', Icon: BookOpen, type: 'intervention' },
-    { id: 'kit', label: 'Kit', Icon: Package, type: 'intervention' },
-    { id: 'app', label: 'App', Icon: Smartphone, type: 'intervention' },
-    { id: 'meeting', label: 'Meeting', Icon: MessageSquare, type: 'intervention' },
+    { id: 'training', label: 'Training Workshop', Icon: GraduationCap, type: 'intervention' },
+    { id: 'mentoring', label: 'Mentoring / Coaching', Icon: Handshake, type: 'intervention' },
+    { id: 'tlm-kit', label: 'TLM / Resource Kit', Icon: Package, type: 'intervention' },
+    { id: 'digital-tool', label: 'Digital Tool / App', Icon: Smartphone, type: 'intervention' },
+    { id: 'community-event', label: 'Community Event', Icon: Megaphone, type: 'intervention' },
+    { id: 'governance-review', label: 'Governance Review', Icon: FileCheck, type: 'intervention' },
   ];
 
-  const resources = [
-    { id: 'budget', label: 'Budget', Icon: DollarSign, type: 'resource' },
-    { id: 'tablet', label: 'Tablet', Icon: Tablet, type: 'resource' },
-    { id: 'workbook', label: 'Workbook', Icon: BookMarked, type: 'resource' },
+  // Logic Bridge (Results)
+  const logicBridge = [
+    { id: 'output', label: 'Output', Icon: ArrowRightCircle, type: 'output' },
+    { id: 'practice-change', label: 'Practice Change', Icon: RefreshCw, type: 'practiceChange' },
+    { id: 'intermediate-outcome', label: 'Intermediate Outcome', Icon: TrendingUp, type: 'intermediateOutcome' },
+    { id: 'indicator', label: 'Indicator', Icon: BarChart3, type: 'indicator' },
+  ];
+
+  // Simulation Modifiers
+  const modifiers = [
+    { id: 'resource-cost', label: 'Resource Cost', Icon: Coins, type: 'resourceCost' },
+    { id: 'assumption', label: 'Assumption', Icon: Dice1, type: 'assumption' },
+    { id: 'risk', label: 'Risk', Icon: AlertTriangle, type: 'risk' },
   ];
 
   if (collapsed) {
@@ -411,9 +601,67 @@ function LogicToolbox({ collapsed, onToggleCollapse }: { collapsed: boolean; onT
     );
   }
 
+  const renderItem = (item: { id: string; label: string; Icon: any; type: string }, color: string, disabled: boolean = false) => (
+    <button
+      key={item.id}
+      draggable={!disabled}
+      className={`aspect-square bg-[#0F1216] border rounded transition-colors flex flex-col items-center justify-center gap-1 p-1 ${disabled
+        ? 'border-[#2D3340] opacity-40 cursor-not-allowed'
+        : 'border-[#374151] hover:border-[' + color + '] cursor-move'
+        }`}
+      onDragStart={(event) => {
+        if (disabled) return;
+        event.dataTransfer.setData('application/reactflow', item.id);
+        event.dataTransfer.setData('application/reactflow-label', item.label);
+        event.dataTransfer.setData('application/reactflow-nodetype', item.type);
+        event.dataTransfer.effectAllowed = 'move';
+      }}
+      title={disabled ? 'Place Problem Statement first' : item.label}
+    >
+      <item.Icon className="w-4 h-4" style={{ color: disabled ? '#4B5563' : color }} />
+      <span className="text-[9px] text-[#9CA3AF] text-center leading-tight line-clamp-2">
+        {item.label}
+      </span>
+    </button>
+  );
+
+  const renderSectionHeader = (
+    title: string,
+    sectionKey: string,
+    color: string,
+    locked: boolean = false
+  ) => (
+    <Button
+      variant="ghost"
+      onClick={() => !locked && toggleSection(sectionKey)}
+      className={`flex items-center justify-between w-full hover:bg-transparent transition-colors mb-2 h-auto font-normal p-0 ${locked ? 'opacity-50 cursor-not-allowed' : ''
+        }`}
+      disabled={locked}
+    >
+      <div className="flex items-center gap-2">
+        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: color }}></div>
+        <span className="font-medium text-sm" style={{ color: locked ? '#6B7280' : '#E5E7EB' }}>{title}</span>
+        {locked && <Lock className="w-3 h-3 text-[#6B7280]" />}
+      </div>
+      <ChevronDown
+        className={`w-4 h-4 transition-transform text-[#9CA3AF] ${expandedSections.includes(sectionKey) ? '' : '-rotate-90'}`}
+      />
+    </Button>
+  );
+
   return (
-    <aside className="w-64 bg-[#171B21] border-r border-[#1F2937] overflow-y-auto">
-      <div className="p-4">
+    <aside className="w-72 bg-[#171B21] border-r border-[#1F2937] overflow-y-auto relative">
+      {/* Hexagon Background */}
+      <div className="absolute inset-0" style={{ zIndex: 0 }}>
+        <HexagonBackground
+          className="w-full h-full"
+          hexagonSize={28}
+          hexagonMargin={2}
+          glowMode="hover"
+        />
+      </div>
+
+      <div className="p-4 relative" style={{ zIndex: 10, pointerEvents: 'none' }}>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 bg-[#D97706] rounded-full"></div>
@@ -425,198 +673,431 @@ function LogicToolbox({ collapsed, onToggleCollapse }: { collapsed: boolean; onT
             onClick={onToggleCollapse}
             className="w-8 h-8 hover:bg-[#1F2937]"
             title="Collapse Toolbox"
+            style={{ pointerEvents: 'auto' }}
           >
             <ChevronLeft className="w-4 h-4 text-[#9CA3AF]" />
           </Button>
         </div>
 
-        {/* Stakeholders */}
-        <ToolboxSection
-          title="Stakeholders"
-          items={stakeholders}
-          expanded={expandedSection === 'stakeholders'}
-          onToggle={() => setExpandedSection(expandedSection === 'stakeholders' ? '' : 'stakeholders')}
-        />
+        {/* 1. Foundations (Anchors) - Always Available */}
+        <div className="mb-4" style={{ pointerEvents: 'auto' }}>
+          {renderSectionHeader('📍 Foundations', 'foundations', CATEGORY_COLORS.foundations)}
+          {expandedSections.includes('foundations') && (
+            <div className="grid grid-cols-2 gap-2 mt-2">
+              {foundations.map(item => renderItem(item, CATEGORY_COLORS.foundations))}
+            </div>
+          )}
+        </div>
 
-        {/* Interventions */}
-        <ToolboxSection
-          title="Interventions"
-          items={interventions}
-          expanded={expandedSection === 'interventions'}
-          onToggle={() => setExpandedSection(expandedSection === 'interventions' ? '' : 'interventions')}
-        />
+        {/* 2. Stakeholders (Actors) - Locked until Problem Statement */}
+        <div className="mb-4" style={{ pointerEvents: 'auto' }}>
+          {renderSectionHeader('👥 Stakeholders', 'stakeholders', CATEGORY_COLORS.stakeholders, !isUnlocked)}
+          {expandedSections.includes('stakeholders') && isUnlocked && (
+            <div className="mt-2 space-y-3">
+              {Object.entries(stakeholderLevels).map(([key, level]) => (
+                <div key={key} className="pl-2 border-l-2" style={{ borderColor: CATEGORY_COLORS.stakeholders + '40' }}>
+                  <Button
+                    variant="ghost"
+                    onClick={() => toggleSubSection(key)}
+                    className="flex items-center justify-between w-full hover:bg-transparent transition-colors mb-1 h-auto font-normal p-0 text-xs"
+                  >
+                    <span className="text-[#9CA3AF]">{level.title}</span>
+                    <ChevronDown
+                      className={`w-3 h-3 transition-transform text-[#6B7280] ${expandedSubSections.includes(key) ? '' : '-rotate-90'}`}
+                    />
+                  </Button>
+                  {expandedSubSections.includes(key) && (
+                    <div className="grid grid-cols-2 gap-2 mt-1">
+                      {level.items.map(item => renderItem(item, CATEGORY_COLORS.stakeholders))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
 
-        {/* Resources */}
-        <ToolboxSection
-          title="Resources"
-          items={resources}
-          expanded={expandedSection === 'resources'}
-          onToggle={() => setExpandedSection(expandedSection === 'resources' ? '' : 'resources')}
-        />
+        {/* 3. Interventions (Actions) - Locked until Problem Statement */}
+        <div className="mb-4" style={{ pointerEvents: 'auto' }}>
+          {renderSectionHeader('⚡ Interventions', 'interventions', CATEGORY_COLORS.interventions, !isUnlocked)}
+          {expandedSections.includes('interventions') && isUnlocked && (
+            <div className="grid grid-cols-2 gap-2 mt-2">
+              {interventions.map(item => renderItem(item, CATEGORY_COLORS.interventions))}
+            </div>
+          )}
+        </div>
+
+        {/* 4. Logic Bridge (Results) - Locked until Problem Statement */}
+        <div className="mb-4" style={{ pointerEvents: 'auto' }}>
+          {renderSectionHeader('🔗 Logic Bridge', 'logicBridge', CATEGORY_COLORS.logicBridge, !isUnlocked)}
+          {expandedSections.includes('logicBridge') && isUnlocked && (
+            <div className="grid grid-cols-2 gap-2 mt-2">
+              {logicBridge.map(item => renderItem(item, CATEGORY_COLORS.logicBridge))}
+            </div>
+          )}
+        </div>
+
+        {/* 5. Simulation Modifiers - Locked until Problem Statement */}
+        <div className="mb-4" style={{ pointerEvents: 'auto' }}>
+          {renderSectionHeader('🎲 Modifiers', 'modifiers', CATEGORY_COLORS.modifiers, !isUnlocked)}
+          {expandedSections.includes('modifiers') && isUnlocked && (
+            <div className="grid grid-cols-3 gap-2 mt-2">
+              {modifiers.map(item => renderItem(item, CATEGORY_COLORS.modifiers))}
+            </div>
+          )}
+        </div>
+
+        {/* Unlock hint */}
+        {!isUnlocked && (
+          <div className="mt-4 p-3 bg-[#EF4444]/10 border border-[#EF4444]/30 rounded text-center">
+            <p className="text-[#EF4444] text-xs">
+              Drag a <strong>Problem Statement</strong> to unlock other categories.
+            </p>
+          </div>
+        )}
       </div>
     </aside>
   );
 }
 
-// Toolbox Section Component
-function ToolboxSection({
-  title,
-  items,
-  expanded,
-  onToggle,
-}: {
-  title: string;
-  items: Array<{ id: string; label: string; Icon: any; type: string }>;
-  expanded: boolean;
-  onToggle: () => void;
-}) {
-  return (
-    <div className="mb-4">
-      <Button
-        variant="ghost"
-        onClick={onToggle}
-        className="flex items-center justify-between w-full text-[#9CA3AF] hover:text-[#E5E7EB] hover:bg-transparent transition-colors mb-2 h-auto font-normal p-0"
-      >
-        <span className="font-medium text-sm">{title}</span>
-        <ChevronDown
-          className={`w-4 h-4 transition-transform ${expanded ? '' : '-rotate-90'}`}
-        />
-      </Button>
-
-      {expanded && (
-        <div className="grid grid-cols-3 gap-2">
-          {items.map((item) => (
-            <button
-              key={item.id}
-              draggable
-              className="aspect-square bg-[#0F1216] border border-[#374151] rounded hover:border-[#D97706] transition-colors flex flex-col items-center justify-center gap-1 cursor-move"
-              onDragStart={(event) => {
-                event.dataTransfer.setData('application/reactflow', item.id);
-                event.dataTransfer.setData('application/reactflow-label', item.label);
-                event.dataTransfer.setData('application/reactflow-nodetype', item.type);
-                event.dataTransfer.effectAllowed = 'move';
-              }}
-            >
-              <item.Icon className="w-5 h-5 text-[#9CA3AF]" />
-              <span className="text-[10px] text-[#9CA3AF] text-center leading-tight">
-                {item.label}
-              </span>
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
 
 // Inspector Panel Component
 function InspectorPanel({
   selectedNode,
   selectedEdge,
+  show,
   onClose,
+  onUpdateNode,
+  onDeleteNode,
 }: {
   selectedNode: Node | null;
   selectedEdge: Edge | null;
+  show: boolean;
   onClose: () => void;
+  onUpdateNode: (nodeId: string, data: any) => void;
+  onDeleteNode: (nodeId: string) => void;
 }) {
-  if (!selectedNode && !selectedEdge) {
+  const [activeTab, setActiveTab] = useState<'config' | 'ai' | 'team'>('config');
+  const [formData, setFormData] = useState<any>({});
+
+  // Reset form data when node changes
+  useEffect(() => {
+    if (selectedNode) {
+      setFormData({ ...selectedNode.data });
+    }
+  }, [selectedNode]);
+
+  if (!show || !selectedNode) return null;
+
+  const handleSave = () => {
+    onUpdateNode(selectedNode.id, formData);
+    // Optional: show toast
+  };
+
+  const updateField = (field: string, value: any) => {
+    setFormData((prev: any) => ({ ...prev, [field]: value }));
+  };
+
+  const getNodeCategoryColor = (type: string) => {
+    const colorKey = type as keyof typeof NODE_COLORS;
+    return NODE_COLORS[colorKey] || '#6B7280';
+  };
+
+  const renderConfigForm = () => {
+    const type = selectedNode.data.type || selectedNode.type;
+
+    // 1. Foundations: Problem Statement
+    if (type === 'problemStatement') {
+      return (
+        <div className="space-y-4">
+          <FormTextArea
+            label="Core Challenge"
+            value={formData.coreChallenge}
+            onChange={(e) => updateField('coreChallenge', e.target.value)}
+            placeholder="e.g., Grade 3 students cannot subtract."
+          />
+          <FormSelect
+            label="Theme"
+            value={formData.theme}
+            onChange={(e) => updateField('theme', e.target.value)}
+            options={['FLN', 'Career Readiness', 'School Leadership']}
+          />
+          <FormInput
+            label="Evidence"
+            value={formData.evidence}
+            onChange={(e) => updateField('evidence', e.target.value)}
+            placeholder="e.g., ASER Report 2024, Page 12"
+          />
+        </div>
+      );
+    }
+
+    // 1. Foundations: Vision
+    if (type === 'vision') {
+      return (
+        <div className="space-y-4">
+          <FormTextArea
+            label="Vision Statement"
+            value={formData.visionStatement}
+            onChange={(e) => updateField('visionStatement', e.target.value)}
+            placeholder="e.g., All students are grade-level competent in Math."
+          />
+          <FormInput
+            label="Target Year"
+            type="number"
+            value={formData.targetYear}
+            onChange={(e) => updateField('targetYear', e.target.value)}
+            placeholder="e.g., 2028"
+          />
+        </div>
+      );
+    }
+
+    // 2. Stakeholders
+    if (type === 'stakeholder') {
+      return (
+        <div className="space-y-4">
+          <FormInput
+            label="Role Name"
+            value={formData.label} // Read-only mostly, but editable here for now driven by label
+            readOnly
+          />
+          <FormInput
+            label="Target Count"
+            type="number"
+            value={formData.targetCount}
+            onChange={(e) => updateField('targetCount', e.target.value)}
+            placeholder="e.g., 50"
+          />
+          <div>
+            <label className="block text-[#9CA3AF] text-xs mb-2 flex justify-between">
+              <span>Current Bandwidth</span>
+              <span>{formData.bandwidth || 100}%</span>
+            </label>
+            <input
+              type="range"
+              min="1"
+              max="100"
+              value={formData.bandwidth || 100}
+              onChange={(e) => updateField('bandwidth', parseInt(e.target.value))}
+              className="w-full h-2 bg-[#374151] rounded-lg appearance-none cursor-pointer accent-[#D97706]"
+            />
+            <p className="text-[#6B7280] text-[10px] mt-1">Lower bandwidth triggers warnings for complex tasks.</p>
+          </div>
+          {formData.targetCount && (
+            <div className="p-2 bg-[#1F2937] rounded border border-[#374151] text-xs text-[#9CA3AF]">
+              Budget Required: est. ₹ {(formData.targetCount * 500).toLocaleString()}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // 3. Interventions
+    if (type === 'intervention') {
+      const totalCost = (formData.unitCost || 0) * (formData.duration || 0); // Simplified calc
+      return (
+        <div className="space-y-4">
+          <FormInput
+            label="Activity Name"
+            value={formData.label}
+            onChange={(e) => updateField('label', e.target.value)}
+          />
+          <FormSelect
+            label="Frequency"
+            value={formData.frequency}
+            onChange={(e) => updateField('frequency', e.target.value)}
+            options={['One-time', 'Weekly', 'Monthly', 'Quarterly']}
+          />
+          <FormInput
+            label="Duration (Hours/Days)"
+            type="number"
+            value={formData.duration}
+            onChange={(e) => updateField('duration', e.target.value)}
+          />
+          <FormInput
+            label="Unit Cost (₹)"
+            type="number"
+            value={formData.unitCost}
+            onChange={(e) => updateField('unitCost', e.target.value)}
+          />
+          <div className="p-2 bg-[#1F2937] rounded border border-[#374151] text-xs text-[#D97706] font-medium">
+            Total Cost: ₹ {totalCost.toLocaleString()}
+          </div>
+        </div>
+      );
+    }
+
+    // 4. Practice Change
+    if (type === 'practiceChange') {
+      return (
+        <div className="space-y-4">
+          <FormInput
+            label="Who is changing?"
+            value={formData.actor || 'Linked Stakeholder'}
+            readOnly
+          />
+          <FormInput
+            label="Current Behavior"
+            value={formData.currentBehavior}
+            onChange={(e) => updateField('currentBehavior', e.target.value)}
+            placeholder="e.g., Uses blackboard only"
+          />
+          <FormInput
+            label="New Behavior"
+            value={formData.newBehavior}
+            onChange={(e) => updateField('newBehavior', e.target.value)}
+            placeholder="e.g., Uses math kit for 10 mins daily"
+          />
+          <FormSelect
+            label="Verification Method"
+            value={formData.verificationMethod}
+            onChange={(e) => updateField('verificationMethod', e.target.value)}
+            options={['Observation', 'Self-Report', 'Survey']}
+          />
+        </div>
+      );
+    }
+
+    // 5. Indicators & Outcomes
+    if (['outcome', 'indicator', 'intermediateOutcome', 'output'].includes(type) || type === 'customNode') {
+      return (
+        <div className="space-y-4">
+          <FormTextArea
+            label="Indicator Statement"
+            value={formData.label}
+            onChange={(e) => updateField('label', e.target.value)}
+          />
+          <div className="grid grid-cols-2 gap-2">
+            <FormInput
+              label="Baseline (%)"
+              type="number"
+              value={formData.baseline}
+              onChange={(e) => updateField('baseline', e.target.value)}
+            />
+            <FormInput
+              label="Target (%)"
+              type="number"
+              value={formData.target}
+              onChange={(e) => updateField('target', e.target.value)}
+            />
+          </div>
+          <FormSelect
+            label="Data Source"
+            value={formData.dataSource}
+            onChange={(e) => updateField('dataSource', e.target.value)}
+            options={['Standard Test', 'Government Data', 'Internal Assessment']}
+          />
+        </div>
+      );
+    }
+
+    // Default Fallback
     return (
-      <aside className="w-80 bg-[#171B21] border-l border-[#1F2937] p-6">
-        <h2 className="text-[#9CA3AF] text-sm">Select a node or connection to inspect</h2>
-      </aside>
+      <div className="space-y-4">
+        <FormTextArea
+          label="Description"
+          value={formData.label}
+          onChange={(e) => updateField('label', e.target.value)}
+        />
+      </div>
     );
-  }
+  };
 
   return (
-    <aside className="w-80 bg-[#171B21] border-l border-[#1F2937] overflow-y-auto">
-      <div className="p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-[#E5E7EB] font-medium">Inspector</h2>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onClose}
-            className="w-8 h-8 hover:bg-[#1F2937]"
-          >
-            <X className="w-4 h-4 text-[#9CA3AF]" />
-          </Button>
+    <aside className="absolute right-0 top-0 h-full w-[750px] bg-[#171B21] border-l border-[#1F2937] shadow-2xl flex flex-col z-20">
+      {/* Header */}
+      <div className="p-4 border-b border-[#2D3340] flex items-center justify-between bg-[#0F1216]">
+        <div className="flex items-center gap-3">
+          <div
+            className="w-3 h-3 rounded-full shadow-[0_0_8px]"
+            style={{
+              backgroundColor: getNodeCategoryColor(selectedNode.data.type),
+              boxShadow: `0 0 8px ${getNodeCategoryColor(selectedNode.data.type)}`
+            }}
+          />
+          <h2 className="text-[#E5E7EB] font-bold text-lg truncate w-48">
+            {selectedNode.data.label}
+          </h2>
         </div>
+        <Button variant="ghost" size="icon" onClick={onClose} className="text-[#9CA3AF] hover:text-white">
+          <X className="w-5 h-5" />
+        </Button>
+      </div>
 
-        {selectedNode && (
-          <div className="space-y-6">
-            <div>
-              <label className="block text-[#9CA3AF] text-sm mb-2">Label</label>
-              <input
-                type="text"
-                defaultValue={selectedNode.data.label}
-                className="w-full px-3 py-2 bg-[#0F1216] border border-[#374151] rounded text-[#E5E7EB] focus:outline-none focus:border-[#D97706]"
-              />
-            </div>
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto p-5">
+        {renderConfigForm()}
+      </div>
 
-            <div>
-              <label className="block text-[#9CA3AF] text-sm mb-2">Assumptions</label>
-              <textarea
-                placeholder="Example: Teachers will need hands-on training and demonstration to use FLN kits effectively."
-                rows={4}
-                className="w-full px-3 py-2 bg-[#0F1216] border border-[#374151] rounded text-[#E5E7EB] placeholder-[#6B7280] focus:outline-none focus:border-[#D97706] resize-none text-sm"
-              />
-            </div>
-
-            <div>
-              <label className="block text-[#9CA3AF] text-sm mb-2">Cost Estimate</label>
-              <input
-                type="text"
-                placeholder="₹ 5,000 - 10,000"
-                className="w-full px-3 py-2 bg-[#0F1216] border border-[#374151] rounded text-[#E5E7EB] placeholder-[#6B7280] focus:outline-none focus:border-[#D97706]"
-              />
-            </div>
-          </div>
-        )}
-
-        {selectedEdge && (
-          <div className="space-y-6">
-            <div className="flex items-center gap-2 p-3 bg-[#0D9488]/10 border border-[#0D9488]/30 rounded">
-              <div className="w-3 h-3 bg-[#0D9488] rounded-full"></div>
-              <span className="text-[#E5E7EB] text-sm font-medium">Practice Change</span>
-            </div>
-
-            <div>
-              <label className="block text-[#E5E7EB] text-sm mb-2">
-                What practice will change?
-              </label>
-              <textarea
-                placeholder="Teacher uses kit for daily reading activities."
-                rows={3}
-                className="w-full px-3 py-2 bg-[#0F1216] border border-[#374151] rounded text-[#E5E7EB] placeholder-[#6B7280] focus:outline-none focus:border-[#D97706] resize-none text-sm"
-              />
-            </div>
-
-            <div>
-              <label className="block text-[#E5E7EB] text-sm mb-2 flex items-center gap-2">
-                Indicator
-                <span className="text-[#6B7280] text-xs">(Required)</span>
-              </label>
-              <select className="w-full px-3 py-2 bg-[#0F1216] border border-[#374151] rounded text-[#E5E7EB] focus:outline-none focus:border-[#D97706] mb-2">
-                <option value="">Select indicator...</option>
-                <option>% of classrooms where kit is regularly used</option>
-                <option>Average weekly usage frequency</option>
-                <option>Student engagement score during kit activities</option>
-              </select>
-              <p className="text-[#6B7280] text-xs">
-                Indicates how this node will be evaluated during simulation.
-              </p>
-            </div>
-
-            <div className="flex items-start gap-2 p-3 bg-[#F59E0B]/10 border border-[#F59E0B]/30 rounded">
-              <AlertTriangle className="w-4 h-4 text-[#F59E0B] flex-shrink-0 mt-0.5" />
-              <p className="text-[#F59E0B] text-xs">
-                Missing indicator. This connection will be flagged during simulation.
-              </p>
-            </div>
-          </div>
-        )}
+      {/* Footer */}
+      <div className="p-4 border-t border-[#2D3340] bg-[#0F1216] flex items-center justify-between cursor-auto z-50">
+        <Button
+          variant="destructive"
+          size="sm"
+          onClick={() => onDeleteNode(selectedNode.id)}
+          className="bg-red-900/50 hover:bg-red-900/80 text-red-200 border border-red-900"
+        >
+          <Trash2 className="w-4 h-4" />
+        </Button>
+        <Button
+          onClick={handleSave}
+          className="bg-[#D97706] hover:bg-[#B45309] text-white flex items-center gap-2"
+        >
+          <Save className="w-4 h-4" /> Save
+        </Button>
       </div>
     </aside>
+  );
+}
+
+// Helper Components for Form
+function FormInput({ label, type = "text", value, onChange, placeholder, readOnly }: any) {
+  return (
+    <div>
+      <label className="block text-[#9CA3AF] text-xs font-medium mb-1.5">{label}</label>
+      <input
+        type={type}
+        value={value || ''}
+        onChange={onChange}
+        placeholder={placeholder}
+        readOnly={readOnly}
+        className={`w-full px-3 py-2 bg-[#0F1216] border border-[#374151] rounded text-[#E5E7EB] text-sm focus:outline-none focus:border-[#D97706] transition-colors ${readOnly ? 'opacity-60 cursor-not-allowed' : ''}`}
+      />
+    </div>
+  );
+}
+
+function FormTextArea({ label, value, onChange, placeholder }: any) {
+  return (
+    <div>
+      <label className="block text-[#9CA3AF] text-xs font-medium mb-1.5">{label}</label>
+      <textarea
+        value={value || ''}
+        onChange={onChange}
+        placeholder={placeholder}
+        rows={3}
+        className="w-full px-3 py-2 bg-[#0F1216] border border-[#374151] rounded text-[#E5E7EB] text-sm focus:outline-none focus:border-[#D97706] transition-colors resize-none"
+      />
+    </div>
+  );
+}
+
+function FormSelect({ label, value, onChange, options }: any) {
+  return (
+    <div>
+      <label className="block text-[#9CA3AF] text-xs font-medium mb-1.5">{label}</label>
+      <select
+        value={value || ''}
+        onChange={onChange}
+        className="w-full px-3 py-2 bg-[#0F1216] border border-[#374151] rounded text-[#E5E7EB] text-sm focus:outline-none focus:border-[#D97706] transition-colors appearance-none"
+      >
+        <option value="" disabled>Select {label}...</option>
+        {options.map((opt: string) => (
+          <option key={opt} value={opt}>{opt}</option>
+        ))}
+      </select>
+    </div>
   );
 }
 

@@ -53,8 +53,8 @@ const GridWarpMaterial = shaderMaterial(
       vec2 offset = (gridUv - mouse) * falloff * strength;
       vec2 distortedUv = gridUv + offset;
       
-      // Grid generation - larger boxes (was 25, now 12.5 = 4x larger area per box)
-      float gridSize = 12.5;
+      // Grid generation - larger boxes (was 12.5, now 8.0)
+      float gridSize = 8.0;
       
       // Use distorted UVs for the grid pattern
       vec2 cell = fract(distortedUv * gridSize);
@@ -160,7 +160,7 @@ export default function HeroGridWarp() {
     }, [handleMouseMove, handleMouseLeave]);
 
     return (
-        <div ref={containerRef} className="absolute inset-0 z-0 pointer-events-none">
+        <div ref={containerRef} className="absolute inset-0 z-0 pointer-events-none" style={{ height: '710.5px' }}>
             <Canvas
                 dpr={[1, 2]}
                 gl={{ antialias: true, alpha: true }}

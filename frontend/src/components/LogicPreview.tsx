@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { Button } from './ui/button';
 import NoiseBackground from './NoiseBackground';
+import HexagonBackground from './HexagonBackground';
 
 interface LogicPreviewProps {
   projectName?: string;
@@ -60,8 +61,18 @@ export default function LogicPreview({
       <NoiseBackground />
 
       {/* Top Bar - Validation State */}
-      <header className="bg-[#171B21] border-b border-[#1F2937] px-6 py-3 z-10">
-        <div className="flex items-center justify-between">
+      <header className="bg-[#171B21] border-b border-[#1F2937] px-6 py-3 z-10 relative overflow-hidden">
+        {/* Hexagon Background */}
+        <div className="absolute inset-0" style={{ zIndex: 0 }}>
+          <HexagonBackground
+            className="w-full h-full"
+            hexagonSize={28}
+            hexagonMargin={2}
+            glowMode="hover"
+          />
+        </div>
+
+        <div className="flex items-center justify-between relative" style={{ zIndex: 10, pointerEvents: 'none' }}>
           {/* Left - Branding & Project */}
           <div className="flex items-center gap-6">
             <h1 className="text-[#E5E7EB] font-semibold text-lg">
@@ -84,7 +95,7 @@ export default function LogicPreview({
           </div>
 
           {/* Right - Collaborators & Actions */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3" style={{ pointerEvents: 'auto' }}>
             {/* Collaborators */}
             <div className="flex items-center -space-x-2">
               <div className="w-8 h-8 rounded-full bg-[#D97706] border-2 border-[#171B21] flex items-center justify-center">

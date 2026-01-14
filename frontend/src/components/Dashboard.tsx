@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Plus, Book, Bell, Settings, User, MoreVertical, Search } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import NoiseBackground from './NoiseBackground';
+import HexagonBackground from './HexagonBackground';
 
 interface DashboardProps {
   onBack?: () => void;
@@ -72,88 +73,97 @@ export default function Dashboard({ onBack, onNavigateToPatterns, onNavigateToIn
       }}></div>
 
       {/* Top Bar */}
-      <nav className="sticky top-0 z-50 backdrop-blur-md border-b border-[#1F2937]/30">
-        <div className="bg-[#171B21]/90 relative">
-          {/* Noise on top bar */}
-          <div className="absolute inset-0 opacity-[0.05]" style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
-          }}></div>
+      <nav className="sticky top-0 z-50 backdrop-blur-md border-b border-[#1F2937]/30 relative overflow-hidden bg-[#171B21]/80">
+        {/* Hexagon Background */}
+        <div className="absolute inset-0" style={{ zIndex: 0 }}>
+          <HexagonBackground
+            className="w-full h-full"
+            hexagonSize={28}
+            hexagonMargin={2}
+            glowMode="hover"
+          />
+        </div>
 
-          <div className="max-w-[1920px] mx-auto px-6 py-4 flex items-center gap-6 relative">
-            {/* Left: Logo */}
-            <div className="flex items-center gap-4">
-              <h1 className="text-[#E5E7EB] font-semibold text-xl whitespace-nowrap">
-                Niti<span className="text-[#E5E7EB]">Nirmaan</span>
-              </h1>
+        {/* Noise on top bar */}
+        <div className="absolute inset-0 opacity-[0.05] pointer-events-none" style={{
+          zIndex: 1,
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
+        }}></div>
+
+        <div className="max-w-[1920px] mx-auto px-6 py-4 flex items-center gap-6 relative" style={{ zIndex: 10, pointerEvents: 'none' }}>
+          {/* Left: Logo */}
+          <div className="flex items-center gap-4">
+            <h1 className="text-[#E5E7EB] font-semibold text-xl whitespace-nowrap">
+              Niti<span className="text-[#E5E7EB]">Nirmaan</span>
+            </h1>
+          </div>
+
+          {/* Left Icons */}
+          <div className="flex items-center gap-2" style={{ pointerEvents: 'auto' }}>
+            <Button className="w-10 h-10 p-0 flex items-center justify-center bg-[#D97706] hover:bg-[#B45309] rounded transition-colors">
+              <div className="w-4 h-4 bg-white rounded-sm"></div>
+            </Button>
+            <Button className="w-10 h-10 p-0 flex items-center justify-center bg-[#374151] hover:bg-[#4B5563] rounded transition-colors relative">
+              <svg className="w-5 h-5 text-[#E5E7EB]" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+            </Button>
+          </div>
+
+          {/* Center: Global Search */}
+          <div className="flex-1 max-w-xl" style={{ pointerEvents: 'auto' }}>
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Search projects or templates"
+                className="w-full pl-4 pr-4 py-2.5 bg-[#0F1216] border border-[#2D3340] rounded text-[#E5E7EB] placeholder-[#6B7280] focus:outline-none focus:border-[#4B5563] transition-colors text-sm"
+              />
+            </div>
+          </div>
+
+          {/* Center-Right: Avatar & Level Badge */}
+          <div className="flex items-center gap-3">
+            {/* Avatar */}
+            <div className="relative w-12 h-12 rounded-full bg-[#374151] overflow-hidden border-2 border-[#2D3340]">
+              <img
+                src="figma:asset/c2883b253b54d2569f35712fdc66c1601585d805.png"
+                alt="User avatar"
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-[#D97706] rounded-full border-2 border-[#171B21]"></div>
             </div>
 
-            {/* Left Icons */}
-            <div className="flex items-center gap-2">
-              <Button className="w-10 h-10 p-0 flex items-center justify-center bg-[#D97706] hover:bg-[#B45309] rounded transition-colors">
-                <div className="w-4 h-4 bg-white rounded-sm"></div>
-              </Button>
-              <Button className="w-10 h-10 p-0 flex items-center justify-center bg-[#374151] hover:bg-[#4B5563] rounded transition-colors relative">
-                <svg className="w-5 h-5 text-[#E5E7EB]" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                </svg>
-              </Button>
-            </div>
+            {/* Level Badge */}
+            <div className="group relative cursor-help">
+              <div className="text-sm">
+                <span className="text-[#E5E7EB]">Level 2: </span>
+                <span className="text-[#D97706]">Strategist</span>
+                <span className="text-[#D97706] ml-1">•</span>
+              </div>
 
-            {/* Center: Global Search */}
-            <div className="flex-1 max-w-xl">
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Search projects or templates"
-                  className="w-full pl-4 pr-4 py-2.5 bg-[#0F1216] border border-[#2D3340] rounded text-[#E5E7EB] placeholder-[#6B7280] focus:outline-none focus:border-[#4B5563] transition-colors text-sm"
-                />
+              {/* Tooltip */}
+              <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 px-4 py-2.5 bg-[#1F2937] rounded text-xs text-[#E5E7EB] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 shadow-lg">
+                <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-[#1F2937] rotate-45"></div>
+                <div className="relative">Unlocked after completing<br />2 simulations.</div>
               </div>
             </div>
+          </div>
 
-            {/* Center-Right: Avatar & Level Badge */}
-            <div className="flex items-center gap-3">
-              {/* Avatar */}
-              <div className="relative w-12 h-12 rounded-full bg-[#374151] overflow-hidden border-2 border-[#2D3340]">
-                <img
-                  src="figma:asset/c2883b253b54d2569f35712fdc66c1601585d805.png"
-                  alt="User avatar"
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-[#D97706] rounded-full border-2 border-[#171B21]"></div>
-              </div>
-
-              {/* Level Badge */}
-              <div className="group relative cursor-help">
-                <div className="text-sm">
-                  <span className="text-[#E5E7EB]">Level 2: </span>
-                  <span className="text-[#D97706]">Strategist</span>
-                  <span className="text-[#D97706] ml-1">•</span>
-                </div>
-
-                {/* Tooltip */}
-                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 px-4 py-2.5 bg-[#1F2937] rounded text-xs text-[#E5E7EB] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 shadow-lg">
-                  <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-[#1F2937] rotate-45"></div>
-                  <div className="relative">Unlocked after completing<br />2 simulations.</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Right: Utility Icons */}
-            <div className="flex items-center gap-2">
-              <Button className="relative w-10 h-10 p-0 flex items-center justify-center hover:bg-[#1F2937] rounded transition-colors border border-[#2D3340] bg-transparent">
-                <Bell className="w-5 h-5 text-[#9CA3AF]" />
-                <div className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#D97706] rounded-full"></div>
-              </Button>
-              <Button
-                onClick={onNavigateToSettings}
-                className="w-10 h-10 p-0 flex items-center justify-center hover:bg-[#1F2937] rounded transition-colors border border-[#2D3340] bg-transparent"
-              >
-                <Settings className="w-5 h-5 text-[#9CA3AF]" />
-              </Button>
-              <Button className="w-10 h-10 p-0 flex items-center justify-center hover:bg-[#1F2937] rounded transition-colors border border-[#2D3340] bg-transparent">
-                <User className="w-5 h-5 text-[#9CA3AF]" />
-              </Button>
-            </div>
+          {/* Right: Utility Icons */}
+          <div className="flex items-center gap-2" style={{ pointerEvents: 'auto' }}>
+            <Button className="relative w-10 h-10 p-0 flex items-center justify-center hover:bg-[#1F2937] rounded transition-colors border border-[#2D3340] bg-transparent">
+              <Bell className="w-5 h-5 text-[#9CA3AF]" />
+              <div className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#D97706] rounded-full"></div>
+            </Button>
+            <Button
+              onClick={onNavigateToSettings}
+              className="w-10 h-10 p-0 flex items-center justify-center hover:bg-[#1F2937] rounded transition-colors border border-[#2D3340] bg-transparent"
+            >
+              <Settings className="w-5 h-5 text-[#9CA3AF]" />
+            </Button>
+            <Button className="w-10 h-10 p-0 flex items-center justify-center hover:bg-[#1F2937] rounded transition-colors border border-[#2D3340] bg-transparent">
+              <User className="w-5 h-5 text-[#9CA3AF]" />
+            </Button>
           </div>
         </div>
       </nav>
@@ -171,12 +181,20 @@ export default function Dashboard({ onBack, onNavigateToPatterns, onNavigateToIn
               className="group relative bg-[#1F2329] rounded-lg overflow-hidden cursor-pointer transition-all hover:bg-[#232831] border border-[#2D3340]" style={{
                 boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
               }}>
-              {/* Noise on card */}
-              <div className="absolute inset-0 rounded-lg opacity-[0.04]" style={{
-                backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
-              }}></div>
+              {/* Hexagon Background Effect */}
+              <div className="absolute inset-0" style={{ zIndex: 0 }}>
+                <HexagonBackground
+                  className="w-full h-full"
+                  hexagonSize={25}
+                  hexagonMargin={2}
+                  glowMode="none"
+                />
+              </div>
 
-              <div className="relative p-8">
+              {/* Noise on card */}
+              <div className="absolute inset-0 rounded-lg opacity-[0.04] pointer-events-none" style={{ zIndex: 1, backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}></div>
+
+              <div className="relative p-8" style={{ zIndex: 10 }}>
                 <div className="flex items-start gap-4 mb-6">
                   <div className="w-14 h-14 bg-[#D97706] rounded-lg flex items-center justify-center flex-shrink-0">
                     <Plus className="w-7 h-7 text-white" />
@@ -235,12 +253,20 @@ export default function Dashboard({ onBack, onNavigateToPatterns, onNavigateToIn
               style={{
                 boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
               }}>
-              {/* Noise on card */}
-              <div className="absolute inset-0 rounded-lg opacity-[0.04]" style={{
-                backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
-              }}></div>
+              {/* Hexagon Background Effect */}
+              <div className="absolute inset-0" style={{ zIndex: 0 }}>
+                <HexagonBackground
+                  className="w-full h-full"
+                  hexagonSize={25}
+                  hexagonMargin={2}
+                  glowMode="none"
+                />
+              </div>
 
-              <div className="relative p-8">
+              {/* Noise on card */}
+              <div className="absolute inset-0 rounded-lg opacity-[0.04] pointer-events-none" style={{ zIndex: 1, backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}></div>
+
+              <div className="relative p-8" style={{ zIndex: 10 }}>
                 <div className="flex items-start gap-4 mb-6">
                   <div className="w-14 h-14 bg-[#D97706] rounded-lg flex items-center justify-center flex-shrink-0">
                     <Book className="w-7 h-7 text-white" />

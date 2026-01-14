@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { X, ChevronDown, HelpCircle } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import NoiseBackground from './NoiseBackground';
+import HexagonBackground from './HexagonBackground';
 
 interface PatternLibraryProps {
   onBack?: () => void;
@@ -203,8 +204,18 @@ export default function PatternLibrary({ onBack }: PatternLibraryProps) {
     <div className="min-h-screen bg-[#0F1216] text-gray-200">
       <NoiseBackground />
       {/* Top Navigation */}
-      <nav className="sticky top-0 z-50 bg-[#171B21] border-b border-[#1F2937]/30">
-        <div className="max-w-[1920px] mx-auto px-6 py-4 flex items-center justify-between">
+      <nav className="sticky top-0 z-50 bg-[#171B21] border-b border-[#1F2937]/30 relative overflow-hidden">
+        {/* Hexagon Background */}
+        <div className="absolute inset-0" style={{ zIndex: 0 }}>
+          <HexagonBackground
+            className="w-full h-full"
+            hexagonSize={28}
+            hexagonMargin={2}
+            glowMode="hover"
+          />
+        </div>
+
+        <div className="max-w-[1920px] mx-auto px-6 py-4 flex items-center justify-between relative" style={{ zIndex: 10, pointerEvents: 'none' }}>
           {/* Logo */}
           <div className="flex-shrink-0">
             <h1 className="text-[#E5E7EB] font-semibold text-xl whitespace-nowrap">
@@ -213,7 +224,7 @@ export default function PatternLibrary({ onBack }: PatternLibraryProps) {
           </div>
 
           {/* Right Icons */}
-          <div className="flex items-center gap-3 flex-shrink-0">
+          <div className="flex items-center gap-3 flex-shrink-0" style={{ pointerEvents: 'auto' }}>
             <Button className="relative w-10 h-10 p-0 flex items-center justify-center hover:bg-[#1F2937] rounded transition-colors border border-[#2D3340] bg-transparent">
               <svg className="w-5 h-5 text-[#9CA3AF]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
@@ -262,8 +273,18 @@ export default function PatternLibrary({ onBack }: PatternLibraryProps) {
       {/* Main Layout */}
       <div className="flex max-w-[1920px] mx-auto">
         {/* Left Sidebar - Filters */}
-        <aside className="w-64 bg-[#171B21] min-h-screen sticky top-16 flex-shrink-0">
-          <div className="p-6">
+        <aside className="w-64 bg-[#171B21] min-h-screen sticky top-16 flex-shrink-0 relative overflow-hidden">
+          {/* Hexagon Background */}
+          <div className="absolute inset-0" style={{ zIndex: 0 }}>
+            <HexagonBackground
+              className="w-full h-full"
+              hexagonSize={28}
+              hexagonMargin={2}
+              glowMode="hover"
+            />
+          </div>
+
+          <div className="p-6 relative" style={{ zIndex: 10, pointerEvents: 'none' }}>
             <h2 className="text-[#E5E7EB] font-semibold mb-6">Filters</h2>
 
             {/* Primary Domain Filter */}
@@ -450,7 +471,7 @@ function FilterSection({
   const [isOpen, setIsOpen] = useState(true);
 
   return (
-    <div className="mb-6">
+    <div className="mb-6" style={{ pointerEvents: 'auto' }}>
       <div
         className="flex items-center justify-between mb-3 cursor-pointer"
         onClick={() => collapsible && setIsOpen(!isOpen)}
@@ -481,7 +502,7 @@ function FilterCheckbox({
   tooltip?: string;
 }) {
   return (
-    <label className="flex items-start gap-2 cursor-pointer group">
+    <label className="flex items-start gap-2 cursor-pointer group" style={{ pointerEvents: 'auto' }}>
       <input
         type="checkbox"
         checked={checked}
