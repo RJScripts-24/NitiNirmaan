@@ -16,6 +16,7 @@ import ReactFlow, {
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { FLN_TOOLBOX, ToolNode } from '../config/domains/fln/toolbox';
+import { CAREER_TOOLBOX } from '../config/domains/career/toolbox';
 import { compileFLNGraphToLFA, LFADocument } from '../lib/fln-compiler';
 import {
   ArrowRight,
@@ -125,6 +126,12 @@ const getNodeColor = (type: string): string => {
   const flnNode = FLN_TOOLBOX.find(n => n.id === type);
   if (flnNode) {
     return CATEGORY_COLORS[flnNode.category] || '#6B7280';
+  }
+
+  // 3. Check Career Toolbox
+  const careerNode = CAREER_TOOLBOX.find(n => n.id === type);
+  if (careerNode) {
+    return CATEGORY_COLORS[careerNode.category] || '#6B7280';
   }
 
   return '#6B7280'; // Default Gray
@@ -243,7 +250,8 @@ export default function ImpactCanvas({
   const hasProblemStatement = nodes.some(node =>
     node.data.type === 'problemStatement' ||
     node.data.type === 'learning_crisis' ||
-    node.data.type === 'problem-statement'
+    node.data.type === 'problem-statement' ||
+    node.data.type === 'neet'
   );
 
   const onConnect = useCallback(
@@ -802,6 +810,47 @@ function LogicToolbox({
     }));
   };
 
+  // --- CAREER SPECIFIC LOGIC ---
+  const getCareerIconForNode = (id: string) => {
+    const map: Record<string, any> = {
+      neet: Flag,
+      sustainable_income: Target,
+      self_employment: Briefcase,
+      youth_candidate: GraduationCap,
+      parent_guardian: Home,
+      field_mobilizer: Megaphone,
+      vocational_trainer: BookOpen,
+      soft_skills_trainer: Users,
+      center_manager: Building2,
+      hr_manager: Briefcase,
+      industry_mentor: Handshake,
+      alumni: GraduationCap,
+      tech_bootcamp: BookOpen,
+      career_counseling: MessageSquare,
+      mock_interview: Users,
+      internship_ojt: Briefcase,
+      job_fair: Building2,
+      migration_support: Home,
+      tracking_call: Smartphone,
+      aspiration_alignment: RefreshCw,
+      interview_readiness: Check,
+      family_consent: FileCheck,
+      market_slump: TrendingUp,
+      migration_shock: Home,
+      wage_mismatch: DollarSign,
+    };
+    return map[id] || HelpCircle;
+  };
+
+  const getCareerNodes = (category: string) => {
+    return CAREER_TOOLBOX.filter(node => node.category === category).map(node => ({
+      id: node.id,
+      label: node.label,
+      Icon: getCareerIconForNode(node.id),
+      type: node.id
+    }));
+  };
+
   // --- DEFAULT LISTS ---
   const foundations = [
     { id: 'problem-statement', label: 'Problem Statement', Icon: Flag, type: 'problemStatement' },
@@ -926,7 +975,7 @@ function LogicToolbox({
   );
 
   return (
-    <aside className="w-72 bg-[#171B21] border-r border-[#1F2937] overflow-y-auto relative">
+    <aside className="w-72 bg-[#171B21] border-r border-[#1F2937] relative flex flex-col h-full">
       {/* Hexagon Background */}
       <div className="absolute inset-0" style={{ zIndex: 0 }}>
         <HexagonBackground
@@ -937,7 +986,7 @@ function LogicToolbox({
         />
       </div>
 
-      <div className="p-4 relative" style={{ zIndex: 10, pointerEvents: 'auto' }}>
+      <div className="flex-1 overflow-y-auto p-4 relative" style={{ zIndex: 10, pointerEvents: 'auto' }}>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 bg-[#D97706] rounded-full"></div>
@@ -955,8 +1004,104 @@ function LogicToolbox({
           </Button>
         </div>
 
-        {/* --- FLN DOMAIN RENDER --- */}
-        {domain === 'FLN' ? (
+        {/* --- CAREER READINESS DOMAIN RENDER --- */}
+        {domain === 'Career Readiness' ? (
+          <>
+            {/* 1. Foundations */}
+            <div className="mb-4" style={{ pointerEvents: 'auto' }}>
+              {renderSectionHeader('📍 Foundations', 'foundations', CATEGORY_COLORS.foundations)}
+              {expandedSections.includes('foundations') && (
+                <div className="grid grid-cols-2 gap-2 mt-2">
+                  {getCareerNodes('foundation').map(item => renderItem(item, CATEGORY_COLORS.foundations, false))}
+                </div>
+              )}
+            </div>
+
+            {/* 2. Stakeholders */}
+            <div className="mb-4" style={{ pointerEvents: 'auto' }}>
+              {renderSectionHeader('👥 Stakeholders', 'stakeholders', CATEGORY_COLORS.stakeholders, !isUnlocked)}
+              {expandedSections.includes('stakeholders') && isUnlocked && (
+                <div className="mt-2">
+                  {/* Mobilization */}
+                  <div className="text-xs text-[#9CA3AF] mb-1 font-medium pl-1">Mobilization</div>
+                  <div className="grid grid-cols-2 gap-2 mb-3">
+                    {getCareerNodes('stakeholder')
+                      .filter(n => ['youth_candidate', 'parent_guardian', 'field_mobilizer'].includes(n.id))
+                      .map(item => renderItem(item, CATEGORY_COLORS.stakeholders, false))}
+                  </div>
+
+                  {/* Delivery */}
+                  <div className="text-xs text-[#9CA3AF] mb-1 font-medium pl-1">Delivery</div>
+                  <div className="grid grid-cols-2 gap-2 mb-3">
+                    {getCareerNodes('stakeholder')
+                      .filter(n => ['vocational_trainer', 'soft_skills_trainer', 'center_manager'].includes(n.id))
+                      .map(item => renderItem(item, CATEGORY_COLORS.stakeholders, false))}
+                  </div>
+
+                  {/* Market */}
+                  <div className="text-xs text-[#9CA3AF] mb-1 font-medium pl-1">Market</div>
+                  <div className="grid grid-cols-2 gap-2">
+                    {getCareerNodes('stakeholder')
+                      .filter(n => ['hr_manager', 'industry_mentor', 'alumni'].includes(n.id))
+                      .map(item => renderItem(item, CATEGORY_COLORS.stakeholders, false))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* 3. Interventions */}
+            <div className="mb-4" style={{ pointerEvents: 'auto' }}>
+              {renderSectionHeader('⚡ Interventions', 'interventions', CATEGORY_COLORS.interventions, !isUnlocked)}
+              {expandedSections.includes('interventions') && isUnlocked && (
+                <div className="mt-2">
+                  {/* Skilling */}
+                  <div className="text-xs text-[#9CA3AF] mb-1 font-medium pl-1">Skilling</div>
+                  <div className="grid grid-cols-2 gap-2 mb-3">
+                    {getCareerNodes('intervention')
+                      .filter(n => ['tech_bootcamp', 'career_counseling', 'mock_interview'].includes(n.id))
+                      .map(item => renderItem(item, CATEGORY_COLORS.interventions, false))}
+                  </div>
+
+                  {/* Linkage */}
+                  <div className="text-xs text-[#9CA3AF] mb-1 font-medium pl-1">Linkage</div>
+                  <div className="grid grid-cols-2 gap-2 mb-3">
+                    {getCareerNodes('intervention')
+                      .filter(n => ['internship_ojt', 'job_fair'].includes(n.id))
+                      .map(item => renderItem(item, CATEGORY_COLORS.interventions, false))}
+                  </div>
+
+                  {/* Post-Placement */}
+                  <div className="text-xs text-[#9CA3AF] mb-1 font-medium pl-1">Post-Placement</div>
+                  <div className="grid grid-cols-2 gap-2">
+                    {getCareerNodes('intervention')
+                      .filter(n => ['migration_support', 'tracking_call'].includes(n.id))
+                      .map(item => renderItem(item, CATEGORY_COLORS.interventions, false))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* 4. Logic Bridge */}
+            <div className="mb-4" style={{ pointerEvents: 'auto' }}>
+              {renderSectionHeader('🔗 Logic Bridge', 'logicBridge', CATEGORY_COLORS.logicBridge, !isUnlocked)}
+              {expandedSections.includes('logicBridge') && isUnlocked && (
+                <div className="grid grid-cols-2 gap-2 mt-2">
+                  {getCareerNodes('bridge').map(item => renderItem(item, CATEGORY_COLORS.logicBridge, false))}
+                </div>
+              )}
+            </div>
+
+            {/* 5. Risks */}
+            <div className="mb-4" style={{ pointerEvents: 'auto' }}>
+              {renderSectionHeader('🎲 Risks', 'modifiers', CATEGORY_COLORS.modifiers, !isUnlocked)}
+              {expandedSections.includes('modifiers') && isUnlocked && (
+                <div className="grid grid-cols-2 gap-2 mt-2">
+                  {getCareerNodes('risk').map(item => renderItem(item, CATEGORY_COLORS.modifiers, false))}
+                </div>
+              )}
+            </div>
+          </>
+        ) : domain === 'FLN' ? (
           <>
             {/* 1. Foundations */}
             <div className="mb-4" style={{ pointerEvents: 'auto' }}>
@@ -1090,7 +1235,7 @@ function LogicToolbox({
           </div>
         )}
       </div>
-    </aside>
+    </aside >
   );
 }
 
@@ -1178,6 +1323,71 @@ function InspectorPanel({
                   );
                 }
                 // Default to Input (text, number, date)
+                return (
+                  <FormInput
+                    key={field.name}
+                    label={field.label}
+                    type={field.type}
+                    value={formData[field.name]}
+                    onChange={(e: any) => updateField(field.name, e.target.value)}
+                    placeholder={field.placeholder}
+                    readOnly={field.readOnly}
+                  />
+                );
+              })}
+            </div>
+          </div>
+        );
+      }
+    }
+
+    // --- CAREER DOMAIN LOGIC ---
+    if (domain === 'Career Readiness') {
+      const careerNode = CAREER_TOOLBOX.find(n => n.id === type);
+
+      if (careerNode) {
+        return (
+          <div className="space-y-6">
+            <div className="space-y-4">
+              <h3 className="text-sm font-semibold text-[#D97706] uppercase tracking-wider">Career Configuration</h3>
+              {careerNode.fields.length === 0 && (
+                <p className="text-sm text-[#9CA3AF]">No specific configuration needed for this node.</p>
+              )}
+              {careerNode.fields.map((field) => {
+                if (field.type === 'textarea') {
+                  return (
+                    <FormTextArea
+                      key={field.name}
+                      label={field.label}
+                      value={formData[field.name]}
+                      onChange={(e: any) => updateField(field.name, e.target.value)}
+                      placeholder={field.placeholder}
+                    />
+                  );
+                }
+                if (field.type === 'select') {
+                  return (
+                    <FormSelect
+                      key={field.name}
+                      label={field.label}
+                      value={formData[field.name]}
+                      onChange={(e: any) => updateField(field.name, e.target.value)}
+                      options={field.options || []}
+                    />
+                  );
+                }
+                if (field.type === 'boolean') {
+                  return (
+                    <div key={field.name} className="pt-2">
+                      <FormCheckbox
+                        label={field.label}
+                        checked={formData[field.name]}
+                        onChange={(checked: boolean) => updateField(field.name, checked)}
+                      />
+                    </div>
+                  );
+                }
+                // Default to Input
                 return (
                   <FormInput
                     key={field.name}
