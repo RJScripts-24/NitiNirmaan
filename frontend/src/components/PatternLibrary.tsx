@@ -3,6 +3,8 @@ import { X, ChevronDown, HelpCircle } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import NoiseBackground from './NoiseBackground';
 import HexagonBackground from './HexagonBackground';
+import { supabase } from '../lib/supabase';
+import { useEffect } from 'react';
 
 interface PatternLibraryProps {
   onBack?: () => void;
@@ -20,6 +22,7 @@ const NODE_COLORS = {
 interface TemplateData {
   id: string;
   title: string;
+  description: string;
   institution: string;
   forkedCount: number;
   successRate: 'High' | 'Moderate' | 'Low';
@@ -41,114 +44,7 @@ interface TemplateData {
   };
 }
 
-const templates: TemplateData[] = [
-  {
-    id: '1',
-    title: 'Pratham – Read India Model',
-    institution: 'Pratham',
-    forkedCount: 45,
-    successRate: 'High',
-    theme: ['FLN'],
-    geography: ['Rural'],
-    scale: ['Block'],
-    nodes: [
-      { type: 'stakeholders', label: 'Teacher', x: 60, y: 50 },
-      { type: 'interventions', label: 'Activity Needed', x: 160, y: 50 },
-      { type: 'stakeholders', label: 'Student', x: 260, y: 50 },
-    ],
-    connections: [
-      { from: 0, to: 1 },
-      { from: 1, to: 2 },
-    ],
-    metadata: {
-      geography: 'Rural',
-      operatingScale: 'Block Level',
-      stakeholders: ['Teachers', 'Students', 'Community Volunteers'],
-      constraints: ['Limited infrastructure', 'High student-teacher ratio'],
-    },
-  },
-  {
-    id: '2',
-    title: 'HP Education Dept – NIPUN Bharat 2023',
-    institution: 'HP Education Dept',
-    forkedCount: 32,
-    successRate: 'Moderate',
-    theme: ['FLN'],
-    geography: ['Rural'],
-    scale: ['District'],
-    nodes: [
-      { type: 'stakeholders', label: 'Student', x: 60, y: 50 },
-      { type: 'practiceChange', label: 'Remedial', x: 140, y: 50 },
-      { type: 'interventions', label: 'Digital', x: 200, y: 30 },
-      { type: 'outcomes', label: 'Learning Outcomes', x: 280, y: 50 },
-    ],
-    connections: [
-      { from: 0, to: 1 },
-      { from: 1, to: 2 },
-      { from: 2, to: 3 },
-    ],
-    metadata: {
-      geography: 'Rural',
-      operatingScale: 'District Level',
-      stakeholders: ['Government teachers', 'District officials'],
-      constraints: ['Digital infrastructure gaps', 'Training capacity'],
-    },
-  },
-  {
-    id: '3',
-    title: 'RISE Rajasthan',
-    institution: 'RISE',
-    forkedCount: 27,
-    successRate: 'High',
-    theme: ['Leadership'],
-    geography: ['Rural'],
-    scale: ['Block'],
-    nodes: [
-      { type: 'stakeholders', label: 'Student', x: 60, y: 50 },
-      { type: 'interventions', label: 'Moderate', x: 150, y: 50 },
-      { type: 'stakeholders', label: 'Classroom Change', x: 240, y: 30 },
-      { type: 'resources', label: 'Period', x: 240, y: 70 },
-    ],
-    connections: [
-      { from: 0, to: 1 },
-      { from: 1, to: 2 },
-      { from: 1, to: 3 },
-    ],
-    metadata: {
-      geography: 'Rural',
-      operatingScale: 'Block Level',
-      stakeholders: ['School leaders', 'Teachers', 'Students'],
-      constraints: ['Leadership turnover', 'Resource allocation'],
-    },
-  },
-  {
-    id: '4',
-    title: 'Quest Alliance – Anandshala Model',
-    institution: 'Quest Alliance',
-    forkedCount: 19,
-    successRate: 'Moderate',
-    theme: ['STEM'],
-    geography: ['Mixed Contexts'],
-    scale: ['School'],
-    nodes: [
-      { type: 'stakeholders', label: 'Fedral', x: 60, y: 50 },
-      { type: 'stakeholders', label: 'Learner', x: 140, y: 30 },
-      { type: 'interventions', label: 'Digital', x: 200, y: 50 },
-      { type: 'stakeholders', label: 'Modware', x: 280, y: 50 },
-    ],
-    connections: [
-      { from: 0, to: 1 },
-      { from: 1, to: 2 },
-      { from: 2, to: 3 },
-    ],
-    metadata: {
-      geography: 'Mixed Contexts',
-      operatingScale: 'School',
-      stakeholders: ['Students', 'Teachers', 'Technology partners'],
-      constraints: ['Digital literacy', 'Device availability'],
-    },
-  },
-];
+
 
 export default function PatternLibrary({ onBack }: PatternLibraryProps) {
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateData | null>(null);
@@ -157,10 +53,54 @@ export default function PatternLibrary({ onBack }: PatternLibraryProps) {
     geography: string[];
     scale: string[];
   }>({
-    theme: ['FLN', 'Rural'],
+    theme: [],
     geography: [],
     scale: [],
   });
+
+  const [searchQuery, setSearchQuery] = useState('');
+  const [templates, setTemplates] = useState<TemplateData[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch Templates from Supabase
+  useEffect(() => {
+    async function fetchTemplates() {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('projects')
+        .select('*')
+        .eq('is_template', true);
+
+      if (error) {
+        console.error('Error fetching templates:', error);
+      } else if (data) {
+        // Map Database Row -> Frontend TemplateData
+        const realTemplates: TemplateData[] = data.map((row: any) => ({
+          id: row.id,
+          title: row.title,
+          description: row.description || '',
+          institution: row.institution || 'NitiNirmaan',
+          forkedCount: 120, // Mock for now, or add to DB
+          successRate: row.metadata?.success_rate || 'High',
+          theme: row.primary_domain ? [row.primary_domain] : ['General'], // Ensure array
+          geography: row.geography ? [row.geography] : [],
+          scale: row.operating_scale ? [row.operating_scale] : [],
+          nodes: [], // row.nodes (if we stored them) or empty
+          connections: [],
+          metadata: {
+            geography: row.geography,
+            operatingScale: row.operating_scale,
+            stakeholders: ['Community', 'Government'], // Mock or from metadata
+            constraints: ['Resource constraints'] // Mock
+          }
+        }));
+        setTemplates(realTemplates);
+      }
+      setLoading(false);
+    }
+
+    fetchTemplates();
+  }, []);
 
   const toggleFilter = (category: 'theme' | 'geography' | 'scale', value: string) => {
     setActiveFilters((prev) => {
@@ -184,15 +124,22 @@ export default function PatternLibrary({ onBack }: PatternLibraryProps) {
   };
 
   const filteredTemplates = templates.filter((template) => {
-    const allFilters = [...activeFilters.theme, ...activeFilters.geography, ...activeFilters.scale];
-    if (allFilters.length === 0) return true;
+    // Search Filter
+    const matchesSearch = searchQuery === '' ||
+      template.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      template.description.toLowerCase().includes(searchQuery.toLowerCase());
 
-    return allFilters.some(
-      (filter) =>
-        template.theme.includes(filter) ||
-        template.geography.includes(filter) ||
-        template.scale.includes(filter)
-    );
+    // Category Filters
+    const matchesTheme = activeFilters.theme.length === 0 ||
+      template.theme.some(t => activeFilters.theme.includes(t));
+
+    const matchesGeography = activeFilters.geography.length === 0 ||
+      template.geography.some(g => activeFilters.geography.includes(g));
+
+    const matchesScale = activeFilters.scale.length === 0 ||
+      template.scale.some(s => activeFilters.scale.includes(s));
+
+    return matchesSearch && matchesTheme && matchesGeography && matchesScale;
   });
 
   const hasActiveFilters =
@@ -218,9 +165,9 @@ export default function PatternLibrary({ onBack }: PatternLibraryProps) {
         <div className="max-w-[1920px] mx-auto px-6 py-4 flex items-center justify-between relative" style={{ zIndex: 10, pointerEvents: 'none' }}>
           {/* Logo */}
           <div className="flex-shrink-0">
-            <img 
-              src="/logo-2.png" 
-              alt="NitiNirmaan" 
+            <img
+              src="/logo-2.png"
+              alt="NitiNirmaan"
               className="h-14 w-auto object-contain"
             />
           </div>
