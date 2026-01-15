@@ -1242,7 +1242,15 @@ function AICompanionWidget({ show, onToggle, nodes, edges }: { show: boolean; on
   ]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [isExpanded, setIsExpanded] = useState(false);
+
+  // Window State
+  const [position, setPosition] = useState({ x: window.innerWidth - 370, y: window.innerHeight - 520 });
+  const [size, setSize] = useState({ width: 350, height: 500 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [isResizing, setIsResizing] = useState(false);
+  const dragRef = useRef<{ startX: number; startY: number; startLeft: number; startTop: number } | null>(null);
+  const resizeRef = useRef<{ startX: number; startY: number; startWidth: number; startHeight: number } | null>(null);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -1253,6 +1261,68 @@ function AICompanionWidget({ show, onToggle, nodes, edges }: { show: boolean; on
     scrollToBottom();
   }, [messages]);
 
+  // Handle Dragging
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (e.target instanceof Element && (e.target.closest('button') || e.target.closest('input'))) return;
+    setIsDragging(true);
+    dragRef.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      startLeft: position.x,
+      startTop: position.y
+    };
+  };
+
+  // Handle Resizing
+  const handleResizeStart = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsResizing(true);
+    resizeRef.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      startWidth: size.width,
+      startHeight: size.height
+    };
+  };
+
+  // Global Mouse Move/Up listeners
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (isDragging && dragRef.current) {
+        const dx = e.clientX - dragRef.current.startX;
+        const dy = e.clientY - dragRef.current.startY;
+        setPosition({
+          x: dragRef.current.startLeft + dx,
+          y: dragRef.current.startTop + dy
+        });
+      }
+      if (isResizing && resizeRef.current) {
+        const dx = e.clientX - resizeRef.current.startX;
+        const dy = e.clientY - resizeRef.current.startY;
+        setSize({
+          width: Math.max(300, resizeRef.current.startWidth + dx),
+          height: Math.max(400, resizeRef.current.startHeight + dy)
+        });
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+      setIsResizing(false);
+      dragRef.current = null;
+      resizeRef.current = null;
+    };
+
+    if (isDragging || isResizing) {
+      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mouseup', handleMouseUp);
+    }
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging, isResizing]);
+
   // Load initial greeting based on persona
   useEffect(() => {
     const savedData = localStorage.getItem('current_mission_data');
@@ -1260,9 +1330,7 @@ function AICompanionWidget({ show, onToggle, nodes, edges }: { show: boolean; on
       try {
         const parsed = JSON.parse(savedData);
         if (parsed.aiCompanion === 'critical') {
-          setMessages([{ role: 'assistant', content: 'I am here to review your logic. Please show me your evidence.' }]);
-        } else {
-          setMessages([{ role: 'assistant', content: 'Hello! I am here to support your design process.' }]);
+          setMessages(prev => prev[0]?.role === 'assistant' ? [{ role: 'assistant', content: 'I am here to review your logic. Please show me your evidence.' }] : prev);
         }
       } catch (e) {
         console.error("Error parsing mission data", e);
@@ -1295,7 +1363,7 @@ function AICompanionWidget({ show, onToggle, nodes, edges }: { show: boolean; on
         nodes: nodes.map(n => ({
           id: n.id,
           type: n.data.type || n.type,
-          data: n.data  // Send ALL data (evidence, coreChallenge, etc.)
+          data: n.data
         })),
         edges: edges.map(e => ({ source: e.source, target: e.target }))
       };
@@ -1340,96 +1408,113 @@ function AICompanionWidget({ show, onToggle, nodes, edges }: { show: boolean; on
     }
   };
 
+  if (!show) {
+    return (
+      <button
+        onClick={onToggle}
+        className="fixed bottom-6 right-6 w-16 h-16 rounded-full flex items-center justify-center shadow-lg hover:opacity-80 transition-all animate-pulse p-0 overflow-hidden relative cursor-pointer border-0 z-30"
+      >
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="w-full h-full object-cover rounded-full"
+        >
+          <source src="/BeeBot.mp4" type="video/mp4" />
+        </video>
+      </button>
+    );
+  }
+
   return (
-    <div className={`fixed bottom-6 right-6 z-30 flex flex-col transition-all duration-300 ${isExpanded ? 'w-[600px] h-[85vh]' : 'w-80 max-h-[500px]'}`}>
-      {show ? (
-        <div className={`bg-[#0F1216] border border-[#D97706] rounded-lg shadow-xl flex flex-col w-full h-full overflow-hidden`}>
-          <div className="p-4 border-b border-[#D97706]/30 flex items-center justify-between bg-[#171B21] flex-shrink-0">
-            <div className="flex items-center gap-2">
-              <Bot className="w-5 h-5 text-[#D97706]" />
-              <span className="text-[#E5E7EB] font-medium">AI Companion</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setIsExpanded(!isExpanded)}
-                className="w-8 h-8 hover:bg-[#1F2937] text-[#9CA3AF]"
-              >
-                {isExpanded ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={onToggle}
-                className="w-8 h-8 hover:bg-[#1F2937]"
-              >
-                <X className="w-4 h-4 text-[#9CA3AF]" />
-              </Button>
-            </div>
+    <div
+      className="fixed z-30 flex flex-col"
+      style={{
+        left: position.x,
+        top: position.y,
+        width: size.width,
+        height: size.height
+      }}
+    >
+      <div className="bg-[#0F1216] border border-[#D97706] rounded-lg shadow-2xl flex flex-col w-full h-full overflow-hidden relative">
+        {/* Header - Draggable */}
+        <div
+          className="p-4 border-b border-[#D97706]/30 flex items-center justify-between bg-[#171B21] flex-shrink-0 cursor-move select-none"
+          onMouseDown={handleMouseDown}
+        >
+          <div className="flex items-center gap-2">
+            <Bot className="w-5 h-5 text-[#D97706]" />
+            <span className="text-[#E5E7EB] font-medium">Bee Bot</span>
           </div>
-
-          <div className="p-4 overflow-y-auto flex-1 space-y-4 custom-scrollbar min-h-0">
-            {messages.map((msg, idx) => (
-              <div key={idx} className={`flex items-start gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${msg.role === 'assistant' ? 'bg-[#D97706]/20' : 'bg-[#374151]'}`}>
-                  {msg.role === 'assistant' ? <Bot className="w-4 h-4 text-[#D97706]" /> : <User className="w-4 h-4 text-[#E5E7EB]" />}
-                </div>
-                <div className={`max-w-[80%] rounded-lg p-3 text-sm ${msg.role === 'assistant' ? 'bg-[#1F2937] text-[#E5E7EB]' : 'bg-[#D97706] text-[#0F1216]'}`}>
-                  {msg.content}
-                </div>
-              </div>
-            ))}
-            {isLoading && (
-              <div className="flex items-start gap-3">
-                <div className="w-8 h-8 bg-[#D97706]/20 rounded-full flex items-center justify-center flex-shrink-0">
-                  <Bot className="w-4 h-4 text-[#D97706]" />
-                </div>
-                <div className="bg-[#1F2937] text-[#E5E7EB] rounded-lg p-3 text-sm">
-                  <span className="animate-pulse">Thinking...</span>
-                </div>
-              </div>
-            )}
-            <div ref={messagesEndRef} />
-          </div>
-
-          <div className="p-3 border-t border-[#2D3340] bg-[#171B21] rounded-b-lg">
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-                placeholder="Type a message..."
-                className="flex-1 px-3 py-2 bg-[#0F1216] border border-[#374151] rounded text-[#E5E7EB] placeholder-[#6B7280] focus:outline-none focus:border-[#D97706] text-sm"
-              />
-              <Button
-                onClick={handleSendMessage}
-                disabled={isLoading || !inputValue.trim()}
-                size="icon"
-                className="bg-[#D97706] hover:bg-[#B45309] text-[#0F1216]"
-              >
-                <ArrowRight className="w-4 h-4" />
-              </Button>
-            </div>
+          <div className="flex items-center gap-2">
+            <Move className="w-4 h-4 text-[#6B7280]" />
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onToggle}
+              className="w-8 h-8 hover:bg-[#1F2937]"
+            >
+              <X className="w-4 h-4 text-[#9CA3AF]" />
+            </Button>
           </div>
         </div>
-      ) : (
-        <button
-          onClick={onToggle}
-          className="w-16 h-16 rounded-full flex items-center justify-center shadow-lg hover:opacity-80 transition-all animate-pulse p-0 overflow-hidden relative cursor-pointer border-0"
-        >
-          <video
-            autoPlay
-            loop
-            muted
-            playsInline
-            className="w-full h-full object-cover rounded-full"
+
+        {/* Messages Body - Scrollable */}
+        <div className="p-4 overflow-y-auto flex-1 space-y-4 custom-scrollbar min-h-0 bg-[#0F1216]">
+          {messages.map((msg, idx) => (
+            <div key={idx} className={`flex items-start gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${msg.role === 'assistant' ? 'bg-[#D97706]/20' : 'bg-[#374151]'}`}>
+                {msg.role === 'assistant' ? <Bot className="w-4 h-4 text-[#D97706]" /> : <User className="w-4 h-4 text-[#E5E7EB]" />}
+              </div>
+              <div className={`max-w-[85%] rounded-lg p-3 text-sm leading-relaxed ${msg.role === 'assistant' ? 'bg-[#1F2937] text-[#E5E7EB]' : 'bg-[#D97706] text-[#0F1216]'}`}>
+                {msg.content}
+              </div>
+            </div>
+          ))}
+          {isLoading && (
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 bg-[#D97706]/20 rounded-full flex items-center justify-center flex-shrink-0">
+                <Bot className="w-4 h-4 text-[#D97706]" />
+              </div>
+              <div className="bg-[#1F2937] text-[#E5E7EB] rounded-lg p-3 text-sm">
+                <span className="animate-pulse">Thinking...</span>
+              </div>
+            </div>
+          )}
+          <div ref={messagesEndRef} />
+        </div>
+
+        {/* Footer - Fixed */}
+        <div className="p-3 border-t border-[#2D3340] bg-[#171B21] flex-shrink-0 relative">
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+              placeholder="Ask Bee Bot..."
+              className="flex-1 px-3 py-2 bg-[#0F1216] border border-[#374151] rounded text-[#E5E7EB] placeholder-[#6B7280] focus:outline-none focus:border-[#D97706] text-sm"
+            />
+            <Button
+              onClick={handleSendMessage}
+              disabled={isLoading || !inputValue.trim()}
+              size="icon"
+              className="bg-[#D97706] hover:bg-[#B45309] text-[#0F1216]"
+            >
+              <ArrowRight className="w-4 h-4" />
+            </Button>
+          </div>
+
+          {/* Resize Handle */}
+          <div
+            className="absolute bottom-0 right-0 w-4 h-4 cursor-se-resize flex items-center justify-center z-40"
+            onMouseDown={handleResizeStart}
           >
-            <source src="/BeeBot.mp4" type="video/mp4" />
-          </video>
-        </button>
-      )}
+            <GripHorizontal className="w-3 h-3 text-[#6B7280] rotate-45" />
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
