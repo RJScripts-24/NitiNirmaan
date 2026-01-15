@@ -1,7 +1,9 @@
 import { Router } from 'express';
-import { authMiddleware } from '../middleware/auth.js';
+import { optionalAuthMiddleware } from '../middleware/auth.js';
 import type { Node, Edge } from '../types/canvas.js';
 import type { LogicError, SimulationResult, SimulationStatus } from '../types/simulation.js';
+import { compileCareerGraphToLFA } from '../services/careerCompiler.js';
+import { generateJSON } from '../lib/ai/groq.js';
 
 export const simulationRouter = Router();
 
@@ -9,15 +11,77 @@ export const simulationRouter = Router();
 const MAX_INTERVENTIONS_PER_TEACHER = 3; // Hard limit for "Burden" check
 
 // --- RUN SIMULATION ---
-simulationRouter.post('/:projectId', authMiddleware, async (req, res) => {
+// Using optionalAuthMiddleware to allow guest mode simulations
+simulationRouter.post('/:projectId', optionalAuthMiddleware, async (req, res) => {
     try {
-        const supabase = req.supabaseClient! as any;
+        const supabase = req.supabaseClient; // May be undefined in guest mode
         const projectId = req.params.projectId;
-        const { nodes, edges } = req.body as { nodes: Node[], edges: Edge[] };
+        const { nodes, edges, domain } = req.body as { nodes: Node[], edges: Edge[], domain?: string };
 
         if (!nodes || !edges) {
             return res.status(400).json({ error: 'Missing nodes or edges' });
         }
+
+        // --- CAREER READINESS LOGIC ---
+        if (domain === 'Career Readiness') {
+            console.log('📊 [Simulation] Career Readiness mode detected');
+            console.log('📊 [Simulation] ProjectId:', projectId);
+
+            // DEBUG: Log full nodes to see structure
+            console.log('🔍 [DEBUG] Nodes Payload:', JSON.stringify(nodes, null, 2));
+
+            try {
+                // 1. Compile Graph to LFA
+                console.log('🔧 [Simulation] Compiling graph to LFA...');
+                const lfa = compileCareerGraphToLFA(nodes, edges);
+                console.log('✅ [Simulation] LFA compiled successfully:', JSON.stringify(lfa, null, 2));
+
+                // 2. AI Analysis via Groq
+                console.log('🤖 [Simulation] Calling Groq AI for analysis...');
+                const systemPrompt = `You are an implementation expert for "School-to-Work" transition programs in India.
+Analyze the provided Logical Framework Analysis (LFA) document.
+Return a JSON object with:
+- "shortcomings": string[] (Critical logic gaps, e.g., missing market linkages, unrealistic assumptions)
+- "suggestions": string[] (Actionable improvements)
+- "overallAssessment": string (Brief summary)
+If the plan is solid, return empty arrays.`;
+
+                const userPrompt = JSON.stringify(lfa, null, 2);
+                const aiResult = await generateJSON(systemPrompt, userPrompt);
+                console.log('✅ [Simulation] AI analysis result:', JSON.stringify(aiResult, null, 2));
+
+                // 3. Construct Result
+                const result = {
+                    status: (aiResult?.shortcomings?.length || 0) > 0 ? 'warning' : 'success',
+                    score: Math.max(0, 100 - ((aiResult?.shortcomings?.length || 0) * 10)),
+                    lfa,
+                    shortcomings: aiResult?.shortcomings || [],
+                    suggestions: aiResult?.suggestions || [],
+                    overallAssessment: aiResult?.overallAssessment || 'Analysis complete.',
+                    errors: [] // Standard simulation errors (legacy format)
+                };
+
+                console.log('✅ [Simulation] Sending response with status:', result.status);
+                return res.json(result);
+
+            } catch (compilerError: any) {
+                console.error('❌ [Simulation] Career Readiness error:', compilerError);
+                console.error('❌ [Simulation] Error stack:', compilerError.stack);
+
+                // Return structured error response instead of 400, so frontend can show it in the modal
+                return res.json({
+                    status: 'failure',
+                    score: 0,
+                    lfa: { goal: null, outcomes: [], outputs: [], activities: [] },
+                    shortcomings: [compilerError.message],
+                    suggestions: ["Place a 'Sustainable Income' or 'Self Employment' node to define your goal."],
+                    overallAssessment: "Simulation cannot proceed due to critical logic gaps.",
+                    errors: []
+                });
+            }
+        }
+
+        // --- FLN / DEFAULT LOGIC ---
 
         const errors: LogicError[] = [];
         let score = 100;
@@ -116,11 +180,13 @@ simulationRouter.post('/:projectId', authMiddleware, async (req, res) => {
         // --- CALCULATE FINAL STATUS ---
         const status: SimulationStatus = score === 100 ? 'success' : (score > 60 ? 'warning' : 'failure');
 
-        // --- UPDATE DATABASE (Gamification) ---
-        await supabase
-            .from('projects')
-            .update({ logic_health_score: Math.max(0, score) } as any)
-            .eq('id', projectId);
+        // --- UPDATE DATABASE (Gamification) - only if authenticated ---
+        if (supabase && projectId !== 'guest') {
+            await supabase
+                .from('projects')
+                .update({ logic_health_score: Math.max(0, score) } as any)
+                .eq('id', projectId);
+        }
 
         const result: SimulationResult = {
             status,
