@@ -18,10 +18,10 @@ function getGroqClient(): Groq {
 }
 
 // Define the models we will use for NitiNirmaan
-// We use Llama 3 70B for complex logic (Simulation) and 8B for fast chat
+// We use Llama 3.3 70B for complex logic (Simulation) and 3.1 8B for fast chat
 export const AI_MODELS = {
-    COMPLEX: 'llama3-70b-8192', // For "Simulation Engine" & "Boss Battle"
-    FAST: 'llama3-8b-8192',     // For "AI Chat Widget" & suggestions
+    COMPLEX: 'llama-3.3-70b-versatile', // For "Simulation Engine" & "Boss Battle"
+    FAST: 'llama-3.1-8b-instant',     // For "AI Chat Widget" & suggestions
 };
 
 /**

@@ -80,13 +80,16 @@ export default function App() {
       const hash = window.location.hash.slice(1) as PageType; // Remove #
       if (hash && hash !== currentPage) {
         // Validate hash is a valid PageType, otherwise default to landing
+        console.log('Routing to:', hash);
         const validPages: PageType[] = ['landing', 'auth', 'dashboard', 'patterns', 'initialize', 'builder', 'preview', 'settings'];
         if (validPages.includes(hash)) {
           setCurrentPage(hash);
         } else {
+          console.warn('Invalid hash, redirecting to landing:', hash);
           setCurrentPage('landing');
         }
       } else if (!hash) {
+        console.log('No hash, default to landing');
         setCurrentPage('landing');
       }
     };

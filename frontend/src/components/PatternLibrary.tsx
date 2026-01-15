@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, ChevronDown, HelpCircle } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import NoiseBackground from './NoiseBackground';
 import HexagonBackground from './HexagonBackground';
 import { supabase } from '../lib/supabase';
-import { useEffect } from 'react';
+import ImpactCanvas from "./ImpactCanvas";
+import { Node, Edge } from "reactflow";
 
 interface PatternLibraryProps {
   onBack?: () => void;
@@ -82,16 +83,16 @@ export default function PatternLibrary({ onBack }: PatternLibraryProps) {
           institution: row.institution || 'NitiNirmaan',
           forkedCount: 120, // Mock for now, or add to DB
           successRate: row.metadata?.success_rate || 'High',
-          theme: row.primary_domain ? [row.primary_domain] : ['General'], // Ensure array
+          theme: row.primary_domain ? [row.primary_domain] : ['General'],
           geography: row.geography ? [row.geography] : [],
           scale: row.operating_scale ? [row.operating_scale] : [],
-          nodes: [], // row.nodes (if we stored them) or empty
+          nodes: [], // loaded on demand
           connections: [],
           metadata: {
             geography: row.geography,
             operatingScale: row.operating_scale,
-            stakeholders: ['Community', 'Government'], // Mock or from metadata
-            constraints: ['Resource constraints'] // Mock
+            stakeholders: ['Community', 'Government'],
+            constraints: ['Resource constraints']
           }
         }));
         setTemplates(realTemplates);
@@ -101,6 +102,78 @@ export default function PatternLibrary({ onBack }: PatternLibraryProps) {
 
     fetchTemplates();
   }, []);
+
+  // --- Preview Logic ---
+  const [previewNodes, setPreviewNodes] = useState<Node[]>([]);
+  const [previewEdges, setPreviewEdges] = useState<Edge[]>([]);
+  const [loadingPreview, setLoadingPreview] = useState(false);
+
+  // Load graph data when a template is selected
+  useEffect(() => {
+    if (selectedTemplate) {
+      async function loadGraph() {
+        setLoadingPreview(true);
+        const { data: nodesData } = await supabase.from('nodes').select('*').eq('project_id', selectedTemplate?.id);
+        const { data: edgesData } = await supabase.from('edges').select('*').eq('project_id', selectedTemplate?.id);
+
+        if (nodesData) setPreviewNodes(nodesData.map((n: any) => ({ ...n, data: typeof n.data === 'string' ? JSON.parse(n.data) : n.data, position: typeof n.position === 'string' ? JSON.parse(n.position) : n.position })));
+        if (edgesData) setPreviewEdges(edgesData.map((e: any) => ({ ...e })));
+        setLoadingPreview(false);
+      }
+      loadGraph();
+    } else {
+      setPreviewNodes([]);
+      setPreviewEdges([]);
+    }
+  }, [selectedTemplate]);
+
+  const handleFork = async (templateId: string) => {
+    // Check for Guest Mode
+    const isGuest = localStorage.getItem('niti_guest_mode') === 'true';
+
+    // User check (only if not guest)
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user && !isGuest) return alert("Please sign in to fork patterns.");
+
+    if (isGuest) {
+      // GUEST FORK: Store in localStorage
+      const template = templates.find(t => t.id === templateId);
+      if (template) {
+        // Create a full project object for the guest
+        const guestProject = {
+          id: 'guest-project-' + Date.now(),
+          title: template.title + ' (Guest Copy)',
+          nodes: previewNodes, // Use the fetched nodes
+          edges: previewEdges,
+          isGuest: true
+        };
+        localStorage.setItem('guest_active_project', JSON.stringify(guestProject));
+        // Ensure standard active project ID is cleared or set to guest indicator
+        localStorage.removeItem('active_project_id');
+        alert('Pattern cloned to Guest Workspace! Redirecting...');
+        console.log('Redirecting to builder for Guest...');
+        window.location.hash = 'builder';
+        return;
+      }
+    }
+
+    // AUTH FORK: DB RPC
+    const { data, error } = await supabase.rpc('fork_project', {
+      p_template_id: templateId,
+      p_owner_id: user?.id
+    });
+
+    if (error) {
+      console.error('Forking failed:', error);
+      alert('Failed to fork project.');
+    } else {
+      // Redirect to the new project
+      localStorage.setItem('active_project_id', data); // Store the new project ID for the builder to load
+      alert('Project forked successfully! Redirecting...');
+      window.location.hash = `builder`;
+    }
+  };
 
   const toggleFilter = (category: 'theme' | 'geography' | 'scale', value: string) => {
     setActiveFilters((prev) => {
@@ -376,7 +449,11 @@ export default function PatternLibrary({ onBack }: PatternLibraryProps) {
       {selectedTemplate && (
         <TemplatePreviewModal
           template={selectedTemplate}
+          nodes={previewNodes}
+          edges={previewEdges}
+          isLoading={loadingPreview}
           onClose={() => setSelectedTemplate(null)}
+          onFork={() => handleFork(selectedTemplate.id)}
         />
       )}
     </div>
@@ -591,16 +668,24 @@ function TemplateCard({
 // Template Preview Modal
 function TemplatePreviewModal({
   template,
+  nodes,
+  edges,
+  isLoading,
   onClose,
+  onFork
 }: {
   template: TemplateData;
+  nodes: Node[];
+  edges: Edge[];
+  isLoading: boolean;
   onClose: () => void;
+  onFork: () => void;
 }) {
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-6">
-      <div className="bg-[#171B21] rounded-lg max-w-5xl w-full max-h-[90vh] overflow-auto">
+      <div className="bg-[#171B21] rounded-lg max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-[#2D3340]">
+        <div className="flex items-center justify-between p-6 border-b border-[#2D3340] flex-shrink-0">
           <h2 className="text-[#E5E7EB] text-xl font-semibold">{template.title}</h2>
           <Button
             variant="ghost"
@@ -611,92 +696,38 @@ function TemplatePreviewModal({
           </Button>
         </div>
 
-        <div className="p-6 flex gap-6">
-          {/* Impact Canvas */}
-          <div className="flex-1">
-            <h3 className="text-[#E5E7EB] text-sm font-medium mb-3">Impact Canvas</h3>
-            <div className="bg-[#0F1216] rounded-lg p-8 relative" style={{ height: '400px' }}>
-              {/* Grid background */}
-              <div
-                className="absolute inset-0 opacity-10"
-                style={{
-                  backgroundImage: `
-                    linear-gradient(#374151 1px, transparent 1px),
-                    linear-gradient(90deg, #374151 1px, transparent 1px)
-                  `,
-                  backgroundSize: '20px 20px',
-                }}
-              ></div>
+        <div className="flex-1 flex overflow-hidden">
+          {/* Impact Canvas Preview */}
+          <div className="flex-1 bg-[#0F1216] relative flex flex-col">
+            <h3 className="text-[#E5E7EB] text-sm font-medium p-4 absolute top-0 left-0 z-10 bg-black/50 rounded-br">Impact Canvas Preview</h3>
 
-              {/* Logic graph - larger version */}
-              <svg className="absolute inset-0 w-full h-full" viewBox="0 0 600 400" style={{ padding: '20px' }}>
-                {/* Draw connections */}
-                {template.connections.map((conn, i) => {
-                  const fromNode = template.nodes[conn.from];
-                  const toNode = template.nodes[conn.to];
-                  return (
-                    <line
-                      key={i}
-                      x1={fromNode.x * 1.8}
-                      y1={fromNode.y * 2.5}
-                      x2={toNode.x * 1.8}
-                      y2={toNode.y * 2.5}
-                      stroke="#6B7280"
-                      strokeWidth="3"
-                    />
-                  );
-                })}
-
-                {/* Draw nodes */}
-                {template.nodes.map((node, i) => (
-                  <g key={i}>
-                    <rect
-                      x={node.x * 1.8 - 50}
-                      y={node.y * 2.5 - 20}
-                      width="100"
-                      height="40"
-                      rx="6"
-                      fill={NODE_COLORS[node.type]}
-                    />
-                    <text
-                      x={node.x * 1.8}
-                      y={node.y * 2.5 + 6}
-                      textAnchor="middle"
-                      fill="#E5E7EB"
-                      fontSize="14"
-                      fontWeight="500"
-                    >
-                      {node.label}
-                    </text>
-                  </g>
-                ))}
-              </svg>
-
-              {/* Zoom controls */}
-              <div className="absolute bottom-4 left-4 flex gap-2">
-                <Button className="w-8 h-8 p-0 bg-[#1F2937] rounded flex items-center justify-center hover:bg-[#374151] transition-colors border-none">
-                  <svg className="w-4 h-4 text-[#9CA3AF]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v6m3-3H7" />
-                  </svg>
-                </Button>
-                <Button className="w-8 h-8 p-0 bg-[#1F2937] rounded flex items-center justify-center hover:bg-[#374151] transition-colors border-none">
-                  <svg className="w-4 h-4 text-[#9CA3AF]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 10H7" />
-                  </svg>
-                </Button>
-                <Button className="w-8 h-8 p-0 bg-[#1F2937] rounded flex items-center justify-center hover:bg-[#374151] transition-colors border-none">
-                  <svg className="w-4 h-4 text-[#9CA3AF]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l5-5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
-                  </svg>
-                </Button>
+            {isLoading ? (
+              <div className="flex items-center justify-center h-full text-[#9CA3AF]">Loading logic graph...</div>
+            ) : (
+              <div className="flex-1 w-full h-full">
+                <ImpactCanvas
+                  projectName={template.title}
+                  initialNodes={nodes}
+                  initialEdges={edges}
+                  readOnly={true}
+                // Hide controls for cleaner preview if needed, or keep them
+                />
               </div>
-            </div>
+            )}
           </div>
 
-          {/* Metadata Panel */}
-          <div className="w-80 flex-shrink-0">
+          {/* Metadata Panel (Sidebar) */}
+          <div className="w-80 flex-shrink-0 bg-[#171B21] border-l border-[#2D3340] p-6 overflow-y-auto">
             <h3 className="text-[#E5E7EB] text-sm font-medium mb-3">Context Metadata</h3>
             <div className="space-y-4 mb-6">
+              <div>
+                <label className="text-[#9CA3AF] text-xs">Description</label>
+                <p className="text-[#E5E7EB] text-sm mt-1">{template.description}</p>
+              </div>
+              <div>
+                <label className="text-[#9CA3AF] text-xs">Institution</label>
+                <p className="text-[#E5E7EB] text-sm">{template.institution}</p>
+              </div>
               <div>
                 <label className="text-[#9CA3AF] text-xs">Forked</label>
                 <p className="text-[#E5E7EB] text-sm">{template.forkedCount} times</p>
@@ -713,26 +744,13 @@ function TemplatePreviewModal({
                 <label className="text-[#9CA3AF] text-xs">Operating Scale</label>
                 <p className="text-[#E5E7EB] text-sm">{template.metadata.operatingScale}</p>
               </div>
-              <div>
-                <label className="text-[#9CA3AF] text-xs">Stakeholders</label>
-                <ul className="text-[#E5E7EB] text-sm space-y-1">
-                  {template.metadata.stakeholders.map((s, i) => (
-                    <li key={i}>• {s}</li>
-                  ))}
-                </ul>
-              </div>
-              <div>
-                <label className="text-[#9CA3AF] text-xs">Known constraints</label>
-                <ul className="text-[#E5E7EB] text-sm space-y-1">
-                  {template.metadata.constraints.map((c, i) => (
-                    <li key={i}>• {c}</li>
-                  ))}
-                </ul>
-              </div>
             </div>
 
             {/* Primary CTA */}
-            <Button className="w-full py-3 bg-[#D97706] text-[#0F1216] rounded font-semibold hover:bg-[#B45309] transition-colors h-auto">
+            <Button
+              onClick={onFork}
+              className="w-full py-3 bg-[#D97706] text-[#0F1216] rounded font-semibold hover:bg-[#B45309] transition-colors h-auto"
+            >
               Fork this Logic
             </Button>
             <p className="text-[#6B7280] text-xs mt-2 text-center">

@@ -16,6 +16,8 @@ import ReactFlow, {
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import {
+  ArrowRight,
+  User,
   Undo2,
   Redo2,
   ZoomIn,
@@ -60,8 +62,13 @@ import {
   Lock,
   Save,
   Trash2,
+  Maximize2,
+  Minimize2,
+  Move,
+  GripHorizontal,
 } from 'lucide-react';
 import { Button } from './ui/button';
+import { supabase } from '../lib/supabase';
 
 import HexagonBackground from './HexagonBackground';
 
@@ -70,6 +77,9 @@ interface ImpactCanvasProps {
   onBack?: () => void;
   onSimulationComplete?: () => void;
   onSettings?: () => void;
+  initialNodes?: Node[];
+  initialEdges?: Edge[];
+  readOnly?: boolean;
 }
 
 // Node type colors
@@ -120,9 +130,19 @@ const nodeTypes = {
   customNode: CustomNode,
 };
 
-export default function ImpactCanvas({ projectName = 'FLN Improvement – Bihar (2026)', onBack, onSimulationComplete, onSettings }: ImpactCanvasProps) {
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+export default function ImpactCanvas({
+  projectName = 'FLN Improvement – Bihar (2026)',
+  onBack,
+  onSimulationComplete,
+  onSettings,
+  initialNodes: propNodes,
+  initialEdges: propEdges,
+  readOnly = false
+}: ImpactCanvasProps) {
+  // Use propNodes if available, otherwise fallback to default initialNodes or empty array
+  const [nodes, setNodes, onNodesChange] = useNodesState(propNodes || initialNodes);
+  const [edges, setEdges, onEdgesChange] = useEdgesState(propEdges || initialEdges); // Assuming initialEdges exists or should be empty array
+
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
   const [selectedEdge, setSelectedEdge] = useState<Edge | null>(null);
   const [showAICompanion, setShowAICompanion] = useState(false);
@@ -134,6 +154,52 @@ export default function ImpactCanvas({ projectName = 'FLN Improvement – Bihar 
   const [showInspector, setShowInspector] = useState(false);
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
+
+  // Sync state if props change (for template selection) or load from Storage/DB
+  useEffect(() => {
+    // 1. If props provided (Preview Mode), use them
+    if (propNodes) {
+      setNodes(propNodes);
+      if (propEdges) setEdges(propEdges);
+      return;
+    }
+
+    // 2. Check for active project ID (Auth Mode - Builder)
+    const activeProjectId = localStorage.getItem('active_project_id');
+    if (activeProjectId) {
+      async function loadProject() {
+        const { data: project } = await supabase.from('projects').select('*').eq('id', activeProjectId).single();
+        if (project) setCurrentProjectName(project.title);
+
+        const { data: nodesData, error: nodesError } = await supabase.from('nodes').select('*').eq('project_id', activeProjectId);
+        const { data: edgesData, error: edgesError } = await supabase.from('edges').select('*').eq('project_id', activeProjectId);
+
+        console.log('Fetching Project:', activeProjectId);
+        if (nodesError) console.error('Nodes Error:', nodesError);
+        console.log('Nodes Data:', nodesData?.length);
+
+        if (nodesData) {
+          setNodes(nodesData.map((n: any) => ({
+            ...n,
+            data: typeof n.data === 'string' ? JSON.parse(n.data) : n.data,
+            position: typeof n.position === 'string' ? JSON.parse(n.position) : n.position
+          })));
+        }
+        if (edgesData) setEdges(edgesData);
+      }
+      loadProject();
+      return;
+    }
+
+    // 3. Guest Mode Loading logic
+    const guestProjectRaw = localStorage.getItem('guest_active_project');
+    if (guestProjectRaw) {
+      const guestProject = JSON.parse(guestProjectRaw);
+      if (guestProject.nodes) setNodes(guestProject.nodes);
+      if (guestProject.edges) setEdges(guestProject.edges);
+      if (guestProject.title) setCurrentProjectName(guestProject.title);
+    }
+  }, [propNodes, propEdges, setNodes, setEdges]);
 
   // Check if Problem Statement has been placed on canvas
   const hasProblemStatement = nodes.some(node => node.data.type === 'problemStatement');
@@ -194,6 +260,53 @@ export default function ImpactCanvas({ projectName = 'FLN Improvement – Bihar 
     setSelectedNode(null);
     setShowInspector(false);
   }, [setNodes, setEdges]);
+
+  // Context Menu State
+  const [menu, setMenu] = useState<{ id: string; top: number; left: number; type: 'node' | 'edge' } | null>(null);
+
+  const onNodeContextMenu = useCallback(
+    (event: React.MouseEvent, node: Node) => {
+      event.preventDefault();
+      const pane = reactFlowWrapper.current?.getBoundingClientRect();
+      if (pane) {
+        setMenu({
+          id: node.id,
+          top: event.clientY - pane.top,
+          left: event.clientX - pane.left,
+          type: 'node',
+        });
+      }
+    },
+    [setMenu]
+  );
+
+  const onEdgeContextMenu = useCallback(
+    (event: React.MouseEvent, edge: Edge) => {
+      event.preventDefault();
+      const pane = reactFlowWrapper.current?.getBoundingClientRect();
+      if (pane) {
+        setMenu({
+          id: edge.id,
+          top: event.clientY - pane.top,
+          left: event.clientX - pane.left,
+          type: 'edge',
+        });
+      }
+    },
+    [setMenu]
+  );
+
+  const onPaneClick = useCallback(() => setMenu(null), [setMenu]);
+
+  const deleteElement = useCallback(() => {
+    if (!menu) return;
+    if (menu.type === 'node') {
+      deleteNode(menu.id);
+    } else if (menu.type === 'edge') {
+      setEdges((eds) => eds.filter((edge) => edge.id !== menu.id));
+    }
+    setMenu(null);
+  }, [menu, deleteNode, setEdges]);
 
   const handleRunSimulation = () => {
     setIsSimulating(true);
@@ -271,9 +384,9 @@ export default function ImpactCanvas({ projectName = 'FLN Improvement – Bihar 
 
         {/* Left - Project Name */}
         <div className="flex items-center gap-4 relative" style={{ zIndex: 10, pointerEvents: 'none' }}>
-          <img 
-            src="/logo-2.png" 
-            alt="NitiNirmaan" 
+          <img
+            src="/logo-2.png"
+            alt="NitiNirmaan"
             className="h-12 w-auto object-contain"
           />
           {editingProjectName ? (
@@ -377,13 +490,16 @@ export default function ImpactCanvas({ projectName = 'FLN Improvement – Bihar 
             nodesDraggable={true}
             nodesConnectable={true}
             selectNodesOnDrag={false}
-            panOnDrag={[1, 2]}
+            panOnDrag={true}
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             onConnect={onConnect}
             onNodeClick={onNodeClick}
             onNodeDoubleClick={onNodeDoubleClick}
             onEdgeClick={onEdgeClick}
+            onNodeContextMenu={onNodeContextMenu}
+            onEdgeContextMenu={onEdgeContextMenu}
+            onPaneClick={onPaneClick}
             nodeTypes={nodeTypes}
             fitView
             className="bg-transparent"
@@ -400,6 +516,20 @@ export default function ImpactCanvas({ projectName = 'FLN Improvement – Bihar 
               className="bg-[#171B21] border border-[#2D3340] rounded"
               showInteractive={false}
             />
+            {menu && (
+              <div
+                style={{ top: menu.top, left: menu.left }}
+                className="absolute z-50 bg-[#1F2937] border border-[#374151] rounded shadow-xl p-1 w-32"
+              >
+                <button
+                  className="w-full text-left px-2 py-1 text-sm text-red-400 hover:bg-[#374151] hover:text-red-300 rounded flex items-center gap-2 transition-colors"
+                  onClick={deleteElement}
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  Delete
+                </button>
+              </div>
+            )}
           </ReactFlow>
 
           {/* Simulation Overlay */}
@@ -432,6 +562,8 @@ export default function ImpactCanvas({ projectName = 'FLN Improvement – Bihar 
         <AICompanionWidget
           show={showAICompanion}
           onToggle={() => setShowAICompanion(!showAICompanion)}
+          nodes={nodes}
+          edges={edges}
         />
       </div>
 
@@ -794,7 +926,10 @@ function InspectorPanel({
   };
 
   const updateField = (field: string, value: any) => {
-    setFormData((prev: any) => ({ ...prev, [field]: value }));
+    const newData = { ...formData, [field]: value };
+    setFormData(newData);
+    // Auto-save to parent state immediately
+    onUpdateNode(selectedNode.id, newData);
   };
 
   const getNodeCategoryColor = (type: string) => {
@@ -1040,10 +1175,10 @@ function InspectorPanel({
           <Trash2 className="w-4 h-4" />
         </Button>
         <Button
-          onClick={handleSave}
-          className="bg-[#D97706] hover:bg-[#B45309] text-white flex items-center gap-2"
+          disabled
+          className="bg-[#D97706]/20 text-[#D97706] border border-[#D97706]/50 flex items-center gap-2 cursor-default"
         >
-          <Save className="w-4 h-4" /> Save
+          <Save className="w-4 h-4" /> Auto-Saved
         </Button>
       </div>
     </aside>
@@ -1101,58 +1236,182 @@ function FormSelect({ label, value, onChange, options }: any) {
 }
 
 // AI Companion Widget Component
-function AICompanionWidget({ show, onToggle }: { show: boolean; onToggle: () => void }) {
+function AICompanionWidget({ show, onToggle, nodes, edges }: { show: boolean; onToggle: () => void; nodes: Node[]; edges: Edge[] }) {
+  const [messages, setMessages] = useState<any[]>([
+    { role: 'assistant', content: 'Hello! I am here to help you design your program.' }
+  ]);
+  const [inputValue, setInputValue] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  // Load initial greeting based on persona
+  useEffect(() => {
+    const savedData = localStorage.getItem('current_mission_data');
+    if (savedData) {
+      try {
+        const parsed = JSON.parse(savedData);
+        if (parsed.aiCompanion === 'critical') {
+          setMessages([{ role: 'assistant', content: 'I am here to review your logic. Please show me your evidence.' }]);
+        } else {
+          setMessages([{ role: 'assistant', content: 'Hello! I am here to support your design process.' }]);
+        }
+      } catch (e) {
+        console.error("Error parsing mission data", e);
+      }
+    }
+  }, []);
+
+  const handleSendMessage = async () => {
+    if (!inputValue.trim() || isLoading) return;
+
+    const userMessage = { role: 'user', content: inputValue };
+    setMessages(prev => [...prev, userMessage]);
+    setInputValue('');
+    setIsLoading(true);
+
+    try {
+      // Get persona from local storage
+      let persona = 'supportive'; // default
+      let missionContext = {};
+      const savedData = localStorage.getItem('current_mission_data');
+      if (savedData) {
+        const parsed = JSON.parse(savedData);
+        if (parsed.aiCompanion) persona = parsed.aiCompanion;
+        missionContext = parsed;
+      }
+
+      // Serialize Nodes and Edges for Context
+      const graphData = {
+        mission: missionContext,
+        nodes: nodes.map(n => ({
+          id: n.id,
+          type: n.data.type || n.type,
+          data: n.data  // Send ALL data (evidence, coreChallenge, etc.)
+        })),
+        edges: edges.map(e => ({ source: e.source, target: e.target }))
+      };
+
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [...messages, userMessage],
+          persona,
+          graphData
+        }),
+      });
+
+      if (!response.body) throw new Error('No response body');
+
+      // Handle streaming response
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let assistantMessage = { role: 'assistant', content: '' };
+
+      setMessages(prev => [...prev, assistantMessage]);
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = new TextDecoder().decode(value);
+        assistantMessage.content += chunk;
+
+        setMessages(prev => [
+          ...prev.slice(0, -1),
+          { ...assistantMessage }
+        ]);
+      }
+
+    } catch (error) {
+      console.error('Chat error:', error);
+      setMessages(prev => [...prev, { role: 'assistant', content: 'Sorry, I encountered an error. Please try again.' }]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
-    <div className="fixed bottom-6 right-6 z-30">
+    <div className={`fixed bottom-6 right-6 z-30 flex flex-col transition-all duration-300 ${isExpanded ? 'w-[600px] h-[85vh]' : 'w-80 max-h-[500px]'}`}>
       {show ? (
-        <div className="bg-[#0F1216] border border-[#D97706] rounded-lg shadow-xl w-80">
-          <div className="p-4 border-b border-[#D97706]/30 flex items-center justify-between">
+        <div className={`bg-[#0F1216] border border-[#D97706] rounded-lg shadow-xl flex flex-col w-full h-full overflow-hidden`}>
+          <div className="p-4 border-b border-[#D97706]/30 flex items-center justify-between bg-[#171B21] flex-shrink-0">
             <div className="flex items-center gap-2">
               <Bot className="w-5 h-5 text-[#D97706]" />
-              <span className="text-[#E5E7EB] font-medium">Ask Bee Bot</span>
+              <span className="text-[#E5E7EB] font-medium">AI Companion</span>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onToggle}
-              className="w-8 h-8 hover:bg-[#1F2937]"
-            >
-              <X className="w-4 h-4 text-[#9CA3AF]" />
-            </Button>
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="w-8 h-8 hover:bg-[#1F2937] text-[#9CA3AF]"
+              >
+                {isExpanded ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onToggle}
+                className="w-8 h-8 hover:bg-[#1F2937]"
+              >
+                <X className="w-4 h-4 text-[#9CA3AF]" />
+              </Button>
+            </div>
           </div>
 
-          <div className="p-4 max-h-96 overflow-y-auto">
-            <div className="space-y-4">
+          <div className="p-4 overflow-y-auto flex-1 space-y-4 custom-scrollbar min-h-0">
+            {messages.map((msg, idx) => (
+              <div key={idx} className={`flex items-start gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${msg.role === 'assistant' ? 'bg-[#D97706]/20' : 'bg-[#374151]'}`}>
+                  {msg.role === 'assistant' ? <Bot className="w-4 h-4 text-[#D97706]" /> : <User className="w-4 h-4 text-[#E5E7EB]" />}
+                </div>
+                <div className={`max-w-[80%] rounded-lg p-3 text-sm ${msg.role === 'assistant' ? 'bg-[#1F2937] text-[#E5E7EB]' : 'bg-[#D97706] text-[#0F1216]'}`}>
+                  {msg.content}
+                </div>
+              </div>
+            ))}
+            {isLoading && (
               <div className="flex items-start gap-3">
                 <div className="w-8 h-8 bg-[#D97706]/20 rounded-full flex items-center justify-center flex-shrink-0">
                   <Bot className="w-4 h-4 text-[#D97706]" />
                 </div>
-                <div className="flex-1">
-                  <p className="text-[#D97706] text-sm">
-                    Your logic looks incomplete. May I assist you?
-                  </p>
-                  <p className="text-[#9CA3AF] text-xs mt-2">
-                    You added a Teacher node but no intervention. Similar programs struggle without clear activities.
-                  </p>
-                  <div className="flex gap-2 mt-3">
-                    <Button className="px-3 py-1 bg-[#D97706] text-[#0F1216] rounded text-xs font-medium hover:bg-[#B45309] transition-colors h-auto border-none shadow-none">
-                      Add Intervention
-                    </Button>
-                    <Button variant="secondary" className="px-3 py-1 bg-[#374151] text-[#E5E7EB] rounded text-xs font-medium hover:bg-[#4B5563] transition-colors h-auto border-none shadow-none">
-                      Dismiss
-                    </Button>
-                  </div>
+                <div className="bg-[#1F2937] text-[#E5E7EB] rounded-lg p-3 text-sm">
+                  <span className="animate-pulse">Thinking...</span>
                 </div>
               </div>
-            </div>
+            )}
+            <div ref={messagesEndRef} />
           </div>
 
-          <div className="p-3 border-t border-[#2D3340]">
-            <input
-              type="text"
-              placeholder="Ask me anything..."
-              className="w-full px-3 py-2 bg-[#0F1216] border border-[#374151] rounded text-[#E5E7EB] placeholder-[#6B7280] focus:outline-none focus:border-[#D97706] text-sm"
-            />
+          <div className="p-3 border-t border-[#2D3340] bg-[#171B21] rounded-b-lg">
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+                placeholder="Type a message..."
+                className="flex-1 px-3 py-2 bg-[#0F1216] border border-[#374151] rounded text-[#E5E7EB] placeholder-[#6B7280] focus:outline-none focus:border-[#D97706] text-sm"
+              />
+              <Button
+                onClick={handleSendMessage}
+                disabled={isLoading || !inputValue.trim()}
+                size="icon"
+                className="bg-[#D97706] hover:bg-[#B45309] text-[#0F1216]"
+              >
+                <ArrowRight className="w-4 h-4" />
+              </Button>
+            </div>
           </div>
         </div>
       ) : (

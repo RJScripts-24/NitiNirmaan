@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, Book, Bell, Settings, User, MoreVertical, Search } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import NoiseBackground from './NoiseBackground';
@@ -56,6 +56,25 @@ export default function Dashboard({ onBack, onNavigateToPatterns, onNavigateToIn
     if (health <= 70) return '#F59E0B';
     return '#047857';
   };
+
+  // Load Guest Project
+  const [guestProject, setGuestProject] = useState<any>(null);
+  useEffect(() => {
+    const stored = localStorage.getItem('guest_active_project');
+    if (stored) {
+      setGuestProject(JSON.parse(stored));
+    }
+  }, []);
+
+  const allProjects = guestProject ? [{
+    id: guestProject.id,
+    name: guestProject.title,
+    status: 'Guest Draft',
+    edited: 'Just now',
+    logicHealth: 50,
+    statusColor: 'neutral',
+    isGuest: true
+  }, ...projects] : projects;
 
   return (
     <div className="min-h-screen bg-[#0F1216] text-gray-200 relative">
@@ -149,7 +168,7 @@ export default function Dashboard({ onBack, onNavigateToPatterns, onNavigateToIn
 
           {/* Right: Utility Icons */}
           <div className="flex items-center gap-2" style={{ pointerEvents: 'auto' }}>
-            
+
             <Button
               onClick={onNavigateToSettings}
               className="w-10 h-10 p-0 flex items-center justify-center hover:bg-[#1F2937] rounded transition-colors border border-[#2D3340] bg-transparent"
@@ -344,9 +363,17 @@ export default function Dashboard({ onBack, onNavigateToPatterns, onNavigateToIn
 
           {/* Project Cards - Full Width List */}
           <div className="space-y-4">
-            {projects.map((project) => (
+            {allProjects.map((project) => (
               <div
                 key={project.id}
+                onClick={() => {
+                  if ((project as any).isGuest) {
+                    window.location.hash = 'builder';
+                  } else {
+                    localStorage.setItem('active_project_id', project.id);
+                    window.location.hash = 'builder';
+                  }
+                }}
                 className="relative bg-[#2B2F38] rounded-lg overflow-hidden cursor-pointer transition-all hover:bg-[#2F333C]"
                 style={{
                   boxShadow: '0 2px 8px rgba(0,0,0,0.3)'

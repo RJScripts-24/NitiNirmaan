@@ -12,9 +12,39 @@ chatRouter.post('/', async (req, res) => {
             return res.status(400).json({ error: 'Missing messages array' });
         }
 
+        // Determine the system prompt based on user selection
+        const { persona, graphData } = req.body;
+        let systemPrompt = (persona === 'critical') ? PERSONAS.CRITIC : PERSONAS.MENTOR;
+
+        // Inject Graph Context if available
+        if (graphData && graphData.nodes && graphData.nodes.length > 0) {
+            const contextString = `
+            
+CURRENT CANVAS CONTEXT:
+Project: ${graphData.mission?.projectName || 'Untitled'}
+Theme: ${graphData.mission?.domain || 'Unknown'}
+
+NODES (The logic flow):
+${graphData.nodes.map((n: any) => {
+                // Format node data into a readable block
+                const details = Object.entries(n.data)
+                    .filter(([key]) => key !== 'label' && key !== 'type') // Exclude redundant keys
+                    .map(([key, value]) => `  - ${key}: ${value}`)
+                    .join('\n');
+
+                return `[${n.type.toUpperCase()}] "${n.data.label}"\n${details}`;
+            }).join('\n\n')}
+
+EDGES:
+${graphData.edges.length} connections.
+
+User Question:
+`;
+            systemPrompt += contextString;
+        }
+
         // Get the stream from our helper
-        // We use the MENTOR persona for the chat widget
-        const responseStream = await streamChat(PERSONAS.MENTOR, messages);
+        const responseStream = await streamChat(systemPrompt, messages);
 
         // Set headers for streaming
         res.setHeader('Content-Type', 'text/plain; charset=utf-8');

@@ -55,6 +55,7 @@ export default function MissionInitialize({ onClose, onComplete }: MissionInitia
 
   const handleInitialize = () => {
     // Initialize workspace logic here
+    localStorage.setItem('current_mission_data', JSON.stringify(missionData));
     onComplete?.();
   };
 
