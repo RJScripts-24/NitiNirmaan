@@ -20,6 +20,7 @@ import { projectsRouter } from './routes/projects.js';
 import { simulationRouter } from './routes/simulation.js';
 import { patternsRouter } from './routes/patterns.js';
 import { usersRouter } from './routes/users.js';
+import { analyzeLogicRouter } from './routes/analyze-logic.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -46,6 +47,7 @@ app.use('/api/projects', projectsRouter);
 app.use('/api/simulation', simulationRouter);
 app.use('/api/patterns', patternsRouter);
 app.use('/api/user', usersRouter);
+app.use('/api/analyze-logic', analyzeLogicRouter);
 
 // Error handling middleware
 app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {

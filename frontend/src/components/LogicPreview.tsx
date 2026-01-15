@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import ReactFlow, { Background, Node, Edge } from 'reactflow';
+import 'reactflow/dist/style.css';
 import {
   CheckCircle2,
   Users,
@@ -10,16 +12,22 @@ import {
   Settings,
   ChevronDown,
   Presentation,
+  AlertTriangle,
 } from 'lucide-react';
 import { Button } from './ui/button';
 import NoiseBackground from './NoiseBackground';
 import HexagonBackground from './HexagonBackground';
+import { LFADocument } from '../lib/fln-compiler';
 
 interface LogicPreviewProps {
   projectName?: string;
   onBack?: () => void;
   simulationPassed?: boolean;
   onSettings?: () => void;
+  lfaData?: LFADocument | null;
+  canvasNodes?: Node[];
+  canvasEdges?: Edge[];
+  shortcomings?: string[];
 }
 
 export default function LogicPreview({
@@ -27,6 +35,10 @@ export default function LogicPreview({
   onBack,
   simulationPassed = true,
   onSettings,
+  lfaData,
+  canvasNodes = [],
+  canvasEdges = [],
+  shortcomings = [],
 }: LogicPreviewProps) {
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
   const [hoveredSection, setHoveredSection] = useState<string | null>(null);
@@ -76,9 +88,9 @@ export default function LogicPreview({
         <div className="flex items-center justify-between relative" style={{ zIndex: 10, pointerEvents: 'none' }}>
           {/* Left - Branding & Project */}
           <div className="flex items-center gap-6">
-            <img 
-              src="/logo-2.png" 
-              alt="NitiNirmaan" 
+            <img
+              src="/logo-2.png"
+              alt="NitiNirmaan"
               className="h-12 w-auto object-contain"
             />
             <span className="text-[#9CA3AF] text-sm">{projectName}</span>
@@ -121,25 +133,40 @@ export default function LogicPreview({
         {/* LEFT PANEL - Visual System Snapshot */}
         <div className="w-1/2 bg-[#0F1216] border-r border-[#1F2937] flex flex-col">
           {/* Panel Header */}
-          <div className="px-6 py-4 border-b border-[#1F2937]">
+          <div className="px-6 py-4 border-b border-[#1F2937] flex items-center justify-between">
             <h2 className="text-[#E5E7EB] font-medium">Visual System Snapshot</h2>
+            <span className="text-xs text-[#6B7280]">{canvasNodes.length} nodes</span>
           </div>
 
-          {/* Canvas Snapshot */}
-          <div className="flex-1 p-6 overflow-auto relative">
-            <SystemSnapshot
-              hoveredSection={hoveredSection}
-              onNodeHover={setHoveredNode}
-            />
+          {/* Canvas Snapshot - Live ReactFlow */}
+          <div className="flex-1 relative">
+            {canvasNodes.length > 0 ? (
+              <ReactFlow
+                nodes={canvasNodes}
+                edges={canvasEdges}
+                fitView
+                className="bg-[#0F1216]"
+                nodesDraggable={false}
+                nodesConnectable={false}
+                panOnScroll={true}
+                zoomOnScroll={true}
+                proOptions={{ hideAttribution: true }}
+              >
+                <Background color="#333" gap={24} size={1} className="opacity-20" />
+              </ReactFlow>
+            ) : (
+              <div className="flex items-center justify-center h-full text-[#6B7280]">
+                No canvas data available
+              </div>
+            )}
 
             {/* Legend */}
-            <div className="absolute bottom-6 left-6 bg-[#171B21] border border-[#2D3340] rounded-lg p-4">
+            <div className="absolute bottom-6 left-6 bg-[#171B21] border border-[#2D3340] rounded-lg p-4 z-10">
               <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
-                <LegendItem color="#6B7280" icon={Users} label="Stakeholders" />
+                <LegendItem color="#EF4444" icon={Target} label="Foundation" />
+                <LegendItem color="#6366F1" icon={Users} label="Stakeholders" />
                 <LegendItem color="#D97706" icon={Flame} label="Interventions" />
                 <LegendItem color="#0D9488" icon={Target} label="Practice Change" />
-                <LegendItem color="#047857" icon={Target} label="Outcomes" />
-                <LegendItem color="#475569" icon={BarChart3} label="Indicators" />
               </div>
             </div>
           </div>
@@ -159,11 +186,98 @@ export default function LogicPreview({
           </div>
 
           {/* Document Content */}
-          <div className="flex-1 overflow-auto p-8">
-            <LFADocumentPreview
-              hoveredNode={hoveredNode}
-              onSectionHover={setHoveredSection}
-            />
+          <div className="flex-1 overflow-auto p-6">
+            {/* Shortcomings Panel */}
+            {shortcomings.length > 0 && (
+              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                <h3 className="text-red-800 font-semibold mb-3 flex items-center gap-2">
+                  <AlertTriangle className="w-5 h-5" />
+                  AI Logic Analysis
+                </h3>
+                <div className="space-y-2">
+                  {shortcomings.map((item, idx) => (
+                    <div key={idx} className="flex items-start gap-2 text-sm text-red-700">
+                      <span className="text-red-500 mt-0.5">•</span>
+                      <span>{item}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Dynamic LFA Table */}
+            <div className="bg-white rounded-lg shadow-sm p-6">
+              <h3 className="text-lg font-semibold mb-4 text-[#1F2937]">Logical Framework (LFA)</h3>
+
+              {lfaData ? (
+                <div className="border border-[#D1D5DB] rounded-lg overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead className="bg-[#F9FAFB] border-b border-[#D1D5DB]">
+                      <tr>
+                        <th className="text-left py-3 px-4 font-semibold text-[#1F2937] w-1/5">Level</th>
+                        <th className="text-left py-3 px-4 font-semibold text-[#1F2937] w-2/5">Narrative Summary</th>
+                        <th className="text-left py-3 px-4 font-semibold text-[#1F2937]">Indicators</th>
+                        <th className="text-left py-3 px-4 font-semibold text-[#1F2937]">Assumptions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#E5E7EB]">
+                      {/* Goal */}
+                      <tr>
+                        <td className="py-3 px-4 font-medium text-[#EF4444]">Goal (Impact)</td>
+                        <td className="py-3 px-4 text-[#6B7280]">{lfaData.goal?.narrative || <span className="italic text-gray-400">Not defined</span>}</td>
+                        <td className="py-3 px-4 text-[#6B7280]">{lfaData.goal?.indicators?.join(', ') || '-'}</td>
+                        <td className="py-3 px-4 text-[#6B7280]">{lfaData.goal?.assumptions_risks?.join(', ') || '-'}</td>
+                      </tr>
+
+                      {/* Outcomes */}
+                      {lfaData.outcomes.map((item, i) => (
+                        <tr key={`outcome-${i}`} className="bg-[#F0FDFA]">
+                          <td className="py-3 px-4 font-medium text-[#0D9488]">{i === 0 ? 'Outcomes' : ''}</td>
+                          <td className="py-3 px-4 text-[#6B7280]">{item.narrative}</td>
+                          <td className="py-3 px-4 text-[#6B7280]">{item.indicators?.join(', ')}</td>
+                          <td className="py-3 px-4 text-[#6B7280]">{item.assumptions_risks?.join(', ') || '-'}</td>
+                        </tr>
+                      ))}
+                      {lfaData.outcomes.length === 0 && (
+                        <tr className="bg-[#F0FDFA]">
+                          <td className="py-3 px-4 font-medium text-[#0D9488]">Outcomes</td>
+                          <td className="py-3 px-4 text-gray-400 italic" colSpan={3}>No outcomes defined</td>
+                        </tr>
+                      )}
+
+                      {/* Outputs */}
+                      {lfaData.outputs.map((item, i) => (
+                        <tr key={`output-${i}`} className="bg-[#FFFBEB]">
+                          <td className="py-3 px-4 font-medium text-[#D97706]">{i === 0 ? 'Outputs' : ''}</td>
+                          <td className="py-3 px-4 text-[#6B7280]">{item.narrative}</td>
+                          <td className="py-3 px-4 text-[#6B7280]">{item.indicators?.join(', ')}</td>
+                          <td className="py-3 px-4 text-[#6B7280]">{item.assumptions_risks?.join(', ') || '-'}</td>
+                        </tr>
+                      ))}
+
+                      {/* Activities */}
+                      {lfaData.activities.map((item, i) => (
+                        <tr key={`activity-${i}`}>
+                          <td className="py-3 px-4 font-medium text-[#6B7280]">{i === 0 ? 'Activities' : ''}</td>
+                          <td className="py-3 px-4 text-[#6B7280]">{item.narrative}</td>
+                          <td className="py-3 px-4 text-[#6B7280]">{item.indicators?.join(', ')}</td>
+                          <td className="py-3 px-4 text-[#6B7280]">{item.assumptions_risks?.join(', ') || '-'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="text-center py-8 text-[#6B7280]">
+                  No LFA data available. Run simulation first.
+                </div>
+              )}
+
+              {/* Footer note */}
+              <div className="mt-6 pt-4 border-t border-[#E5E7EB] text-xs text-[#9CA3AF] italic">
+                This document is auto-generated from validated logic model via NitiNirmaan AI Engine.
+              </div>
+            </div>
           </div>
 
           {/* Export Actions - Bottom Right */}

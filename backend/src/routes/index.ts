@@ -18,7 +18,8 @@ rootRouter.get('/', (req, res) => {
             '/api/projects',
             '/api/simulation',
             '/api/templates',
-            '/api/users'
+            '/api/users',
+            '/api/analyze-logic'
         ]
     });
 });

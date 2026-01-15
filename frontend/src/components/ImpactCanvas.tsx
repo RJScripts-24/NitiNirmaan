@@ -15,6 +15,8 @@ import ReactFlow, {
   ConnectionMode,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
+import { FLN_TOOLBOX, ToolNode } from '../config/domains/fln/toolbox';
+import { compileFLNGraphToLFA, LFADocument } from '../lib/fln-compiler';
 import {
   ArrowRight,
   User,
@@ -48,6 +50,7 @@ import {
   Share,
   Flag,
   Target,
+  Check,
   Home,
   Handshake,
   Briefcase,
@@ -66,6 +69,7 @@ import {
   Minimize2,
   Move,
   GripHorizontal,
+  Download,
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { supabase } from '../lib/supabase';
@@ -75,33 +79,55 @@ import HexagonBackground from './HexagonBackground';
 interface ImpactCanvasProps {
   projectName?: string;
   onBack?: () => void;
-  onSimulationComplete?: () => void;
+  onSimulationComplete?: (results: { lfa: LFADocument; nodes: Node[]; edges: Edge[]; shortcomings: string[] }) => void;
   onSettings?: () => void;
   initialNodes?: Node[];
   initialEdges?: Edge[];
   readOnly?: boolean;
 }
 
-// Node type colors
-const NODE_COLORS = {
-  // Foundations (Red)
+// Node type colors (Generic Fallback)
+const NODE_COLORS: Record<string, string> = {
   problemStatement: '#EF4444',
   vision: '#EF4444',
-  // Stakeholders (Indigo)
   stakeholder: '#6366F1',
-  // Interventions (Amber)
   intervention: '#D97706',
-  // Logic Bridge (Teal)
   output: '#0D9488',
   practiceChange: '#0D9488',
   intermediateOutcome: '#0D9488',
   indicator: '#0D9488',
   outcome: '#047857',
-  // Simulation Modifiers (Purple)
   resourceCost: '#8B5CF6',
   assumption: '#8B5CF6',
   risk: '#8B5CF6',
   resource: '#475569',
+};
+
+// Category Colors (Shared)
+const CATEGORY_COLORS: Record<string, string> = {
+  foundation: '#EF4444', // Red
+  foundations: '#EF4444', // Red (Alias)
+  stakeholder: '#6366F1', // Indigo/Blue
+  stakeholders: '#6366F1', // Indigo/Blue (Alias)
+  intervention: '#D97706', // Amber/Orange
+  interventions: '#D97706', // Amber/Orange (Alias)
+  bridge: '#0D9488', // Teal
+  logicBridge: '#0D9488', // Teal (Alias)
+  risk: '#8B5CF6', // Purple
+  modifiers: '#8B5CF6', // Purple (Alias)
+};
+
+const getNodeColor = (type: string): string => {
+  // 1. Check direct mapping (legacy)
+  if (NODE_COLORS[type]) return NODE_COLORS[type];
+
+  // 2. Check FLN Toolbox
+  const flnNode = FLN_TOOLBOX.find(n => n.id === type);
+  if (flnNode) {
+    return CATEGORY_COLORS[flnNode.category] || '#6B7280';
+  }
+
+  return '#6B7280'; // Default Gray
 };
 
 // Initial nodes - outcome and some stakeholders pre-seeded
@@ -154,9 +180,21 @@ export default function ImpactCanvas({
   const [showInspector, setShowInspector] = useState(false);
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
+  const [domain, setDomain] = useState<string>('');
+  const [simulationData, setSimulationData] = useState<{ lfa: LFADocument; shortcomings: string[] } | null>(null);
 
   // Sync state if props change (for template selection) or load from Storage/DB
   useEffect(() => {
+    // Load domain from localStorage
+    const savedData = localStorage.getItem('current_mission_data');
+    if (savedData) {
+      try {
+        const parsed = JSON.parse(savedData);
+        if (parsed.domain) setDomain(parsed.domain);
+      } catch (e) {
+        console.error("Error parsing mission data for domain", e);
+      }
+    }
     // 1. If props provided (Preview Mode), use them
     if (propNodes) {
       setNodes(propNodes);
@@ -202,7 +240,11 @@ export default function ImpactCanvas({
   }, [propNodes, propEdges, setNodes, setEdges]);
 
   // Check if Problem Statement has been placed on canvas
-  const hasProblemStatement = nodes.some(node => node.data.type === 'problemStatement');
+  const hasProblemStatement = nodes.some(node =>
+    node.data.type === 'problemStatement' ||
+    node.data.type === 'learning_crisis' ||
+    node.data.type === 'problem-statement'
+  );
 
   const onConnect = useCallback(
     (params: Connection) => {
@@ -308,16 +350,79 @@ export default function ImpactCanvas({
     setMenu(null);
   }, [menu, deleteNode, setEdges]);
 
-  const handleRunSimulation = () => {
+  const handleRunSimulation = async () => {
+    console.log('🚀 [Simulation] Starting simulation...');
+    console.log('🚀 [Simulation] Current nodes:', nodes);
+    console.log('🚀 [Simulation] Current edges:', edges);
+
     setIsSimulating(true);
-    // Simulate for 2 seconds
-    setTimeout(() => {
-      setIsSimulating(false);
-      setShowSimulationResult(true);
-      if (onSimulationComplete) {
-        onSimulationComplete();
+
+    // 1. Compile Graph to LFA
+    // Map nodes to the format expected by compiler (FLNNode)
+    const flnNodes = nodes.map(n => ({
+      id: n.id,
+      type: n.data.type || n.type, // Ensure type is passed correctly
+      data: n.data
+    }));
+
+    const flnEdges = edges.map(e => ({ source: e.source, target: e.target }));
+
+    console.log('📊 [Simulation] FLN Nodes for compiler:', flnNodes);
+    console.log('📊 [Simulation] FLN Edges for compiler:', flnEdges);
+
+    try {
+      console.log('🔧 [Simulation] Calling compileFLNGraphToLFA...');
+      const lfa = compileFLNGraphToLFA(flnNodes, flnEdges);
+      console.log('✅ [Simulation] LFA Generated:', lfa);
+
+      // 2. Call Backend Groq API for AI Analysis
+      console.log('🤖 [Simulation] Calling backend /api/analyze-logic...');
+      let shortcomings: string[] = [];
+
+      try {
+        const response = await fetch('/api/analyze-logic', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ lfa, nodes: flnNodes, edges: flnEdges })
+        });
+
+        if (response.ok) {
+          const aiResponse = await response.json();
+          console.log('✅ [Simulation] AI Response:', aiResponse);
+          shortcomings = aiResponse.shortcomings || [];
+        } else {
+          console.warn('⚠️ [Simulation] AI API failed, using fallback heuristics');
+          // Fallback heuristics
+          if (!lfa.goal) shortcomings.push("Missing 'Vision / Goal' node. The program lacks a defined impact.");
+          if (lfa.outcomes.length === 0) shortcomings.push("No 'Practice Changes' defined. How will the goal be achieved?");
+          if (lfa.outputs.length === 0) shortcomings.push("No 'Interventions' (Outputs) found. You need inputs/activities.");
+        }
+      } catch (apiError) {
+        console.error('❌ [Simulation] AI API error:', apiError);
+        // Fallback heuristics
+        if (!lfa.goal) shortcomings.push("Missing 'Vision / Goal' node. The program lacks a defined impact.");
+        if (lfa.outcomes.length === 0) shortcomings.push("No 'Practice Changes' defined. How will the goal be achieved?");
+        if (lfa.outputs.length === 0) shortcomings.push("No 'Interventions' (Outputs) found. You need inputs/activities.");
       }
-    }, 2000);
+
+      console.log('📋 [Simulation] Final shortcomings:', shortcomings);
+      console.log('📋 [Simulation] Setting simulationData and showing modal...');
+
+      setSimulationData({ lfa, shortcomings });
+      setShowSimulationResult(true);
+      console.log('✅ [Simulation] Modal should now be visible!');
+
+      if (onSimulationComplete) {
+        onSimulationComplete({ lfa, nodes, edges, shortcomings });
+      }
+
+    } catch (e) {
+      console.error("❌ [Simulation] Compilation failed:", e);
+      alert('Simulation failed. Check console for details.');
+    } finally {
+      setIsSimulating(false);
+      console.log('🏁 [Simulation] Finished.');
+    }
   };
 
   const onDragOver = useCallback((event: React.DragEvent) => {
@@ -479,6 +584,7 @@ export default function ImpactCanvas({
           collapsed={toolboxCollapsed}
           onToggleCollapse={() => setToolboxCollapsed(!toolboxCollapsed)}
           isUnlocked={hasProblemStatement}
+          domain={domain}
         />
 
         {/* Canvas */}
@@ -556,6 +662,7 @@ export default function ImpactCanvas({
           }}
           onUpdateNode={updateNodeData}
           onDeleteNode={deleteNode}
+          domain={domain}
         />
 
         {/* AI Companion */}
@@ -569,7 +676,12 @@ export default function ImpactCanvas({
 
       {/* Simulation Results Modal */}
       {showSimulationResult && (
-        <SimulationResultsModal onClose={() => setShowSimulationResult(false)} />
+        <SimulationResultsModal
+          onClose={() => setShowSimulationResult(false)}
+          data={simulationData}
+          nodes={nodes}
+          edges={edges}
+        />
       )}
     </div>
   );
@@ -577,7 +689,7 @@ export default function ImpactCanvas({
 
 // Custom Node Component
 function CustomNode({ data }: { data: any }) {
-  const backgroundColor = NODE_COLORS[data.type as keyof typeof NODE_COLORS] || '#6B7280';
+  const backgroundColor = getNodeColor(data.type);
 
   return (
     <div
@@ -615,15 +727,17 @@ function CustomNode({ data }: { data: any }) {
   );
 }
 
-// Logic Toolbox Component
+// LogicToolbox Component
 function LogicToolbox({
   collapsed,
   onToggleCollapse,
-  isUnlocked
+  isUnlocked,
+  domain
 }: {
   collapsed: boolean;
   onToggleCollapse: () => void;
   isUnlocked: boolean;
+  domain?: string;
 }) {
   const [expandedSections, setExpandedSections] = useState<string[]>(['foundations']);
   const [expandedSubSections, setExpandedSubSections] = useState<string[]>(['school']);
@@ -644,22 +758,56 @@ function LogicToolbox({
     );
   };
 
-  // Category colors
-  const CATEGORY_COLORS = {
-    foundations: '#EF4444',
-    stakeholders: '#6366F1',
-    interventions: '#D97706',
-    logicBridge: '#0D9488',
-    modifiers: '#8B5CF6',
+  // --- FLN SPECIFIC LOGIC ---
+  const getIconForNode = (id: string) => {
+    const map: Record<string, any> = {
+      learning_crisis: Flag,
+      attendance_crisis: Users,
+      nipun_lakshya: Target,
+      student_primary: GraduationCap,
+      teacher_govt: BookOpen,
+      headmaster: Building2,
+      smc_member: Home,
+      gram_pradhan: Megaphone,
+      nodal_teacher: BookOpen,
+      crcc: Handshake,
+      brp: BookMarked,
+      beo: Briefcase,
+      diet_faculty: School,
+      district_magistrate: Scale,
+      scert_official: Building2,
+      tlm_kit: Package,
+      student_workbook: BookOpen,
+      teacher_guide: BookOpen,
+      cascade_training: GraduationCap,
+      cluster_meeting: Users,
+      digital_training: Smartphone,
+      classroom_observation: ClipboardList,
+      pedagogy_shift: RefreshCw,
+      tlm_usage: Package,
+      assessment_shift: FileCheck,
+      funds_delay: DollarSign,
+      teacher_transfer: RefreshCw,
+      tech_infrastructure: Smartphone,
+    };
+    return map[id] || HelpCircle;
   };
 
-  // Foundations (Anchors)
+  const getFlnNodes = (category: string) => {
+    return FLN_TOOLBOX.filter(node => node.category === category).map(node => ({
+      id: node.id,
+      label: node.label,
+      Icon: getIconForNode(node.id),
+      type: node.id
+    }));
+  };
+
+  // --- DEFAULT LISTS ---
   const foundations = [
     { id: 'problem-statement', label: 'Problem Statement', Icon: Flag, type: 'problemStatement' },
     { id: 'vision', label: 'Vision / Impact', Icon: Target, type: 'vision' },
   ];
 
-  // Stakeholders organized by level
   const stakeholderLevels = {
     school: {
       title: 'School Level',
@@ -688,7 +836,6 @@ function LogicToolbox({
     },
   };
 
-  // Interventions (Actions)
   const interventions = [
     { id: 'training', label: 'Training Workshop', Icon: GraduationCap, type: 'intervention' },
     { id: 'mentoring', label: 'Mentoring / Coaching', Icon: Handshake, type: 'intervention' },
@@ -698,7 +845,6 @@ function LogicToolbox({
     { id: 'governance-review', label: 'Governance Review', Icon: FileCheck, type: 'intervention' },
   ];
 
-  // Logic Bridge (Results)
   const logicBridge = [
     { id: 'output', label: 'Output', Icon: ArrowRightCircle, type: 'output' },
     { id: 'practice-change', label: 'Practice Change', Icon: RefreshCw, type: 'practiceChange' },
@@ -706,7 +852,6 @@ function LogicToolbox({
     { id: 'indicator', label: 'Indicator', Icon: BarChart3, type: 'indicator' },
   ];
 
-  // Simulation Modifiers
   const modifiers = [
     { id: 'resource-cost', label: 'Resource Cost', Icon: Coins, type: 'resourceCost' },
     { id: 'assumption', label: 'Assumption', Icon: Dice1, type: 'assumption' },
@@ -792,11 +937,11 @@ function LogicToolbox({
         />
       </div>
 
-      <div className="p-4 relative" style={{ zIndex: 10, pointerEvents: 'none' }}>
+      <div className="p-4 relative" style={{ zIndex: 10, pointerEvents: 'auto' }}>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 bg-[#D97706] rounded-full"></div>
-            <h2 className="text-[#E5E7EB] font-medium">Logic Toolbox</h2>
+            <h2 className="text-[#E5E7EB] font-medium">Logic Toolbox {domain ? `(${domain})` : ''}</h2>
           </div>
           <Button
             variant="ghost"
@@ -810,73 +955,131 @@ function LogicToolbox({
           </Button>
         </div>
 
-        {/* 1. Foundations (Anchors) - Always Available */}
-        <div className="mb-4" style={{ pointerEvents: 'auto' }}>
-          {renderSectionHeader('📍 Foundations', 'foundations', CATEGORY_COLORS.foundations)}
-          {expandedSections.includes('foundations') && (
-            <div className="grid grid-cols-2 gap-2 mt-2">
-              {foundations.map(item => renderItem(item, CATEGORY_COLORS.foundations))}
-            </div>
-          )}
-        </div>
-
-        {/* 2. Stakeholders (Actors) - Locked until Problem Statement */}
-        <div className="mb-4" style={{ pointerEvents: 'auto' }}>
-          {renderSectionHeader('👥 Stakeholders', 'stakeholders', CATEGORY_COLORS.stakeholders, !isUnlocked)}
-          {expandedSections.includes('stakeholders') && isUnlocked && (
-            <div className="mt-2 space-y-3">
-              {Object.entries(stakeholderLevels).map(([key, level]) => (
-                <div key={key} className="pl-2 border-l-2" style={{ borderColor: CATEGORY_COLORS.stakeholders + '40' }}>
-                  <Button
-                    variant="ghost"
-                    onClick={() => toggleSubSection(key)}
-                    className="flex items-center justify-between w-full hover:bg-transparent transition-colors mb-1 h-auto font-normal p-0 text-xs"
-                  >
-                    <span className="text-[#9CA3AF]">{level.title}</span>
-                    <ChevronDown
-                      className={`w-3 h-3 transition-transform text-[#6B7280] ${expandedSubSections.includes(key) ? '' : '-rotate-90'}`}
-                    />
-                  </Button>
-                  {expandedSubSections.includes(key) && (
-                    <div className="grid grid-cols-2 gap-2 mt-1">
-                      {level.items.map(item => renderItem(item, CATEGORY_COLORS.stakeholders))}
-                    </div>
-                  )}
+        {/* --- FLN DOMAIN RENDER --- */}
+        {domain === 'FLN' ? (
+          <>
+            {/* 1. Foundations */}
+            <div className="mb-4" style={{ pointerEvents: 'auto' }}>
+              {renderSectionHeader('📍 Foundations (The "Why")', 'foundations', CATEGORY_COLORS.foundations)}
+              {expandedSections.includes('foundations') && (
+                <div className="grid grid-cols-2 gap-2 mt-2">
+                  {getFlnNodes('foundation').map(item => renderItem(item, CATEGORY_COLORS.foundations))}
                 </div>
-              ))}
+              )}
             </div>
-          )}
-        </div>
 
-        {/* 3. Interventions (Actions) - Locked until Problem Statement */}
-        <div className="mb-4" style={{ pointerEvents: 'auto' }}>
-          {renderSectionHeader('⚡ Interventions', 'interventions', CATEGORY_COLORS.interventions, !isUnlocked)}
-          {expandedSections.includes('interventions') && isUnlocked && (
-            <div className="grid grid-cols-2 gap-2 mt-2">
-              {interventions.map(item => renderItem(item, CATEGORY_COLORS.interventions))}
+            {/* 2. Stakeholders */}
+            <div className="mb-4" style={{ pointerEvents: 'auto' }}>
+              {renderSectionHeader('👥 Stakeholders (The "Who")', 'stakeholders', CATEGORY_COLORS.stakeholders, !isUnlocked)}
+              {expandedSections.includes('stakeholders') && isUnlocked && (
+                <div className="grid grid-cols-2 gap-2 mt-2">
+                  {getFlnNodes('stakeholder').map(item => renderItem(item, CATEGORY_COLORS.stakeholders))}
+                </div>
+              )}
             </div>
-          )}
-        </div>
 
-        {/* 4. Logic Bridge (Results) - Locked until Problem Statement */}
-        <div className="mb-4" style={{ pointerEvents: 'auto' }}>
-          {renderSectionHeader('🔗 Logic Bridge', 'logicBridge', CATEGORY_COLORS.logicBridge, !isUnlocked)}
-          {expandedSections.includes('logicBridge') && isUnlocked && (
-            <div className="grid grid-cols-2 gap-2 mt-2">
-              {logicBridge.map(item => renderItem(item, CATEGORY_COLORS.logicBridge))}
+            {/* 3. Interventions */}
+            <div className="mb-4" style={{ pointerEvents: 'auto' }}>
+              {renderSectionHeader('⚡ Interventions (The "What")', 'interventions', CATEGORY_COLORS.interventions, !isUnlocked)}
+              {expandedSections.includes('interventions') && isUnlocked && (
+                <div className="grid grid-cols-2 gap-2 mt-2">
+                  {getFlnNodes('intervention').map(item => renderItem(item, CATEGORY_COLORS.interventions))}
+                </div>
+              )}
             </div>
-          )}
-        </div>
 
-        {/* 5. Simulation Modifiers - Locked until Problem Statement */}
-        <div className="mb-4" style={{ pointerEvents: 'auto' }}>
-          {renderSectionHeader('🎲 Modifiers', 'modifiers', CATEGORY_COLORS.modifiers, !isUnlocked)}
-          {expandedSections.includes('modifiers') && isUnlocked && (
-            <div className="grid grid-cols-3 gap-2 mt-2">
-              {modifiers.map(item => renderItem(item, CATEGORY_COLORS.modifiers))}
+            {/* 4. Logic Bridge */}
+            <div className="mb-4" style={{ pointerEvents: 'auto' }}>
+              {renderSectionHeader('🔗 Logic Bridge (The "Practice Change")', 'logicBridge', CATEGORY_COLORS.logicBridge, !isUnlocked)}
+              {expandedSections.includes('logicBridge') && isUnlocked && (
+                <div className="grid grid-cols-2 gap-2 mt-2">
+                  {getFlnNodes('bridge').map(item => renderItem(item, CATEGORY_COLORS.logicBridge))}
+                </div>
+              )}
             </div>
-          )}
-        </div>
+
+            {/* 5. Risks / Modifiers */}
+            <div className="mb-4" style={{ pointerEvents: 'auto' }}>
+              {renderSectionHeader('🎲 Risks & Modifiers', 'modifiers', CATEGORY_COLORS.modifiers, !isUnlocked)}
+              {expandedSections.includes('modifiers') && isUnlocked && (
+                <div className="grid grid-cols-2 gap-2 mt-2">
+                  {getFlnNodes('risk').map(item => renderItem(item, CATEGORY_COLORS.modifiers))}
+                </div>
+              )}
+            </div>
+          </>
+        ) : (
+          /* --- DEFAULT RENDER --- */
+          <>
+            {/* 1. Foundations (Anchors) - Always Available */}
+            <div className="mb-4" style={{ pointerEvents: 'auto' }}>
+              {renderSectionHeader('📍 Foundations', 'foundations', CATEGORY_COLORS.foundations)}
+              {expandedSections.includes('foundations') && (
+                <div className="grid grid-cols-2 gap-2 mt-2">
+                  {foundations.map(item => renderItem(item, CATEGORY_COLORS.foundations))}
+                </div>
+              )}
+            </div>
+
+            {/* 2. Stakeholders (Actors) - Locked until Problem Statement */}
+            <div className="mb-4" style={{ pointerEvents: 'auto' }}>
+              {renderSectionHeader('👥 Stakeholders', 'stakeholders', CATEGORY_COLORS.stakeholders, !isUnlocked)}
+              {expandedSections.includes('stakeholders') && isUnlocked && (
+                <div className="mt-2 space-y-3">
+                  {Object.entries(stakeholderLevels).map(([key, level]) => (
+                    <div key={key} className="pl-2 border-l-2" style={{ borderColor: CATEGORY_COLORS.stakeholders + '40' }}>
+                      <Button
+                        variant="ghost"
+                        onClick={() => toggleSubSection(key)}
+                        className="flex items-center justify-between w-full hover:bg-transparent transition-colors mb-1 h-auto font-normal p-0 text-xs"
+                      >
+                        <span className="text-[#9CA3AF]">{level.title}</span>
+                        <ChevronDown
+                          className={`w-3 h-3 transition-transform text-[#6B7280] ${expandedSubSections.includes(key) ? '' : '-rotate-90'}`}
+                        />
+                      </Button>
+                      {expandedSubSections.includes(key) && (
+                        <div className="grid grid-cols-2 gap-2 mt-1">
+                          {level.items.map(item => renderItem(item, CATEGORY_COLORS.stakeholders))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* 3. Interventions (Actions) - Locked until Problem Statement */}
+            <div className="mb-4" style={{ pointerEvents: 'auto' }}>
+              {renderSectionHeader('⚡ Interventions', 'interventions', CATEGORY_COLORS.interventions, !isUnlocked)}
+              {expandedSections.includes('interventions') && isUnlocked && (
+                <div className="grid grid-cols-2 gap-2 mt-2">
+                  {interventions.map(item => renderItem(item, CATEGORY_COLORS.interventions))}
+                </div>
+              )}
+            </div>
+
+            {/* 4. Logic Bridge (Results) - Locked until Problem Statement */}
+            <div className="mb-4" style={{ pointerEvents: 'auto' }}>
+              {renderSectionHeader('🔗 Logic Bridge', 'logicBridge', CATEGORY_COLORS.logicBridge, !isUnlocked)}
+              {expandedSections.includes('logicBridge') && isUnlocked && (
+                <div className="grid grid-cols-2 gap-2 mt-2">
+                  {logicBridge.map(item => renderItem(item, CATEGORY_COLORS.logicBridge))}
+                </div>
+              )}
+            </div>
+
+            {/* 5. Simulation Modifiers - Locked until Problem Statement */}
+            <div className="mb-4" style={{ pointerEvents: 'auto' }}>
+              {renderSectionHeader('🎲 Modifiers', 'modifiers', CATEGORY_COLORS.modifiers, !isUnlocked)}
+              {expandedSections.includes('modifiers') && isUnlocked && (
+                <div className="grid grid-cols-3 gap-2 mt-2">
+                  {modifiers.map(item => renderItem(item, CATEGORY_COLORS.modifiers))}
+                </div>
+              )}
+            </div>
+          </>
+        )}
 
         {/* Unlock hint */}
         {!isUnlocked && (
@@ -892,7 +1095,7 @@ function LogicToolbox({
 }
 
 
-// Inspector Panel Component
+// InspectorPanel Component
 function InspectorPanel({
   selectedNode,
   selectedEdge,
@@ -900,6 +1103,7 @@ function InspectorPanel({
   onClose,
   onUpdateNode,
   onDeleteNode,
+  domain
 }: {
   selectedNode: Node | null;
   selectedEdge: Edge | null;
@@ -907,8 +1111,8 @@ function InspectorPanel({
   onClose: () => void;
   onUpdateNode: (nodeId: string, data: any) => void;
   onDeleteNode: (nodeId: string) => void;
+  domain?: string;
 }) {
-  const [activeTab, setActiveTab] = useState<'config' | 'ai' | 'team'>('config');
   const [formData, setFormData] = useState<any>({});
 
   // Reset form data when node changes
@@ -920,11 +1124,6 @@ function InspectorPanel({
 
   if (!show || !selectedNode) return null;
 
-  const handleSave = () => {
-    onUpdateNode(selectedNode.id, formData);
-    // Optional: show toast
-  };
-
   const updateField = (field: string, value: any) => {
     const newData = { ...formData, [field]: value };
     setFormData(newData);
@@ -932,13 +1131,72 @@ function InspectorPanel({
     onUpdateNode(selectedNode.id, newData);
   };
 
-  const getNodeCategoryColor = (type: string) => {
-    const colorKey = type as keyof typeof NODE_COLORS;
-    return NODE_COLORS[colorKey] || '#6B7280';
-  };
-
   const renderConfigForm = () => {
     const type = selectedNode.data.type || selectedNode.type;
+
+    // --- FLN DOMAIN LOGIC ---
+    if (domain === 'FLN') {
+      const flnNode = FLN_TOOLBOX.find(n => n.id === type);
+
+      if (flnNode) {
+        return (
+          <div className="space-y-6">
+            <div className="space-y-4">
+              <h3 className="text-sm font-semibold text-[#D97706] uppercase tracking-wider">Configuration</h3>
+              {flnNode.fields.map((field) => {
+                if (field.type === 'textarea') {
+                  return (
+                    <FormTextArea
+                      key={field.name}
+                      label={field.label}
+                      value={formData[field.name]}
+                      onChange={(e: any) => updateField(field.name, e.target.value)}
+                      placeholder={field.placeholder}
+                    />
+                  );
+                }
+                if (field.type === 'select') {
+                  return (
+                    <FormSelect
+                      key={field.name}
+                      label={field.label}
+                      value={formData[field.name]}
+                      onChange={(e: any) => updateField(field.name, e.target.value)}
+                      options={field.options || []}
+                    />
+                  );
+                }
+                if (field.type === 'boolean') {
+                  return (
+                    <div key={field.name} className="pt-2">
+                      <FormCheckbox
+                        label={field.label}
+                        checked={formData[field.name]}
+                        onChange={(checked: boolean) => updateField(field.name, checked)}
+                      />
+                    </div>
+                  );
+                }
+                // Default to Input (text, number, date)
+                return (
+                  <FormInput
+                    key={field.name}
+                    label={field.label}
+                    type={field.type}
+                    value={formData[field.name]}
+                    onChange={(e: any) => updateField(field.name, e.target.value)}
+                    placeholder={field.placeholder}
+                    readOnly={field.readOnly}
+                  />
+                );
+              })}
+            </div>
+          </div>
+        );
+      }
+    }
+
+    // --- DEFAULT FALLBACK ---
 
     // 1. Foundations: Problem Statement
     if (type === 'problemStatement') {
@@ -947,19 +1205,19 @@ function InspectorPanel({
           <FormTextArea
             label="Core Challenge"
             value={formData.coreChallenge}
-            onChange={(e) => updateField('coreChallenge', e.target.value)}
+            onChange={(e: any) => updateField('coreChallenge', e.target.value)}
             placeholder="e.g., Grade 3 students cannot subtract."
           />
           <FormSelect
             label="Theme"
             value={formData.theme}
-            onChange={(e) => updateField('theme', e.target.value)}
+            onChange={(e: any) => updateField('theme', e.target.value)}
             options={['FLN', 'Career Readiness', 'School Leadership']}
           />
           <FormInput
             label="Evidence"
             value={formData.evidence}
-            onChange={(e) => updateField('evidence', e.target.value)}
+            onChange={(e: any) => updateField('evidence', e.target.value)}
             placeholder="e.g., ASER Report 2024, Page 12"
           />
         </div>
@@ -971,155 +1229,112 @@ function InspectorPanel({
       return (
         <div className="space-y-4">
           <FormTextArea
-            label="Vision Statement"
-            value={formData.visionStatement}
-            onChange={(e) => updateField('visionStatement', e.target.value)}
-            placeholder="e.g., All students are grade-level competent in Math."
+            label="Impact Vision"
+            value={formData.vision}
+            onChange={(e: any) => updateField('vision', e.target.value)}
+            placeholder="e.g., Every child reads by Grade 3."
           />
           <FormInput
             label="Target Year"
             type="number"
             value={formData.targetYear}
-            onChange={(e) => updateField('targetYear', e.target.value)}
-            placeholder="e.g., 2028"
+            onChange={(e: any) => updateField('targetYear', e.target.value)}
           />
         </div>
       );
     }
 
     // 2. Stakeholders
-    if (type === 'stakeholder') {
+    if (['student', 'teacher', 'headmaster', 'smc-parent', 'crp', 'beo', 'brp', 'deo', 'diet', 'dm'].includes(type || '')) {
       return (
         <div className="space-y-4">
-          <FormInput
-            label="Role Name"
-            value={formData.label} // Read-only mostly, but editable here for now driven by label
-            readOnly
-          />
-          <FormInput
-            label="Target Count"
-            type="number"
-            value={formData.targetCount}
-            onChange={(e) => updateField('targetCount', e.target.value)}
-            placeholder="e.g., 50"
-          />
-          <div>
-            <label className="block text-[#9CA3AF] text-xs mb-2 flex justify-between">
-              <span>Current Bandwidth</span>
-              <span>{formData.bandwidth || 100}%</span>
-            </label>
-            <input
-              type="range"
-              min="1"
-              max="100"
-              value={formData.bandwidth || 100}
-              onChange={(e) => updateField('bandwidth', parseInt(e.target.value))}
-              className="w-full h-2 bg-[#374151] rounded-lg appearance-none cursor-pointer accent-[#D97706]"
-            />
-            <p className="text-[#6B7280] text-[10px] mt-1">Lower bandwidth triggers warnings for complex tasks.</p>
+          <div className="p-3 bg-indigo-500/10 border border-indigo-500/30 rounded">
+            <h4 className="text-indigo-400 text-sm font-semibold mb-1">Configuration Required</h4>
+            <p className="text-indigo-200/60 text-xs">Define current capacity and training needs.</p>
           </div>
-          {formData.targetCount && (
-            <div className="p-2 bg-[#1F2937] rounded border border-[#374151] text-xs text-[#9CA3AF]">
-              Budget Required: est. ₹ {(formData.targetCount * 500).toLocaleString()}
-            </div>
-          )}
+          <FormInput
+            label="Current Capacity (1-10)"
+            type="number"
+            value={formData.capacity}
+            onChange={(e: any) => updateField('capacity', e.target.value)}
+          />
+          <FormSelect
+            label="Training Need"
+            value={formData.trainingNeed}
+            onChange={(e: any) => updateField('trainingNeed', e.target.value)}
+            options={['High', 'Medium', 'Low']}
+          />
+          <FormSelect
+            label="Role Type"
+            value={formData.roleType}
+            onChange={(e: any) => updateField('roleType', e.target.value)}
+            options={['Permanent', 'Contractual', 'Volunteer']}
+          />
         </div>
       );
     }
 
     // 3. Interventions
-    if (type === 'intervention') {
-      const totalCost = (formData.unitCost || 0) * (formData.duration || 0); // Simplified calc
+    if (['training', 'mentoring', 'tlm-kit', 'digital-tool', 'community-event', 'governance-review'].includes(type || '')) {
       return (
         <div className="space-y-4">
-          <FormInput
-            label="Activity Name"
-            value={formData.label}
-            onChange={(e) => updateField('label', e.target.value)}
+          <FormTextArea
+            label="Activity Description"
+            value={formData.description}
+            onChange={(e: any) => updateField('description', e.target.value)}
+            placeholder="Describe the activity..."
           />
-          <FormSelect
-            label="Frequency"
-            value={formData.frequency}
-            onChange={(e) => updateField('frequency', e.target.value)}
-            options={['One-time', 'Weekly', 'Monthly', 'Quarterly']}
-          />
-          <FormInput
-            label="Duration (Hours/Days)"
-            type="number"
-            value={formData.duration}
-            onChange={(e) => updateField('duration', e.target.value)}
-          />
-          <FormInput
-            label="Unit Cost (₹)"
-            type="number"
-            value={formData.unitCost}
-            onChange={(e) => updateField('unitCost', e.target.value)}
-          />
-          <div className="p-2 bg-[#1F2937] rounded border border-[#374151] text-xs text-[#D97706] font-medium">
-            Total Cost: ₹ {totalCost.toLocaleString()}
+          <div className="grid grid-cols-2 gap-2">
+            <FormInput
+              label="Frequency"
+              value={formData.frequency}
+              onChange={(e: any) => updateField('frequency', e.target.value)}
+              placeholder="e.g. Weekly"
+            />
+            <FormInput
+              label="Duration (Hrs)"
+              type="number"
+              value={formData.duration}
+              onChange={(e: any) => updateField('duration', e.target.value)}
+            />
           </div>
-        </div>
-      );
-    }
-
-    // 4. Practice Change
-    if (type === 'practiceChange') {
-      return (
-        <div className="space-y-4">
           <FormInput
-            label="Who is changing?"
-            value={formData.actor || 'Linked Stakeholder'}
-            readOnly
-          />
-          <FormInput
-            label="Current Behavior"
-            value={formData.currentBehavior}
-            onChange={(e) => updateField('currentBehavior', e.target.value)}
-            placeholder="e.g., Uses blackboard only"
-          />
-          <FormInput
-            label="New Behavior"
-            value={formData.newBehavior}
-            onChange={(e) => updateField('newBehavior', e.target.value)}
-            placeholder="e.g., Uses math kit for 10 mins daily"
-          />
-          <FormSelect
-            label="Verification Method"
-            value={formData.verificationMethod}
-            onChange={(e) => updateField('verificationMethod', e.target.value)}
-            options={['Observation', 'Self-Report', 'Survey']}
+            label="Cost Estimate (INR)"
+            type="number"
+            value={formData.budget}
+            onChange={(e: any) => updateField('budget', e.target.value)}
           />
         </div>
       );
     }
 
-    // 5. Indicators & Outcomes
+    // 4. Logic Bridge
     if (['outcome', 'indicator', 'intermediateOutcome', 'output'].includes(type) || type === 'customNode') {
       return (
         <div className="space-y-4">
           <FormTextArea
             label="Indicator Statement"
             value={formData.label}
-            onChange={(e) => updateField('label', e.target.value)}
+            onChange={(e: any) => updateField('label', e.target.value)}
           />
           <div className="grid grid-cols-2 gap-2">
             <FormInput
               label="Baseline (%)"
               type="number"
               value={formData.baseline}
-              onChange={(e) => updateField('baseline', e.target.value)}
+              onChange={(e: any) => updateField('baseline', e.target.value)}
             />
             <FormInput
               label="Target (%)"
               type="number"
               value={formData.target}
-              onChange={(e) => updateField('target', e.target.value)}
+              onChange={(e: any) => updateField('target', e.target.value)}
             />
           </div>
           <FormSelect
             label="Data Source"
             value={formData.dataSource}
-            onChange={(e) => updateField('dataSource', e.target.value)}
+            onChange={(e: any) => updateField('dataSource', e.target.value)}
             options={['Standard Test', 'Government Data', 'Internal Assessment']}
           />
         </div>
@@ -1132,7 +1347,7 @@ function InspectorPanel({
         <FormTextArea
           label="Description"
           value={formData.label}
-          onChange={(e) => updateField('label', e.target.value)}
+          onChange={(e: any) => updateField('label', e.target.value)}
         />
       </div>
     );
@@ -1146,8 +1361,8 @@ function InspectorPanel({
           <div
             className="w-3 h-3 rounded-full shadow-[0_0_8px]"
             style={{
-              backgroundColor: getNodeCategoryColor(selectedNode.data.type),
-              boxShadow: `0 0 8px ${getNodeCategoryColor(selectedNode.data.type)}`
+              backgroundColor: getNodeColor(selectedNode.data.type),
+              boxShadow: `0 0 8px ${getNodeColor(selectedNode.data.type)}`
             }}
           />
           <h2 className="text-[#E5E7EB] font-bold text-lg truncate w-48">
@@ -1231,6 +1446,19 @@ function FormSelect({ label, value, onChange, options }: any) {
           <option key={opt} value={opt}>{opt}</option>
         ))}
       </select>
+    </div>
+  );
+}
+
+function FormCheckbox({ label, checked, onChange }: any) {
+  return (
+    <div className="flex items-start gap-2 cursor-pointer group" onClick={() => onChange(!checked)}>
+      <div className={`mt-0.5 w-4 h-4 rounded border flex items-center justify-center transition-colors ${checked ? 'bg-[#D97706] border-[#D97706]' : 'bg-[#0F1216] border-[#374151] group-hover:border-[#9CA3AF]'}`}>
+        {checked && <Check className="w-3 h-3 text-[#0F1216]" />}
+      </div>
+      <label className="text-[#E5E7EB] text-sm leading-tight cursor-pointer select-none group-hover:text-white">
+        {label}
+      </label>
     </div>
   );
 }
@@ -1412,7 +1640,7 @@ function AICompanionWidget({ show, onToggle, nodes, edges }: { show: boolean; on
     return (
       <button
         onClick={onToggle}
-        className="fixed bottom-6 right-6 w-16 h-16 rounded-full flex items-center justify-center shadow-lg hover:opacity-80 transition-all animate-pulse p-0 overflow-hidden relative cursor-pointer border-0 z-30"
+        className="fixed bottom-6 right-6 w-16 h-16 rounded-full flex items-center justify-center shadow-lg hover:opacity-80 transition-all animate-pulse p-0 overflow-hidden cursor-pointer border-0 z-30"
       >
         <video
           autoPlay
@@ -1515,65 +1743,156 @@ function AICompanionWidget({ show, onToggle, nodes, edges }: { show: boolean; on
           </div>
         </div>
       </div>
+
     </div>
   );
 }
 
 // Simulation Results Modal Component
-function SimulationResultsModal({ onClose }: { onClose: () => void }) {
+function SimulationResultsModal({ onClose, data, nodes, edges }: { onClose: () => void; data: { lfa: LFADocument; shortcomings: string[] } | null; nodes: Node[]; edges: Edge[] }) {
+  if (!data) return null;
+
   return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-6">
-      <div className="bg-[#171B21] rounded-lg max-w-2xl w-full border border-[#B91C1C]">
-        <div className="p-6 border-b border-[#2D3340]">
-          <div className="flex items-start justify-between">
-            <div>
-              <h2 className="text-[#E5E7EB] text-xl font-semibold mb-2">Simulation Failed</h2>
-              <p className="text-[#B91C1C] text-sm">2 Critical Errors Found</p>
+    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-6 backdrop-blur-sm">
+      <div className="bg-[#171B21] rounded-xl w-[90vw] h-[90vh] border border-[#374151] flex flex-col shadow-2xl overflow-hidden">
+        {/* Modal Header */}
+        <div className="p-6 border-b border-[#2D3340] flex items-center justify-between bg-[#0F1216]">
+          <div>
+            <h2 className="text-[#E5E7EB] text-2xl font-bold flex items-center gap-3">
+              <span className="w-3 h-3 rounded-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]"></span>
+              Logic Simulation Report
+            </h2>
+            <p className="text-[#9CA3AF] text-sm mt-1">Generated via NitiNirmaan Engine • FLN Domain</p>
+          </div>
+          <Button variant="ghost" size="icon" onClick={onClose} className="w-10 h-10 hover:bg-[#1F2937]">
+            <X className="w-6 h-6 text-[#9CA3AF]" />
+          </Button>
+        </div>
+
+        {/* Modal Content - Split View */}
+        <div className="flex-1 flex overflow-hidden">
+
+          {/* LEFT: LFA & Shortcomings */}
+          <div className="w-1/2 flex flex-col border-r border-[#2D3340] overflow-hidden">
+
+            {/* Shortcomings Panel */}
+            <div className="p-6 bg-[#171B21] border-b border-[#2D3340]">
+              <h3 className="text-[#E5E7EB] font-semibold mb-4 flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5 text-[#D97706]" />
+                AI Logic Analysis (Groq)
+              </h3>
+              {data.shortcomings.length > 0 ? (
+                <div className="space-y-3">
+                  {data.shortcomings.map((err, idx) => (
+                    <div key={idx} className="flex items-start gap-3 p-3 bg-[#B91C1C]/10 border border-[#B91C1C]/30 rounded-lg">
+                      <div className="mt-1 w-1.5 h-1.5 rounded-full bg-[#EF4444]"></div>
+                      <p className="text-[#E5E7EB] text-sm leading-relaxed">{err}</p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-4 bg-green-900/20 border border-green-900/50 rounded-lg text-green-400 text-sm flex items-center gap-2">
+                  <Check className="w-4 h-4" />
+                  Logic flow appears consistent. No critical gaps detected.
+                </div>
+              )}
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onClose}
-              className="w-8 h-8 hover:bg-[#1F2937]"
+
+            {/* LFA Table */}
+            <div className="flex-1 overflow-y-auto p-6 bg-[#0F1216]">
+              <h3 className="text-[#E5E7EB] font-semibold mb-4 flex items-center gap-2">
+                <FileCheck className="w-5 h-5 text-[#6366F1]" />
+                Generated Logical Framework (LFA)
+              </h3>
+
+              <div className="border border-[#374151] rounded-lg overflow-hidden">
+                <table className="w-full text-left border-collapse">
+                  <thead className="bg-[#1F2937] text-[#9CA3AF] text-xs uppercase tracking-wider">
+                    <tr>
+                      <th className="p-3 border-r border-[#374151] w-1/4">Level</th>
+                      <th className="p-3 border-r border-[#374151] w-1/3">Narrative Summary</th>
+                      <th className="p-3 border-r border-[#374151]">Indicators (OVI)</th>
+                      <th className="p-3">Assumptions / Risks</th>
+                    </tr>
+                  </thead>
+                  <tbody className="text-sm text-[#E5E7EB] divide-y divide-[#374151]">
+                    {/* Goal */}
+                    <tr className="bg-[#171B21]/50">
+                      <td className="p-3 border-r border-[#374151] font-medium text-[#EF4444]">Goal (Impact)</td>
+                      <td className="p-3 border-r border-[#374151]">{data.lfa.goal?.narrative || <span className="text-gray-500 italic">Not defined</span>}</td>
+                      <td className="p-3 border-r border-[#374151]">{data.lfa.goal?.indicators.join(', ') || '-'}</td>
+                      <td className="p-3">{data.lfa.goal?.assumptions_risks.join(', ') || '-'}</td>
+                    </tr>
+
+                    {/* Outcomes */}
+                    {data.lfa.outcomes.map((item, i) => (
+                      <tr key={`outcome-${i}`} className="bg-[#171B21]/30">
+                        <td className="p-3 border-r border-[#374151] font-medium text-[#0D9488]">{i === 0 ? 'Outcomes' : ''}</td>
+                        <td className="p-3 border-r border-[#374151]">{item.narrative}</td>
+                        <td className="p-3 border-r border-[#374151]">{item.indicators.join(', ')}</td>
+                        <td className="p-3">{item.assumptions_risks.join(', ') || '-'}</td>
+                      </tr>
+                    ))}
+                    {data.lfa.outcomes.length === 0 && (
+                      <tr className="bg-[#171B21]/30"><td className="p-3 text-[#0D9488]" colSpan={4}>No Outcomes defined</td></tr>
+                    )}
+
+                    {/* Outputs */}
+                    {data.lfa.outputs.map((item, i) => (
+                      <tr key={`output-${i}`} className="bg-[#171B21]/10">
+                        <td className="p-3 border-r border-[#374151] font-medium text-[#D97706]">{i === 0 ? 'Outputs' : ''}</td>
+                        <td className="p-3 border-r border-[#374151]">{item.narrative}</td>
+                        <td className="p-3 border-r border-[#374151]">{item.indicators.join(', ')}</td>
+                        <td className="p-3">{item.assumptions_risks.join(', ') || '-'}</td>
+                      </tr>
+                    ))}
+
+                    {/* Activities */}
+                    {data.lfa.activities.map((item, i) => (
+                      <tr key={`activity-${i}`}>
+                        <td className="p-3 border-r border-[#374151] font-medium text-[#6B7280]">{i === 0 ? 'Activities' : ''}</td>
+                        <td className="p-3 border-r border-[#374151]">{item.narrative}</td>
+                        <td className="p-3 border-r border-[#374151]">{item.indicators.join(', ')}</td>
+                        <td className="p-3">{item.assumptions_risks.join(', ') || '-'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          {/* RIGHT: Real Canvas Snapshot */}
+          <div className="w-1/2 flex flex-col bg-[#111111] relative">
+            <div className="absolute top-4 right-4 z-20 bg-black/60 px-3 py-1 rounded-full text-xs text-white border border-white/20">
+              Live Canvas Snapshot
+            </div>
+            {/* We render a Read-Only React Flow instance here to act as the snapshot */}
+            <ReactFlow
+              nodes={nodes}
+              edges={edges}
+              nodeTypes={nodeTypes} // Reuse the same node types
+              fitView
+              attributionPosition="bottom-right"
+              className="bg-[#111111]"
+              nodesDraggable={false}
+              nodesConnectable={false}
+              panOnScroll={true}
+              zoomOnScroll={true}
+              proOptions={{ hideAttribution: true }}
             >
-              <X className="w-4 h-4 text-[#9CA3AF]" />
-            </Button>
+              <Background color="#333" gap={24} size={1} className="opacity-20" />
+            </ReactFlow>
           </div>
+
         </div>
 
-        <div className="p-6 space-y-4">
-          {/* Error 1 */}
-          <div className="flex items-start gap-3 p-4 bg-[#B91C1C]/10 border border-[#B91C1C]/30 rounded">
-            <AlertTriangle className="w-5 h-5 text-[#B91C1C] flex-shrink-0 mt-0.5" />
-            <div>
-              <p className="text-[#E5E7EB] font-medium mb-1">BEO assigned 5 tasks beyond capacity</p>
-              <p className="text-[#9CA3AF] text-sm">
-                Block Education Officer cannot realistically manage this many responsibilities. Consider adding support staff or reducing scope.
-              </p>
-            </div>
-          </div>
-
-          {/* Error 2 */}
-          <div className="flex items-start gap-3 p-4 bg-[#B91C1C]/10 border border-[#B91C1C]/30 rounded">
-            <AlertTriangle className="w-5 h-5 text-[#B91C1C] flex-shrink-0 mt-0.5" />
-            <div>
-              <p className="text-[#E5E7EB] font-medium mb-1">Outcome has no measurable indicator</p>
-              <p className="text-[#9CA3AF] text-sm">
-                Add at least one indicator to measure progress toward your outcome. Without this, the program cannot be evaluated.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="p-6 border-t border-[#2D3340] bg-[#0F1216]/50">
-          <p className="text-[#6B7280] text-sm mb-4">
-            Export remains locked until all critical errors are resolved.
-          </p>
-          <Button
-            onClick={onClose}
-            className="w-full py-3 bg-[#D97706] text-[#0F1216] rounded font-semibold hover:bg-[#B45309] transition-colors h-auto border-none shadow-none"
-          >
-            Return to Canvas
+        {/* Footer */}
+        <div className="p-4 border-t border-[#2D3340] bg-[#171B21] flex justify-end gap-3">
+          <Button variant="outline" className="border-[#374151] text-[#E5E7EB]" onClick={onClose}>Close</Button>
+          <Button className="bg-[#D97706] hover:bg-[#B45309] text-[#0F1216]">
+            <Download className="w-4 h-4 mr-2" />
+            Export LFA PDF
           </Button>
         </div>
       </div>

@@ -8,6 +8,8 @@ import PatternLibrary from './components/PatternLibrary';
 import MissionInitialize from './components/MissionInitialize';
 import ImpactCanvas from './components/ImpactCanvas';
 import LogicPreview from './components/LogicPreview';
+import { LFADocument } from './lib/fln-compiler';
+import { Node, Edge } from 'reactflow';
 import HeroGridWarp from './components/HeroGridWarp';
 import Settings from './components/Settings';
 import HexagonBackground from './components/HexagonBackground';
@@ -23,6 +25,12 @@ export default function App() {
   const [currentPage, setCurrentPage] = useState<PageType>('landing');
   const [simulationPassed, setSimulationPassed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [simulationResults, setSimulationResults] = useState<{
+    lfa: LFADocument;
+    nodes: Node[];
+    edges: Edge[];
+    shortcomings: string[];
+  } | null>(null);
 
   // Refs for hero text animations
   const headlineRef = useRef<HTMLHeadingElement>(null);
@@ -119,14 +127,34 @@ export default function App() {
   }
 
   if (currentPage === 'preview') {
-    return <LogicPreview simulationPassed={simulationPassed} onBack={() => navigateTo('builder')} onSettings={() => navigateTo('settings')} />;
+    return (
+      <LogicPreview
+        simulationPassed={simulationPassed}
+        onBack={() => navigateTo('builder')}
+        onSettings={() => navigateTo('settings')}
+        lfaData={simulationResults?.lfa || null}
+        canvasNodes={simulationResults?.nodes || []}
+        canvasEdges={simulationResults?.edges || []}
+        shortcomings={simulationResults?.shortcomings || []}
+      />
+    );
   }
 
   if (currentPage === 'builder') {
-    return <ImpactCanvas onBack={() => navigateTo('dashboard')} onSimulationComplete={() => {
-      setSimulationPassed(true);
-      navigateTo('preview');
-    }} onSettings={() => navigateTo('settings')} />;
+    return (
+      <ImpactCanvas
+        onBack={() => navigateTo('dashboard')}
+        onSimulationComplete={(results) => {
+          console.log('📦 [App] Received simulation results:', results);
+          setSimulationPassed(true);
+          if (results) {
+            setSimulationResults(results);
+          }
+          navigateTo('preview');
+        }}
+        onSettings={() => navigateTo('settings')}
+      />
+    );
   }
 
   if (currentPage === 'initialize') {
