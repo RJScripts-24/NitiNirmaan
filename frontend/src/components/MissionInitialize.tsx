@@ -4,6 +4,8 @@ import { Button } from "./ui/button";
 import { Ripple } from "./ui/ripple";
 import NoiseBackground from './NoiseBackground';
 import HexagonBackground from './HexagonBackground';
+import { supabase } from '../lib/supabase';
+import { useEffect } from 'react';
 
 interface MissionInitializeProps {
   onClose: () => void;
@@ -84,9 +86,9 @@ export default function MissionInitialize({ onClose, onComplete }: MissionInitia
           </div>
 
           <div className="px-8 py-6 flex items-center relative" style={{ zIndex: 10, pointerEvents: 'none' }}>
-            <img 
-              src="/logo-2.png" 
-              alt="NitiNirmaan" 
+            <img
+              src="/logo-2.png"
+              alt="NitiNirmaan"
               className="h-14 w-auto object-contain"
             />
           </div>
@@ -215,6 +217,50 @@ function ContextStep({
   onNext: () => void;
   isValid: boolean;
 }) {
+  const [statesList, setStatesList] = useState<any[]>([]);
+  const [districtsList, setDistrictsList] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  // Fetch States on Mount
+  useEffect(() => {
+    const fetchStates = async () => {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('master_states')
+        .select('*')
+        .order('name');
+
+      if (data) {
+        setStatesList(data);
+      }
+      setLoading(false);
+    };
+
+    fetchStates();
+  }, []);
+
+  // Fetch Districts when State Changes
+  useEffect(() => {
+    const fetchDistricts = async () => {
+      if (!missionData.state) {
+        setDistrictsList([]);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('master_districts')
+        .select('*')
+        .eq('state_id', missionData.state)
+        .order('name');
+
+      if (data) {
+        setDistrictsList(data);
+      }
+    };
+
+    fetchDistricts();
+  }, [missionData.state]);
+
   return (
     <div>
       <div className="mb-8">
@@ -257,17 +303,17 @@ function ContextStep({
               <div className="space-y-3">
                 <select
                   value={missionData.state}
-                  onChange={(e) =>
-                    setMissionData({ ...missionData, state: e.target.value })
-                  }
+                  onChange={(e) => {
+                    const newState = e.target.value;
+                    // Reset district when state changes
+                    setMissionData({ ...missionData, state: newState, district: '' });
+                  }}
                   className="w-full px-4 py-3 bg-[#0F1216] border border-[#374151] rounded text-[#E5E7EB] focus:outline-none focus:border-[#D97706] transition-colors"
                 >
                   <option value="">Select State</option>
-                  <option value="Bihar">Bihar</option>
-                  <option value="Gujarat">Gujarat</option>
-                  <option value="Punjab">Punjab</option>
-                  <option value="Rajasthan">Rajasthan</option>
-                  <option value="Himachal Pradesh">Himachal Pradesh</option>
+                  {statesList.map(state => (
+                    <option key={state.id} value={state.id}>{state.name}</option>
+                  ))}
                 </select>
 
                 <select
@@ -275,12 +321,14 @@ function ContextStep({
                   onChange={(e) =>
                     setMissionData({ ...missionData, district: e.target.value })
                   }
-                  className="w-full px-4 py-3 bg-[#0F1216] border border-[#374151] rounded text-[#E5E7EB] focus:outline-none focus:border-[#D97706] transition-colors"
+                  disabled={!missionData.state}
+                  className={`w-full px-4 py-3 bg-[#0F1216] border border-[#374151] rounded text-[#E5E7EB] focus:outline-none focus:border-[#D97706] transition-colors ${!missionData.state ? 'opacity-50 cursor-not-allowed' : ''
+                    }`}
                 >
-                  <option value="">Select District (Optional)</option>
-                  <option value="Patna">Patna</option>
-                  <option value="Gaya">Gaya</option>
-                  <option value="Muzaffarpur">Muzaffarpur</option>
+                  <option value="">Select District</option>
+                  {districtsList.map(district => (
+                    <option key={district.id} value={district.name}>{district.name}</option>
+                  ))}
                 </select>
               </div>
 
