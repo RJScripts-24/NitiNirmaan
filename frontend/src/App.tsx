@@ -97,8 +97,16 @@ export default function App() {
           setCurrentPage('landing');
         }
       } else if (!hash) {
-        console.log('No hash, default to landing');
-        setCurrentPage('landing');
+        // Check for Guest Token
+        const token = new URLSearchParams(window.location.search).get('token');
+        if (token) {
+          console.log('Guest Token found, routing to builder');
+          setCurrentPage('builder');
+          window.location.hash = 'builder';
+        } else {
+          console.log('No hash, default to landing');
+          setCurrentPage('landing');
+        }
       }
     };
 
@@ -153,6 +161,7 @@ export default function App() {
           navigateTo('preview');
         }}
         onSettings={() => navigateTo('settings')}
+        guestToken={new URLSearchParams(window.location.search).get('token') || undefined}
       />
     );
   }

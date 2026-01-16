@@ -12,6 +12,10 @@ interface AuthPageProps {
   onAuthSuccess?: () => void;
 }
 
+import { supabase } from '../lib/supabase';
+
+// ... (keep imports)
+
 export default function AuthPage({ onBack, onAuthSuccess }: AuthPageProps) {
   const [isSignup, setIsSignup] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -19,6 +23,7 @@ export default function AuthPage({ onBack, onAuthSuccess }: AuthPageProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [orgName, setOrgName] = useState('');
+  const [loading, setLoading] = useState(false); // Add loading state
 
   // Refs for animations
   const leftPanelRef = useRef<HTMLDivElement>(null);
@@ -26,37 +31,82 @@ export default function AuthPage({ onBack, onAuthSuccess }: AuthPageProps) {
 
   // Fade-in animations on page load
   useGSAP(() => {
+    // ... (keep existing animation logic)
     const timeline = gsap.timeline();
-
     timeline
-      .fromTo(
-        leftPanelRef.current,
-        { opacity: 0, x: -50 },
-        { opacity: 1, x: 0, duration: 0.8, ease: 'power3.out' }
-      )
-      .fromTo(
-        formContainerRef.current,
-        { opacity: 0, scale: 0.9, y: 20 },
-        { opacity: 1, scale: 1, y: 0, duration: 0.8, ease: 'power3.out' },
-        '-=0.5'
-      );
+      .fromTo(leftPanelRef.current, { opacity: 0, x: -50 }, { opacity: 1, x: 0, duration: 0.8, ease: 'power3.out' })
+      .fromTo(formContainerRef.current, { opacity: 0, scale: 0.9, y: 20 }, { opacity: 1, scale: 1, y: 0, duration: 0.8, ease: 'power3.out' }, '-=0.5');
   }, []);
 
-  const handleAuth = (e: React.FormEvent) => {
+  const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
-    setShowWelcome(true);
-    setTimeout(() => {
-      setShowWelcome(false);
-      onAuthSuccess?.();
-    }, 3000);
+    setLoading(true);
+
+    try {
+      let result;
+      if (isSignup) {
+        // Sign Up
+        result = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              org_name: orgName,
+            }
+          }
+        });
+      } else {
+        // Sign In
+        result = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+      }
+
+      const { data, error } = result;
+
+      if (error) {
+        throw error;
+      }
+
+      if (data.session) {
+        // Success
+        localStorage.setItem('token', data.session.access_token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+
+        // Show Welcome Animation
+        setShowWelcome(true);
+        setTimeout(() => {
+          setShowWelcome(false);
+          onAuthSuccess?.();
+        }, 3000);
+      } else if (isSignup && !data.session) {
+        // Email confirmation case (if enabled in Supabase)
+        alert('Please check your email to confirm your registration.');
+      }
+
+    } catch (error: any) {
+      console.error('Auth Error:', error);
+      alert(error.message || 'Authentication failed');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleGoogleSignIn = () => {
-    setShowWelcome(true);
-    setTimeout(() => {
-      setShowWelcome(false);
-      onAuthSuccess?.();
-    }, 3000);
+  const handleGoogleSignIn = async () => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin // Redirect back to this app
+        }
+      });
+      if (error) throw error;
+      // Note: OAuth redirect will reload the page, so we don't manually navigate here.
+    } catch (error: any) {
+      console.error('Google Auth Error:', error);
+      alert(error.message || 'Google Sign-In failed');
+    }
   };
 
   return (

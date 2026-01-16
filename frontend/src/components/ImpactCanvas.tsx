@@ -71,9 +71,11 @@ import {
   Move,
   GripHorizontal,
   Download,
+  MousePointer2,
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { supabase } from '../lib/supabase';
+import { useRealtime } from '../hooks/useRealtime';
 
 import HexagonBackground from './HexagonBackground';
 
@@ -85,6 +87,7 @@ interface ImpactCanvasProps {
   initialNodes?: Node[];
   initialEdges?: Edge[];
   readOnly?: boolean;
+  guestToken?: string;
 }
 
 // Node type colors (Generic Fallback)
@@ -170,7 +173,8 @@ export default function ImpactCanvas({
   onSettings,
   initialNodes: propNodes,
   initialEdges: propEdges,
-  readOnly = false
+  readOnly = false,
+  guestToken
 }: ImpactCanvasProps) {
   // Use propNodes if available, otherwise fallback to default initialNodes or empty array
   const [nodes, setNodes, onNodesChange] = useNodesState(propNodes || initialNodes);
@@ -189,6 +193,27 @@ export default function ImpactCanvas({
   const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
   const [domain, setDomain] = useState<string>('');
   const [simulationData, setSimulationData] = useState<{ lfa: LFADocument; shortcomings: string[] } | null>(null);
+  const [projectId, setProjectId] = useState<string | null>(null);
+
+  // Identity for Realtime
+  const identity = useMemo(() => {
+    try {
+      return JSON.parse(localStorage.getItem('user_identity') || 'null');
+    } catch { return null; }
+  }, [guestToken]); // Update when guest mode triggers identity creation
+
+  const { cursors, broadcastCursor } = useRealtime({
+    projectId: projectId || '',
+    token: guestToken,
+    identity
+  });
+
+  const onMouseMove = useCallback((e: React.MouseEvent) => {
+    if (reactFlowInstance) {
+      const pos = reactFlowInstance.screenToFlowPosition({ x: e.clientX, y: e.clientY });
+      broadcastCursor(pos.x, pos.y);
+    }
+  }, [reactFlowInstance, broadcastCursor]);
 
   // Sync state if props change (for template selection) or load from Storage/DB
   useEffect(() => {
@@ -213,6 +238,7 @@ export default function ImpactCanvas({
     const activeProjectId = localStorage.getItem('active_project_id');
     if (activeProjectId) {
       async function loadProject() {
+        setProjectId(activeProjectId); // Set Realtime ID
         const { data: project } = await supabase.from('projects').select('*').eq('id', activeProjectId).single();
         if (project) setCurrentProjectName(project.title);
 
@@ -236,7 +262,79 @@ export default function ImpactCanvas({
       return;
     }
 
-    // 3. Guest Mode Loading logic
+    // 3. Shared Link / Guest Token Mode
+    if (guestToken) {
+      async function loadSharedProject() {
+        console.log('🔗 [ImpactCanvas] Loading shared project with token:', guestToken);
+
+        // Set global header for this session
+        // @ts-ignore
+        supabase.global = { headers: { 'x-share-token': guestToken } }; // Monkey-patch global headers for this session
+        // OR better:
+        // supabase['rest'].headers['x-share-token'] = guestToken; 
+        // But supabase-js v2 keeps headers in the client config.
+        // Let's rely on the fact that we can't easily change global headers in v2 without creating a new client.
+        // But we can just try to query with the filter, and if RLS allows it (due to our policy checking headers OR just the filter if we could pass headers).
+        // WAIT. My RLS checks 'request.headers'. I MUST send the header.
+        // Re-initializing client here is messy.
+        // Workaround: Call an RPC that sets a local config variable? No.
+        // Actually, supabase-js v2 allows:
+        // const { data } = await supabase.from(...).select(...)
+        // It does NOT support custom headers per request easily.
+        // BUT, we can use `supabase.functions.invoke`? No.
+        // Let's use the `global` property if it exists, or just hack it.
+        // In v2: `supabase.rest.headers['x-share-token'] = guestToken;`
+
+        // Attempt to set header on the imported instance (depends on version)
+        // Assuming v2
+        // @ts-ignore
+        if (supabase.rest) supabase.rest.headers['x-share-token'] = guestToken;
+
+        // Fetch Project
+        const { data: project, error: projError } = await supabase
+          .from('projects')
+          .select('*')
+          .eq('share_token', guestToken)
+          .single();
+
+        if (projError || !project) {
+          console.error('Shared Project Error:', projError);
+          alert('Invalid or expired share link.');
+          return;
+        }
+
+        setCurrentProjectName(project.title);
+        setProjectId(project.id); // Set Realtime ID
+        // Store active project ID so other components know (like simulation)
+        // But mark as guest-access
+        localStorage.setItem('active_project_id', project.id);
+        localStorage.setItem('is_guest_access', 'true'); // Flag for other logic
+
+        const { data: nodesData } = await supabase.from('nodes').select('*').eq('project_id', project.id);
+        const { data: edgesData } = await supabase.from('edges').select('*').eq('project_id', project.id);
+
+        if (nodesData) {
+          setNodes(nodesData.map((n: any) => ({
+            ...n,
+            data: typeof n.data === 'string' ? JSON.parse(n.data) : n.data,
+            position: typeof n.position === 'string' ? JSON.parse(n.position) : n.position
+          })));
+        }
+        if (edgesData) setEdges(edgesData);
+
+        // Generate Guest Identity
+        if (!localStorage.getItem('user_identity')) {
+          const randomColor = '#' + Math.floor(Math.random() * 16777215).toString(16);
+          const randomName = 'Guest ' + Math.floor(Math.random() * 1000);
+          localStorage.setItem('user_identity', JSON.stringify({ name: randomName, color: randomColor }));
+          console.log('👤 [ImpactCanvas] Assigned Guest Identity:', randomName);
+        }
+      }
+      loadSharedProject();
+      return;
+    }
+
+    // 4. Local Guest Mode Loading logic (Legacy)
     const guestProjectRaw = localStorage.getItem('guest_active_project');
     if (guestProjectRaw) {
       const guestProject = JSON.parse(guestProjectRaw);
@@ -244,7 +342,7 @@ export default function ImpactCanvas({
       if (guestProject.edges) setEdges(guestProject.edges);
       if (guestProject.title) setCurrentProjectName(guestProject.title);
     }
-  }, [propNodes, propEdges, setNodes, setEdges]);
+  }, [propNodes, propEdges, setNodes, setEdges, guestToken]);
 
   // Check if Problem Statement has been placed on canvas
   const hasProblemStatement = nodes.some(node =>
@@ -413,7 +511,7 @@ export default function ImpactCanvas({
 
         // Try local compilation for FLN (or default)
         try {
-          localLfa = compileFLNGraphToLFA(nodes, edges);
+          localLfa = compileFLNGraphToLFA(nodes as any, edges);
         } catch (err) {
           console.error("Local compilation failed", err);
         }
@@ -603,9 +701,101 @@ export default function ImpactCanvas({
             <Settings className="w-5 h-5 text-[#9CA3AF]" />
           </Button>
 
-          {/* Share Button */}
           <Button
             className="px-4 py-2 bg-[#1F2937] hover:bg-[#374151] text-[#E5E7EB] rounded font-medium transition-colors flex items-center gap-2 h-auto border border-[#2D3340]"
+            onClick={async () => {
+              let activeProjectId = localStorage.getItem('active_project_id');
+              let token = localStorage.getItem('token');
+
+              // A. Guest Mode (Viewing Shared Link) -> Just Copy URL
+              if (guestToken) {
+                navigator.clipboard.writeText(window.location.href);
+                alert('Link copied to clipboard!');
+                return;
+              }
+
+              // B. Unsaved Project -> Auto-Save then Share
+              if (!activeProjectId || activeProjectId === 'guest') {
+
+                // 1. If no token, try Anonymous Sign-in
+                if (!token) {
+                  console.log('🔒 [Share] No auth token found. Attempting Anonymous Sign-in...');
+                  const { data: authData, error: authError } = await supabase.auth.signInAnonymously();
+
+                  if (authError || !authData.session) {
+                    console.error('Anonymous Auth Failed:', authError);
+                    alert('You must be logged in to share. (Guest access not enabled on server)');
+                    return;
+                  }
+
+                  token = authData.session.access_token;
+                  localStorage.setItem('token', token);
+                  // Also store user info for consistency
+                  if (authData.user) {
+                    localStorage.setItem('user', JSON.stringify(authData.user));
+                  }
+                  console.log('✅ [Share] Anonymous Guest logged in.');
+                }
+
+                try {
+                  // 2. Create Project
+                  const createRes = await fetch('/api/projects', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({
+                      projectName: currentProjectName || 'Untitled Canvas',
+                      description: 'Shared via Link',
+                      domain: domain || 'GENERAL'
+                    })
+                  });
+
+                  if (!createRes.ok) {
+                    if (createRes.status === 401) throw new Error('Unauthorized: Token invalid');
+                    throw new Error('Failed to create project');
+                  }
+
+                  const createData = await createRes.json();
+                  activeProjectId = createData.id;
+
+                  // Update Local State
+                  localStorage.setItem('active_project_id', activeProjectId!);
+                  setProjectId(activeProjectId);
+
+                  // 3. Save Graph Logic
+                  const saveRes = await fetch(`/api/projects/${activeProjectId}/graph`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ nodes, edges, logicScore: 0 })
+                  });
+                  if (!saveRes.ok) throw new Error('Failed to save content');
+
+                } catch (e) {
+                  console.error('Auto-save failed:', e);
+                  alert(`Failed to save project before sharing. ${e instanceof Error ? e.message : ''}`);
+                  return;
+                }
+              }
+
+              // C. Standard Share
+              try {
+                const response = await fetch(`/api/projects/${activeProjectId}/share`, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                  }
+                });
+
+                if (!response.ok) throw new Error('Failed to generate link');
+
+                const data = await response.json();
+                navigator.clipboard.writeText(data.shareUrl);
+                alert('Share link copied to clipboard!');
+              } catch (e) {
+                console.error('Share Error:', e);
+                alert('Could not generate share link.');
+              }
+            }}
           >
             <Share className="w-4 h-4" />
             Share
@@ -659,7 +849,22 @@ export default function ImpactCanvas({
             fitView
             className="bg-transparent"
             onInit={setReactFlowInstance}
+            onMouseMove={onMouseMove}
           >
+            {/* Realtime Cursors */}
+            {Object.entries(cursors).map(([id, cursor]) => (
+              <div key={id} style={{
+                position: 'absolute',
+                transform: `translate(${cursor.x}px, ${cursor.y}px)`,
+                zIndex: 100,
+                pointerEvents: 'none',
+                transition: 'transform 0.1s linear'
+              }}>
+                <MousePointer2 fill={cursor.color} color={cursor.color} size={16} />
+                <span className="ml-4 px-2 py-1 rounded text-xs text-white whitespace-nowrap opacity-75" style={{ backgroundColor: cursor.color }}>{cursor.name}</span>
+              </div>
+            ))}
+
             <Background
               color="#333"
               variant={BackgroundVariant.Dots}

@@ -122,6 +122,68 @@ projectsRouter.get('/:id', authMiddleware, async (req, res) => {
     }
 });
 
+// --- GENERATE SHARE LINK ---
+projectsRouter.post('/:id/share', authMiddleware, async (req, res) => {
+    try {
+        const supabase = req.supabaseClient! as any;
+        const user = req.user!;
+        const projectId = req.params.id;
+
+        // 1. Check Ownership
+        const { data: project, error: fetchError } = await supabase
+            .from('projects')
+            .select('id, user_id, share_token')
+            .eq('id', projectId)
+            .single();
+
+        if (fetchError || !project) {
+            return res.status(404).json({ error: 'Project not found' });
+        }
+
+        // Allow Guests (who might be editing a shared project) to generate link if public editing is enabled?
+        // For now, enforcing Owner check as per original plan, but can relax if needed.
+        // User said: "even if i log in as Gues i should be able to generate link"
+        // If the user is unauthenticated (Guest), authMiddleware might fail unless we allow optional auth.
+        // But this route uses `authMiddleware` which likely requires a valid token.
+        // TODO: This might need adjustment if "Guest" means "Unauthenticated User".
+
+        if (project.user_id !== user.id) {
+            // Check if Guest has access via token? 
+            // Currently, the authMiddleware validates the JWT.
+            return res.status(403).json({ error: 'Unauthorized' });
+        }
+
+        // 2. Enable Public Editing & Ensure Token Exists
+        const { data: updatedProject, error: updateError } = await supabase
+            .from('projects')
+            .update({
+                is_public_editing_enabled: true,
+                // share_token should effectively already exist due to default, but we can ensure it here if null
+            })
+            .eq('id', projectId)
+            .select('share_token')
+            .single();
+
+        if (updateError) {
+            return res.status(500).json({ error: 'Failed to enable sharing' });
+        }
+
+        const token = updatedProject.share_token;
+        // Construct URL - frontend will handle the specific route (e.g., /#builder?token=...)
+        const shareUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:5173'}/#builder?token=${token}`;
+
+        res.json({
+            shareUrl,
+            token,
+            message: 'Public editing enabled'
+        });
+
+    } catch (error) {
+        console.error('Share Project Error:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
 // --- SAVE PROJECT GRAPH ---
 projectsRouter.put('/:id/graph', authMiddleware, async (req, res) => {
     try {
