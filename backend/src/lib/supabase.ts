@@ -56,9 +56,11 @@ export async function getUserFromToken(token: string) {
     const { data: { user }, error } = await client.auth.getUser();
 
     if (error || !user) {
+        console.error('🔑 [Auth] Token validation failed:', error?.message || 'No user found');
         return null;
     }
 
+    console.log('🔑 [Auth] Token validated for user:', user.id);
     return { user, client };
 }
 

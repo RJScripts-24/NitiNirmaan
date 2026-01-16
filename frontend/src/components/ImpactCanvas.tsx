@@ -304,12 +304,19 @@ export default function ImpactCanvas({
 
         if (nodesData) {
           setNodes(nodesData.map((n: any) => ({
-            ...n,
-            data: typeof n.data === 'string' ? JSON.parse(n.data) : n.data,
-            position: typeof n.position === 'string' ? JSON.parse(n.position) : n.position
+            id: n.id,
+            type: n.type || 'customNode',
+            position: { x: n.position_x || 0, y: n.position_y || 0 },
+            data: typeof n.data === 'string' ? JSON.parse(n.data) : (n.data || { label: n.label || 'Untitled' }),
           })));
         }
-        if (edgesData) setEdges(edgesData);
+        if (edgesData) {
+          setEdges(edgesData.map((e: any) => ({
+            id: e.id,
+            source: e.source,
+            target: e.target,
+          })));
+        }
       }
       loadProject();
       return;
@@ -321,25 +328,6 @@ export default function ImpactCanvas({
         console.log('🔗 [ImpactCanvas] Loading shared project with token:', guestToken);
 
         // Set global header for this session
-        // @ts-ignore
-        supabase.global = { headers: { 'x-share-token': guestToken } }; // Monkey-patch global headers for this session
-        // OR better:
-        // supabase['rest'].headers['x-share-token'] = guestToken; 
-        // But supabase-js v2 keeps headers in the client config.
-        // Let's rely on the fact that we can't easily change global headers in v2 without creating a new client.
-        // But we can just try to query with the filter, and if RLS allows it (due to our policy checking headers OR just the filter if we could pass headers).
-        // WAIT. My RLS checks 'request.headers'. I MUST send the header.
-        // Re-initializing client here is messy.
-        // Workaround: Call an RPC that sets a local config variable? No.
-        // Actually, supabase-js v2 allows:
-        // const { data } = await supabase.from(...).select(...)
-        // It does NOT support custom headers per request easily.
-        // BUT, we can use `supabase.functions.invoke`? No.
-        // Let's use the `global` property if it exists, or just hack it.
-        // In v2: `supabase.rest.headers['x-share-token'] = guestToken;`
-
-        // Attempt to set header on the imported instance (depends on version)
-        // Assuming v2
         // @ts-ignore
         if (supabase.rest) supabase.rest.headers['x-share-token'] = guestToken;
 
@@ -368,12 +356,19 @@ export default function ImpactCanvas({
 
         if (nodesData) {
           setNodes(nodesData.map((n: any) => ({
-            ...n,
-            data: typeof n.data === 'string' ? JSON.parse(n.data) : n.data,
-            position: typeof n.position === 'string' ? JSON.parse(n.position) : n.position
+            id: n.id,
+            type: n.type || 'customNode',
+            position: { x: n.position_x || 0, y: n.position_y || 0 },
+            data: typeof n.data === 'string' ? JSON.parse(n.data) : (n.data || { label: n.label || 'Untitled' }),
           })));
         }
-        if (edgesData) setEdges(edgesData);
+        if (edgesData) {
+          setEdges(edgesData.map((e: any) => ({
+            id: e.id,
+            source: e.source,
+            target: e.target,
+          })));
+        }
 
         // Generate Guest Identity
         if (!localStorage.getItem('user_identity')) {
@@ -396,6 +391,69 @@ export default function ImpactCanvas({
       if (guestProject.title) setCurrentProjectName(guestProject.title);
     }
   }, [propNodes, propEdges, setNodes, setEdges, guestToken]);
+
+
+  // --- SAVE FUNCTIONALITY ---
+  const [isSaving, setIsSaving] = useState(false);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+
+  const saveProject = useCallback(async (currentNodes: Node[], currentEdges: Edge[]) => {
+    const activeProjectId = projectId || localStorage.getItem('active_project_id');
+
+    // Don't save if guest/demo mode without project ID, or if viewing shared link (guestToken)
+    if (!activeProjectId || activeProjectId === 'guest' || guestToken) {
+      return;
+    }
+
+    // Get fresh token from Supabase session (handles refresh automatically)
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token;
+
+    if (!token) {
+      console.warn('⚠️ [Auto-Save] No active session found');
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+      console.log(`💾 [Auto-Save] Saving to ${activeProjectId} with fresh token`);
+
+      const response = await fetch(`/api/projects/${activeProjectId}/graph`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          nodes: currentNodes,
+          edges: currentEdges,
+          logicScore: 0
+        })
+      });
+
+      if (!response.ok) throw new Error('Failed to auto-save');
+
+      setLastSaved(new Date());
+      console.log('✅ [Auto-Save] Saved project graph');
+    } catch (error) {
+      console.error('❌ [Auto-Save] Failed:', error);
+    } finally {
+      setIsSaving(false);
+    }
+  }, [projectId, guestToken]);
+
+  // Auto-Save Effect
+  useEffect(() => {
+    // Skip if no project or if initial load hasn't stabilized
+    if (!projectId || projectId === 'guest' || guestToken) return;
+    if (nodes.length === 0 && edges.length === 0) return; // Don't save empty state over existing data on load
+
+    const timer = setTimeout(() => {
+      saveProject(nodes, edges);
+    }, 2000); // 2 seconds debounce
+
+    return () => clearTimeout(timer);
+  }, [nodes, edges, projectId, guestToken, saveProject]);
 
   // Check if Problem Statement has been placed on canvas
   const hasProblemStatement = nodes.some(node =>
@@ -687,7 +745,6 @@ export default function ImpactCanvas({
           />
         </div>
 
-        {/* Left - Project Name */}
         <div className="flex items-center gap-4 relative" style={{ zIndex: 10, pointerEvents: 'none' }}>
           <img
             src="/logo-2.png"
@@ -715,6 +772,18 @@ export default function ImpactCanvas({
               {currentProjectName}
             </Button>
           )}
+
+          {/* Saving Indicator */}
+          <div className="flex items-center gap-2 transition-opacity duration-300 min-w-[60px]">
+            {isSaving ? (
+              <span className="text-xs text-[#D97706] flex items-center gap-1 font-medium">
+                <div className="w-1.5 h-1.5 bg-[#D97706] rounded-full animate-pulse"></div>
+                Saving...
+              </span>
+            ) : lastSaved ? (
+              <span className="text-xs text-[#6B7280]">Saved</span>
+            ) : null}
+          </div>
         </div>
 
         {/* Center Controls */}

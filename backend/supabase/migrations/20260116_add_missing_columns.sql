@@ -9,6 +9,8 @@ ALTER TABLE projects ADD COLUMN IF NOT EXISTS theme text;
 ALTER TABLE projects ADD COLUMN IF NOT EXISTS location text;
 ALTER TABLE projects ADD COLUMN IF NOT EXISTS status text DEFAULT 'draft';
 ALTER TABLE projects ADD COLUMN IF NOT EXISTS logic_health_score integer DEFAULT 0;
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now();
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now();
 
 -- 2. Share Feature Columns
 ALTER TABLE projects ADD COLUMN IF NOT EXISTS share_token uuid DEFAULT gen_random_uuid();

@@ -88,19 +88,15 @@ projectsRouter.get('/:id', authMiddleware, async (req, res) => {
         // Reconstruct ReactFlow format but also provide top-level fields for API contract
         const flowNodes = ((nodes as any[]) || []).map((n: any) => ({
             id: n.id,
-            type: n.type,
-            position: { x: n.position_x, y: n.position_y },
-            data: { ...(n.data as object || {}), label: n.label }
+            type: n.type || 'customNode',
+            position: { x: n.position_x || 0, y: n.position_y || 0 },
+            data: { ...(n.data as object || {}), label: n.label || 'Untitled' }
         }));
 
         const flowEdges = ((edges as any[]) || []).map((e: any) => ({
             id: e.id,
-            source: e.source_node_id,
-            target: e.target_node_id,
-            data: {
-                interactionType: e.interaction_type,
-                indicators: e.indicators
-            }
+            source: e.source,
+            target: e.target,
         }));
 
         const projectData = project as any; // Cast to avoid never type issues if present
@@ -222,6 +218,8 @@ projectsRouter.put('/:id/graph', authMiddleware, async (req, res) => {
         const projectId = req.params.id;
         const { nodes, edges, logicScore } = req.body;
 
+        console.log(`📝 [Save Graph] Saving graph for project: ${projectId}, nodes: ${nodes?.length}, edges: ${edges?.length}`);
+
         if (!nodes || !edges) {
             return res.status(400).json({ error: 'Missing nodes or edges' });
         }
@@ -236,7 +234,8 @@ projectsRouter.put('/:id/graph', authMiddleware, async (req, res) => {
             .eq('id', projectId);
 
         if (projError) {
-            return res.status(500).json({ error: 'Failed to update project metadata' });
+            console.error('📝 [Save Graph] Project metadata update error:', projError);
+            return res.status(500).json({ error: 'Failed to update project metadata', details: projError.message });
         }
 
         // 2. Sync Nodes (Upsert Strategy)
@@ -244,44 +243,51 @@ projectsRouter.put('/:id/graph', authMiddleware, async (req, res) => {
             id: node.id,
             project_id: projectId,
             type: node.type,
-            label: node.data.label,
-            position_x: node.position.x,
-            position_y: node.position.y,
-            data: node.data,
+            label: node.data?.label || 'Untitled',
+            position_x: node.position?.x || 0,
+            position_y: node.position?.y || 0,
+            data: node.data || {},
         }));
 
         // Delete old nodes to handle removals
-        await supabase.from('nodes').delete().eq('project_id', projectId);
+        const { error: deleteNodesError } = await supabase.from('nodes').delete().eq('project_id', projectId);
+        if (deleteNodesError) {
+            console.error('📝 [Save Graph] Delete nodes error:', deleteNodesError);
+        }
+
         const { error: nodeError } = await supabase.from('nodes').insert(formattedNodes);
 
         if (nodeError) {
-            console.error('Node Save Error:', nodeError);
-            return res.status(500).json({ error: 'Failed to save system nodes.' });
+            console.error('📝 [Save Graph] Node insert error:', nodeError);
+            return res.status(500).json({ error: 'Failed to save system nodes.', details: nodeError.message });
         }
 
         // 3. Sync Edges
         const formattedEdges = edges.map((edge: any) => ({
             id: edge.id,
             project_id: projectId,
-            source_node_id: edge.source,
-            target_node_id: edge.target,
-            interaction_type: edge.data?.interactionType || 'connects',
-            indicators: edge.data?.indicators || [],
+            source: edge.source,
+            target: edge.target,
         }));
 
-        await supabase.from('edges').delete().eq('project_id', projectId);
+        const { error: deleteEdgesError } = await supabase.from('edges').delete().eq('project_id', projectId);
+        if (deleteEdgesError) {
+            console.error('📝 [Save Graph] Delete edges error:', deleteEdgesError);
+        }
+
         const { error: edgeError } = await supabase.from('edges').insert(formattedEdges);
 
         if (edgeError) {
-            console.error('Edge Save Error:', edgeError);
-            return res.status(500).json({ error: 'Failed to save logic connections.' });
+            console.error('📝 [Save Graph] Edge insert error:', edgeError);
+            return res.status(500).json({ error: 'Failed to save logic connections.', details: edgeError.message });
         }
 
+        console.log(`✅ [Save Graph] Successfully saved graph for project: ${projectId}`);
         res.json({ message: 'System blueprint saved successfully.' });
 
-    } catch (error) {
-        console.error('Save Project Error:', error);
-        res.status(500).json({ error: 'Internal Server Error' });
+    } catch (error: any) {
+        console.error('📝 [Save Graph] Unhandled error:', error);
+        res.status(500).json({ error: 'Internal Server Error', details: error.message });
     }
 });
 
