@@ -85,7 +85,12 @@ export default function App() {
   // Initialize state from URL hash
   useEffect(() => {
     const handleHashChange = () => {
-      const hash = window.location.hash.slice(1) as PageType; // Remove #
+      // Handle hash with query params like #builder?token=...
+      const fullHash = window.location.hash.slice(1);
+      const [hashPath, hashQuery] = fullHash.split('?');
+
+      const hash = hashPath as PageType;
+
       if (hash && hash !== currentPage) {
         // Validate hash is a valid PageType, otherwise default to landing
         console.log('Routing to:', hash);
@@ -97,10 +102,10 @@ export default function App() {
           setCurrentPage('landing');
         }
       } else if (!hash) {
-        // Check for Guest Token
+        // Check for Guest Token in search params (legacy or direct link)
         const token = new URLSearchParams(window.location.search).get('token');
         if (token) {
-          console.log('Guest Token found, routing to builder');
+          console.log('Guest Token found in search params, routing to builder');
           setCurrentPage('builder');
           window.location.hash = 'builder';
         } else {
@@ -161,7 +166,11 @@ export default function App() {
           navigateTo('preview');
         }}
         onSettings={() => navigateTo('settings')}
-        guestToken={new URLSearchParams(window.location.search).get('token') || undefined}
+        guestToken={
+          new URLSearchParams(window.location.search).get('token') ||
+          new URLSearchParams(window.location.hash.split('?')[1]).get('token') ||
+          undefined
+        }
       />
     );
   }
