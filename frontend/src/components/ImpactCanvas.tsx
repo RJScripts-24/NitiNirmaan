@@ -198,14 +198,34 @@ export default function ImpactCanvas({
   // Identity for Realtime
   const identity = useMemo(() => {
     try {
-      return JSON.parse(localStorage.getItem('user_identity') || 'null');
-    } catch { return null; }
-  }, [guestToken]); // Update when guest mode triggers identity creation
+      const stored = localStorage.getItem('user_identity');
+      if (stored) return JSON.parse(stored);
+      // Generate if missing
+      const randomColor = '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
+      const randomName = 'User ' + Math.floor(Math.random() * 1000);
+      const newIdentity = { name: randomName, color: randomColor };
+      localStorage.setItem('user_identity', JSON.stringify(newIdentity));
+      return newIdentity;
+    } catch { return { name: 'Guest', color: '#888888' }; }
+  }, []);
 
-  const { cursors, broadcastCursor } = useRealtime({
+  // Callbacks for receiving remote updates
+  const handleRemoteNodesUpdate = useCallback((remoteNodes: Node[]) => {
+    console.log(`🔄 [ImpactCanvas] Applying ${remoteNodes.length} nodes from remote user`);
+    setNodes(remoteNodes);
+  }, [setNodes]);
+
+  const handleRemoteEdgesUpdate = useCallback((remoteEdges: Edge[]) => {
+    console.log(`🔄 [ImpactCanvas] Applying ${remoteEdges.length} edges from remote user`);
+    setEdges(remoteEdges);
+  }, [setEdges]);
+
+  const { cursors, broadcastCursor, broadcastNodes, broadcastEdges } = useRealtime({
     projectId: projectId || '',
     token: guestToken,
-    identity
+    identity,
+    onNodesChange: handleRemoteNodesUpdate,
+    onEdgesChange: handleRemoteEdgesUpdate,
   });
 
   const onMouseMove = useCallback((e: React.MouseEvent) => {
@@ -214,6 +234,21 @@ export default function ImpactCanvas({
       broadcastCursor(pos.x, pos.y);
     }
   }, [reactFlowInstance, broadcastCursor]);
+
+  // Broadcast nodes/edges when they change locally
+  useEffect(() => {
+    if (projectId && nodes.length > 0) {
+      console.log(`📤 [ImpactCanvas] Nodes changed, broadcasting...`);
+      broadcastNodes(nodes);
+    }
+  }, [nodes, projectId, broadcastNodes]);
+
+  useEffect(() => {
+    if (projectId && edges.length > 0) {
+      console.log(`📤 [ImpactCanvas] Edges changed, broadcasting...`);
+      broadcastEdges(edges);
+    }
+  }, [edges, projectId, broadcastEdges]);
 
   // Sync state if props change (for template selection) or load from Storage/DB
   useEffect(() => {
