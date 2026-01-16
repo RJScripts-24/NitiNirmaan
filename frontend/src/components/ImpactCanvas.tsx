@@ -176,9 +176,14 @@ export default function ImpactCanvas({
   readOnly = false,
   guestToken
 }: ImpactCanvasProps) {
-  // Use propNodes if available, otherwise fallback to default initialNodes or empty array
-  const [nodes, setNodes, onNodesChange] = useNodesState(propNodes || initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(propEdges || initialEdges); // Assuming initialEdges exists or should be empty array
+  // Determine if we need to fetch data (Auth or Guest Token)
+  const shouldFetch = !propNodes && (guestToken || (typeof localStorage !== 'undefined' && localStorage.getItem('active_project_id')));
+
+  // Use propNodes if available, otherwise empty if fetching, otherwise default
+  const [nodes, setNodes, onNodesChange] = useNodesState(propNodes || (shouldFetch ? [] : initialNodes));
+  const [edges, setEdges, onEdgesChange] = useEdgesState(propEdges || (shouldFetch ? [] : initialEdges));
+
+  const [isLoadingProject, setIsLoadingProject] = useState(!!shouldFetch);
 
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
   const [selectedEdge, setSelectedEdge] = useState<Edge | null>(null);
@@ -324,6 +329,7 @@ export default function ImpactCanvas({
             data: { indicators: e.indicators, interactionType: e.interaction_type }
           })));
         }
+        setIsLoadingProject(false);
       }
       loadProject();
       return;
@@ -391,6 +397,7 @@ export default function ImpactCanvas({
           localStorage.setItem('user_identity', JSON.stringify({ name: randomName, color: randomColor }));
           console.log('👤 [ImpactCanvas] Assigned Guest Identity:', randomName);
         }
+        setIsLoadingProject(false);
       }
       loadSharedProject();
       return;
@@ -403,6 +410,7 @@ export default function ImpactCanvas({
       if (guestProject.nodes) setNodes(guestProject.nodes);
       if (guestProject.edges) setEdges(guestProject.edges);
       if (guestProject.title) setCurrentProjectName(guestProject.title);
+      setIsLoadingProject(false);
     }
   }, [propNodes, propEdges, setNodes, setEdges, guestToken]);
 
@@ -732,6 +740,15 @@ export default function ImpactCanvas({
     },
     [reactFlowInstance, setNodes]
   );
+
+  if (isLoadingProject && !propNodes) {
+    return (
+      <div className="h-screen bg-[#111111] flex flex-col items-center justify-center text-[#D97706] gap-4">
+        <div className="w-8 h-8 border-2 border-[#D97706] border-t-transparent rounded-full animate-spin"></div>
+        <span className="font-medium animate-pulse text-sm">Loading Canvas...</span>
+      </div>
+    );
+  }
 
   return (
     <div
