@@ -13,6 +13,7 @@ import {
   ChevronDown,
   Presentation,
   AlertTriangle,
+  ArrowRight,
 } from 'lucide-react';
 import { Button } from './ui/button';
 import NoiseBackground from './NoiseBackground';
@@ -220,6 +221,7 @@ export default function LogicPreview({
               lfaData={lfaData}
               missionData={missionData}
               shortcomings={shortcomings}
+              canvasNodes={canvasNodes}
             />
           </div>
 
@@ -252,15 +254,17 @@ function LFADocumentPreview({
   onSectionHover,
   lfaData,
   missionData,
-  shortcomings
+  shortcomings,
+  canvasNodes = []
 }: {
   hoveredNode: string | null;
   onSectionHover: (section: string | null) => void;
   lfaData?: LFADocument | null;
   missionData?: MissionData | null;
   shortcomings: string[];
+  canvasNodes?: Node[];
 }) {
-  // Derive Fallback strings
+  // --- Section 1: Data Maps ---
   const projectName = missionData?.projectName || 'Project Name';
   const geography = (missionData?.state || missionData?.district)
     ? `${missionData.district || ''}${missionData.district && missionData.state ? ', ' : ''}${missionData.state || ''}`
@@ -268,179 +272,202 @@ function LFADocumentPreview({
   const domain = missionData?.domain || 'Not defined';
   const goalNarrative = missionData?.outcome || lfaData?.goal?.narrative || 'Not defined';
 
+  // Find Problem Statement from nodes
+  const problemNode = canvasNodes.find(n => n.type === 'problem' || n.data?.type === 'problem');
+  const problemStatement = problemNode?.data?.label || "Grade 3 students lack reading fluency due to rote-based teaching.";
+
+  // Build Theory of Change statement
+  // Logic: "IF [Activities] AND [Outputs], THEN [Outcomes] LEADING TO [Goal]"
+  const activities = lfaData?.activities?.slice(0, 2).map(a => a.narrative.split(' ').slice(0, 3).join(' ')).join(', ') || "interventions are implemented";
+  const outcomes = lfaData?.outcomes?.slice(0, 2).map(o => o.narrative).join(' and ') || "practices improve";
+  const tocStatement = `IF we ${activities.toLowerCase()}... THEN ${outcomes.toLowerCase()}, LEADING TO ${goalNarrative}.`;
+
+  // Find Stakeholder Shifts (Pedagogy Shift / Bridge Nodes)
+  const shiftNodes = canvasNodes.filter(n =>
+    ['pedagogy_shift', 'bridge', 'tlm_usage'].includes(n.data?.type || n.type)
+  );
+
   return (
-    <div className="bg-white rounded shadow-sm p-8 text-[#1F2937] max-w-3xl mx-auto">
-      {/* Shortcomings Panel */}
-      {shortcomings.length > 0 && (
-        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-          <h3 className="text-red-800 font-semibold mb-3 flex items-center gap-2">
-            <AlertTriangle className="w-5 h-5" />
-            AI Logic Analysis
+    <div className="bg-white rounded shadow-sm p-10 text-[#1F2937] max-w-4xl mx-auto font-sans">
+
+      {/* --- Section 1: Program Identity --- */}
+      <section className="mb-10 border-b-2 border-gray-100 pb-6">
+        <h1 className="text-2xl font-bold text-[#111827] mb-6">Program Identity</h1>
+        <div className="grid grid-cols-2 gap-y-4 gap-x-8">
+          <div>
+            <span className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Project Name</span>
+            <span className="text-lg font-medium text-gray-900">{projectName}</span>
+          </div>
+          <div>
+            <span className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Organization</span>
+            <span className="text-lg text-gray-700">NitiNirmaan</span>
+          </div>
+          <div>
+            <span className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Geography</span>
+            <span className="text-base text-gray-700">{geography}</span>
+          </div>
+          <div>
+            <span className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Duration</span>
+            <span className="text-base text-gray-700">April 2026 - March 2029</span>
+          </div>
+          <div className="col-span-2">
+            <span className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Primary Domain</span>
+            <span className="text-base text-gray-700">{domain}</span>
+          </div>
+        </div>
+      </section>
+
+      {/* --- Section 2: Narrative Logic --- */}
+      <section className="mb-10 border-b-2 border-gray-100 pb-6">
+        <h2 className="text-xl font-bold text-[#111827] mb-6">Narrative Logic</h2>
+
+        <div className="mb-6">
+          <h3 className="text-sm font-semibold text-gray-900 mb-2 flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-red-500"></div>
+            Problem Statement
           </h3>
-          <div className="space-y-2">
-            {shortcomings.map((item, idx) => (
-              <div key={idx} className="flex items-start gap-2 text-sm text-red-700">
-                <span className="text-red-500 mt-0.5">•</span>
-                <span>{item}</span>
-              </div>
-            ))}
-          </div>
+          <p className="text-gray-700 bg-red-50 p-4 rounded-lg border border-red-100 italic">
+            "{problemStatement}"
+          </p>
         </div>
-      )}
 
-      {/* Program Overview */}
-      <section
-        className="mb-8"
-        onMouseEnter={() => onSectionHover('overview')}
-        onMouseLeave={() => onSectionHover(null)}
-      >
-        <h3 className="text-lg font-semibold mb-4 text-[#1F2937]">Program Overview</h3>
-        <div className="space-y-2 text-sm">
-          <div>
-            <span className="font-medium">Project Name:</span>{' '}
-            <span className="text-[#6B7280]">{projectName}</span>
-          </div>
-          <div>
-            <span className="font-medium">Geography:</span>{' '}
-            <span className="text-[#6B7280]">{geography}</span>
-          </div>
-          <div>
-            <span className="font-medium">Domain:</span>{' '}
-            <span className="text-[#6B7280]">{domain}</span>
-          </div>
-          {/* Note: Scale is inferred or static for now */}
-          <div>
-            <span className="font-medium">Scale:</span>{' '}
-            <span className="text-[#6B7280]">District/Block Level</span>
-          </div>
+        <div>
+          <h3 className="text-sm font-semibold text-gray-900 mb-2 flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-green-500"></div>
+            Theory of Change
+          </h3>
+          <p className="text-gray-700 bg-green-50 p-4 rounded-lg border border-green-100">
+            {tocStatement}
+          </p>
         </div>
       </section>
 
-      {/* Goal */}
-      <section
-        className="mb-8"
-        onMouseEnter={() => onSectionHover('goal')}
-        onMouseLeave={() => onSectionHover(null)}
-        style={{
-          backgroundColor: hoveredNode === 'outcome' ? '#F0FDF4' : 'transparent',
-          transition: 'background-color 0.2s',
-        }}
-      >
-        <h3 className="text-lg font-semibold mb-3 text-[#1F2937]">Goal</h3>
-        <p className="text-sm text-[#6B7280]">
-          {goalNarrative}
-        </p>
-        {/* If LFA goal exists and is different, show indicators */}
-        {lfaData?.goal?.indicators && lfaData.goal.indicators.length > 0 && (
-          <div className="mt-2 pl-4 border-l-2 border-gray-200">
-            <p className="text-xs font-semibold text-gray-500 mb-1">Indicators:</p>
-            <p className="text-sm text-[#6B7280]">{lfaData.goal.indicators.join(', ')}</p>
-          </div>
-        )}
-      </section>
-
-      {/* Stakeholders (Could be dynamic from LFA data if available, but for now specific LogicPreview static vs LFA dynamic is mixed. Ideally use lfaData if strictly valid, but the sample code had hardcoded table. I will keep the static table structure but note it might need dynamic populating in future tasks. For now, Goal/Overview were the requested dynamic parts.)
-         Checking if lfaData has actors/stakeholders... LFADocument type usually has outcomes/outputs.
-         Let's keep existing sections but prioritize LFA table integration.
-      */}
-
-      {/* Dynamic LFA Table */}
-      <section
-        className="mb-8"
-        onMouseEnter={() => onSectionHover('theory')}
-        onMouseLeave={() => onSectionHover(null)}
-      >
-        <h3 className="text-lg font-semibold mb-4 text-[#1F2937]">Logical Framework (LFA)</h3>
+      {/* --- Section 3: Master LogFrame Matrix --- */}
+      <section className="mb-10">
+        <h2 className="text-xl font-bold text-[#111827] mb-6">Master LogFrame Matrix</h2>
 
         {lfaData ? (
-          <div className="border border-[#D1D5DB] rounded-lg overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-[#F9FAFB] border-b border-[#D1D5DB]">
+          <div className="border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+            <table className="w-full text-sm text-left">
+              <thead className="bg-[#F3F4F6] text-gray-700 font-semibold border-b border-gray-200">
                 <tr>
-                  <th className="text-left py-3 px-4 font-semibold text-[#1F2937] w-1/5">Level</th>
-                  <th className="text-left py-3 px-4 font-semibold text-[#1F2937] w-2/5">Narrative Summary</th>
-                  <th className="text-left py-3 px-4 font-semibold text-[#1F2937]">Indicators</th>
-                  <th className="text-left py-3 px-4 font-semibold text-[#1F2937]">Assumptions</th>
+                  <th className="py-3 px-4 w-[15%]">Level</th>
+                  <th className="py-3 px-4 w-[30%]">Narrative Summary</th>
+                  <th className="py-3 px-4 w-[20%]">Indicators</th>
+                  <th className="py-3 px-4 w-[15%]">Data Sources</th>
+                  <th className="py-3 px-4 w-[20%]">Assumptions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#E5E7EB]">
-                {/* Goal (Using Mission Data or LFA Data) */}
-                <tr>
-                  <td className="py-3 px-4 font-medium text-[#EF4444]">Goal (Impact)</td>
-                  <td className="py-3 px-4 text-[#6B7280]">{goalNarrative}</td>
-                  <td className="py-3 px-4 text-[#6B7280]">{lfaData.goal?.indicators?.join(', ') || '-'}</td>
-                  <td className="py-3 px-4 text-[#6B7280]">{lfaData.goal?.assumptions_risks?.join(', ') || '-'}</td>
+              <tbody className="divide-y divide-gray-200">
+                {/* Goal */}
+                <tr className="bg-white hover:bg-gray-50">
+                  <td className="py-3 px-4 font-bold text-[#B91C1C]">Goal (Impact)</td>
+                  <td className="py-3 px-4 font-medium text-gray-900">{goalNarrative}</td>
+                  <td className="py-3 px-4 text-gray-600">{lfaData.goal?.indicators?.join('; ') || '-'}</td>
+                  <td className="py-3 px-4 text-gray-600">{lfaData.goal?.means_of_verification?.join('; ') || '-'}</td>
+                  <td className="py-3 px-4 text-gray-600 italic">{lfaData.goal?.assumptions_risks?.join('; ') || '-'}</td>
                 </tr>
 
                 {/* Outcomes */}
-                {lfaData.outcomes.map((item, i) => (
-                  <tr key={`outcome-${i}`} className="bg-[#F0FDFA]">
-                    <td className="py-3 px-4 font-medium text-[#0D9488]">{i === 0 ? 'Outcomes' : ''}</td>
-                    <td className="py-3 px-4 text-[#6B7280]">{item.narrative}</td>
-                    <td className="py-3 px-4 text-[#6B7280]">{item.indicators?.join(', ')}</td>
-                    <td className="py-3 px-4 text-[#6B7280]">{item.assumptions_risks?.join(', ') || '-'}</td>
+                {lfaData.outcomes.length > 0 ? lfaData.outcomes.map((item, i) => (
+                  <tr key={`outcome-${i}`} className="bg-emerald-50/30 hover:bg-emerald-50/60">
+                    <td className="py-3 px-4 font-bold text-[#047857]">{i === 0 ? 'Outcomes (Behavior)' : ''}</td>
+                    <td className="py-3 px-4 text-gray-800">{item.narrative}</td>
+                    <td className="py-3 px-4 text-gray-600">{item.indicators?.join('; ')}</td>
+                    <td className="py-3 px-4 text-gray-600">{item.means_of_verification?.join('; ') || 'COT'}</td>
+                    <td className="py-3 px-4 text-gray-600 italic">{item.assumptions_risks?.join('; ') || '-'}</td>
                   </tr>
-                ))}
-                {lfaData.outcomes.length === 0 && (
-                  <tr className="bg-[#F0FDFA]">
-                    <td className="py-3 px-4 font-medium text-[#0D9488]">Outcomes</td>
-                    <td className="py-3 px-4 text-gray-400 italic" colSpan={3}>No outcomes defined</td>
+                )) : (
+                  <tr className="bg-emerald-50/30">
+                    <td className="py-3 px-4 font-bold text-[#047857]">Outcomes</td>
+                    <td colSpan={4} className="py-3 px-4 text-gray-400 italic">No outcomes defined</td>
                   </tr>
                 )}
 
                 {/* Outputs */}
-                {lfaData.outputs.map((item, i) => (
-                  <tr key={`output-${i}`} className="bg-[#FFFBEB]">
-                    <td className="py-3 px-4 font-medium text-[#D97706]">{i === 0 ? 'Outputs' : ''}</td>
-                    <td className="py-3 px-4 text-[#6B7280]">{item.narrative}</td>
-                    <td className="py-3 px-4 text-[#6B7280]">{item.indicators?.join(', ')}</td>
-                    <td className="py-3 px-4 text-[#6B7280]">{item.assumptions_risks?.join(', ') || '-'}</td>
+                {lfaData.outputs.length > 0 ? lfaData.outputs.map((item, i) => (
+                  <tr key={`output-${i}`} className="bg-amber-50/30 hover:bg-amber-50/60">
+                    <td className="py-3 px-4 font-bold text-[#B45309]">{i === 0 ? 'Outputs (Deliverables)' : ''}</td>
+                    <td className="py-3 px-4 text-gray-800">{item.narrative}</td>
+                    <td className="py-3 px-4 text-gray-600">{item.indicators?.join('; ')}</td>
+                    <td className="py-3 px-4 text-gray-600">{item.means_of_verification?.join('; ') || 'Project Records'}</td>
+                    <td className="py-3 px-4 text-gray-600 italic">{item.assumptions_risks?.join('; ') || '-'}</td>
                   </tr>
-                ))}
+                )) : null}
 
                 {/* Activities */}
-                {lfaData.activities.map((item, i) => (
-                  <tr key={`activity-${i}`}>
-                    <td className="py-3 px-4 font-medium text-[#6B7280]">{i === 0 ? 'Activities' : ''}</td>
-                    <td className="py-3 px-4 text-[#6B7280]">{item.narrative}</td>
-                    <td className="py-3 px-4 text-[#6B7280]">{item.indicators?.join(', ')}</td>
-                    <td className="py-3 px-4 text-[#6B7280]">{item.assumptions_risks?.join(', ') || '-'}</td>
+                {lfaData.activities.length > 0 ? lfaData.activities.map((item, i) => (
+                  <tr key={`activity-${i}`} className="bg-white hover:bg-gray-50">
+                    <td className="py-3 px-4 font-bold text-[#4B5563]">{i === 0 ? 'Activities (Tasks)' : ''}</td>
+                    <td className="py-3 px-4 text-gray-800">{item.narrative}</td>
+                    <td className="py-3 px-4 text-gray-600">{item.indicators?.join('; ')}</td>
+                    <td className="py-3 px-4 text-gray-600">{item.means_of_verification?.join('; ') || 'Admin Records'}</td>
+                    <td className="py-3 px-4 text-gray-600 italic">{item.assumptions_risks?.join('; ') || '-'}</td>
                   </tr>
-                ))}
+                )) : null}
               </tbody>
             </table>
           </div>
         ) : (
-          <div className="text-center py-8 text-[#6B7280]">
-            No LFA data available. Run simulation first.
+          <div className="text-center py-12 bg-gray-50 border border-dashed border-gray-300 rounded-lg text-gray-500">
+            Run simulation to generate the Master LogFrame Matrix.
           </div>
         )}
       </section>
 
-      {/* Risks & Assumptions - Collapsed or Summary */}
-      <section className="mb-8">
-        <h3 className="text-lg font-semibold mb-3 text-[#1F2937]">Risks & Assumptions (Summary)</h3>
-        {lfaData && (lfaData.goal.assumptions_risks.length > 0 || lfaData.outcomes.some(o => o.assumptions_risks.length > 0)) ? (
-          <ul className="space-y-2 text-sm text-[#6B7280] list-disc list-inside">
-            {/* Combine all risks for summary */}
-            {[
-              ...lfaData.goal.assumptions_risks,
-              ...lfaData.outcomes.flatMap(o => o.assumptions_risks),
-              ...lfaData.outputs.flatMap(o => o.assumptions_risks)
-            ].slice(0, 5).map((risk, i) => (
-              <li key={i}>{risk}</li>
-            ))}
-            {/* Fallback if list is empty but arrays exist? No, check length above */}
-          </ul>
+      {/* --- Section 4: Stakeholder Shift Map --- */}
+      <section>
+        <h2 className="text-xl font-bold text-[#111827] mb-6 flex items-center gap-2">
+          Stakeholder Shift Map
+          <span className="px-2 py-0.5 bg-blue-100 text-blue-800 text-xs rounded-full font-normal">System Change</span>
+        </h2>
+
+        {shiftNodes.length > 0 ? (
+          <div className="overflow-hidden rounded-lg border border-gray-200 shadow-sm">
+            <table className="w-full text-sm text-left">
+              <thead className="bg-[#F3F4F6] text-gray-700 font-semibold text-xs uppercase tracking-wider">
+                <tr>
+                  <th className="py-3 px-4 w-1/4">Actor</th>
+                  <th className="py-3 px-4 w-1/4">Current Practice (From)</th>
+                  <th className="py-3 px-4 w-1/4">Desired Practice (To)</th>
+                  <th className="py-3 px-4 w-1/4">Verification</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200 bg-white">
+                {shiftNodes.map((node, i) => {
+                  const d = node.data;
+                  // Infer fields if not strictly present
+                  const actor = d.actor || "Teacher"; // Fallback
+                  const fromBehavior = d.from_behavior || "Traditional rote method";
+                  const toBehavior = d.to_behavior || "Activity-based learning";
+                  const verification = d.evidence_source || "Observation Score";
+
+                  return (
+                    <tr key={i} className="hover:bg-gray-50">
+                      <td className="py-3 px-4 font-medium text-gray-900">{actor}</td>
+                      <td className="py-3 px-4 text-red-600 bg-red-50/50">{fromBehavior}</td>
+                      <td className="py-3 px-4 text-green-600 bg-green-50/50 flex items-center gap-2">
+                        <ArrowRight className="w-3 h-3 text-green-400" />
+                        {toBehavior}
+                      </td>
+                      <td className="py-3 px-4 text-gray-600">{verification}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         ) : (
-          <p className="text-sm text-[#9CA3AF] italic">No specific risks identified in simulation.</p>
+          <div className="p-6 bg-gray-50 border border-dashed border-gray-300 rounded-lg text-center text-sm text-gray-500">
+            <p className="mb-2">No "Practice Change" or "Pedagogy Shift" nodes detected.</p>
+            <p>Add <strong>Pedagogy Shift</strong> nodes to your canvas to see the Stakeholder Shift Map.</p>
+          </div>
         )}
       </section>
 
       {/* Footer note */}
-      <div className="mt-8 pt-6 border-t border-[#E5E7EB] text-xs text-[#9CA3AF] italic">
-        This document is auto-generated from validated logic model (Impact Canvas) and Mission Context ({domain}).
-        All content is system-enforced and simulation-validated.
+      <div className="mt-12 pt-6 border-t border-gray-200 text-xs text-center text-gray-400">
+        Generated by NitiNirmaan Logic Engine | Validated against {domain} Framework
       </div>
     </div>
   );
