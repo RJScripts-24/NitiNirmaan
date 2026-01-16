@@ -277,9 +277,9 @@ export default function Dashboard({ onBack, onNavigateToPatterns, onNavigateToIn
                   {/* Grid background */}
                   <div className="absolute inset-0 opacity-20" style={{
                     backgroundImage: `
-                      linear-gradient(#374151 1px, transparent 1px),
-                      linear-gradient(90deg, #374151 1px, transparent 1px)
-                    `,
+linear - gradient(#374151 1px, transparent 1px),
+  linear - gradient(90deg, #374151 1px, transparent 1px)
+    `,
                     backgroundSize: '12px 12px',
                   }}></div>
 
@@ -349,9 +349,9 @@ export default function Dashboard({ onBack, onNavigateToPatterns, onNavigateToIn
                   {/* Grid background */}
                   <div className="absolute inset-0 opacity-20" style={{
                     backgroundImage: `
-                      linear-gradient(#374151 1px, transparent 1px),
-                      linear-gradient(90deg, #374151 1px, transparent 1px)
-                    `,
+linear - gradient(#374151 1px, transparent 1px),
+  linear - gradient(90deg, #374151 1px, transparent 1px)
+    `,
                     backgroundSize: '12px 12px',
                   }}></div>
 
@@ -481,7 +481,7 @@ export default function Dashboard({ onBack, onNavigateToPatterns, onNavigateToIn
                         <div
                           className="absolute left-0 top-0 h-full rounded-full transition-all"
                           style={{
-                            width: `${project.logicHealth}%`,
+                            width: `${project.logicHealth}% `,
                             background: project.logicHealth <= 30
                               ? '#B91C1C'
                               : project.logicHealth <= 70
@@ -501,9 +501,9 @@ export default function Dashboard({ onBack, onNavigateToPatterns, onNavigateToIn
                       {/* Grid background */}
                       <div className="absolute inset-0 opacity-10" style={{
                         backgroundImage: `
-                          linear-gradient(#374151 1px, transparent 1px),
-                          linear-gradient(90deg, #374151 1px, transparent 1px)
-                        `,
+linear - gradient(#374151 1px, transparent 1px),
+  linear - gradient(90deg, #374151 1px, transparent 1px)
+    `,
                         backgroundSize: '10px 10px',
                       }}></div>
 

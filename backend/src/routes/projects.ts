@@ -139,6 +139,8 @@ projectsRouter.post('/:id/share', authMiddleware, async (req, res) => {
         const projectId = req.params.id;
 
         // 1. Check Ownership
+        console.log(`🔍 [Share] Attempting to share project: ${projectId} by user: ${user.id}`);
+
         const { data: project, error: fetchError } = await supabase
             .from('projects')
             .select('id, user_id, share_token')
@@ -146,20 +148,38 @@ projectsRouter.post('/:id/share', authMiddleware, async (req, res) => {
             .single();
 
         if (fetchError || !project) {
-            return res.status(404).json({ error: 'Project not found' });
+            console.error('❌ [Share] Project lookup failed:', fetchError);
+            return res.status(404).json({ error: 'Project not found', details: fetchError });
         }
 
-        // Allow Guests (who might be editing a shared project) to generate link if public editing is enabled?
-        // For now, enforcing Owner check as per original plan, but can relax if needed.
-        // User said: "even if i log in as Gues i should be able to generate link"
-        // If the user is unauthenticated (Guest), authMiddleware might fail unless we allow optional auth.
-        // But this route uses `authMiddleware` which likely requires a valid token.
-        // TODO: This might need adjustment if "Guest" means "Unauthenticated User".
+        console.log(`✅ [Share] Project found. Owner: ${project.user_id}, Requester: ${user.id}`);
+
+        // 1a. Handle Orphan Projects (No Owner)
+        if (!project.user_id) {
+            console.log(`⚠️ [Share] Project ${projectId} has no owner. Claiming ownership for user ${user.id}...`);
+            const { error: claimError } = await supabase
+                .from('projects')
+                .update({ user_id: user.id })
+                .eq('id', projectId);
+
+            if (claimError) {
+                console.error('❌ [Share] Failed to claim project:', claimError);
+                return res.status(500).json({ error: 'Failed to claim project ownership', details: claimError });
+            }
+            project.user_id = user.id; // Update local state for subsequent specific check
+        }
 
         if (project.user_id !== user.id) {
+            console.warn(`⛔ [Share] Unauthorized Access Attempt.`);
+            console.warn(`   - Project Owner: ${project.user_id}`);
+            console.warn(`   - Requesting User: ${user.id}`);
             // Check if Guest has access via token? 
             // Currently, the authMiddleware validates the JWT.
-            return res.status(403).json({ error: 'Unauthorized' });
+            return res.status(403).json({
+                error: 'Unauthorized',
+                ownerId: project.user_id,
+                userId: user.id
+            });
         }
 
         // 2. Enable Public Editing & Ensure Token Exists
@@ -179,7 +199,9 @@ projectsRouter.post('/:id/share', authMiddleware, async (req, res) => {
 
         const token = updatedProject.share_token;
         // Construct URL - frontend will handle the specific route (e.g., /#builder?token=...)
-        const shareUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:5173'}/#builder?token=${token}`;
+        // Use FRONTEND_URL from env, or fallback to referrer/origin if available, else default.
+        const baseUrl = process.env.FRONTEND_URL || req.headers.origin || 'http://localhost:3000';
+        const shareUrl = `${baseUrl}/#builder?token=${token}`;
 
         res.json({
             shareUrl,

@@ -778,6 +778,7 @@ export default function ImpactCanvas({
 
               // C. Standard Share
               try {
+                console.log(`📤 [Share] Requesting share for project: ${activeProjectId}`);
                 const response = await fetch(`/api/projects/${activeProjectId}/share`, {
                   method: 'POST',
                   headers: {
@@ -786,14 +787,25 @@ export default function ImpactCanvas({
                   }
                 });
 
-                if (!response.ok) throw new Error('Failed to generate link');
+                const contentType = response.headers.get("content-type");
+                if (contentType && contentType.indexOf("application/json") !== -1) {
+                  const data = await response.json();
+                  if (!response.ok) {
+                    console.error('❌ [Share] Server Error:', data);
+                    throw new Error(data.error || 'Failed to generate link');
+                  }
+                  console.log('✅ [Share] Success:', data);
+                  navigator.clipboard.writeText(data.shareUrl);
+                  alert('Share link copied to clipboard!');
+                } else {
+                  const text = await response.text();
+                  console.error('❌ [Share] Non-JSON Response:', text);
+                  throw new Error(`Server returned ${response.status}: ${text}`);
+                }
 
-                const data = await response.json();
-                navigator.clipboard.writeText(data.shareUrl);
-                alert('Share link copied to clipboard!');
-              } catch (e) {
-                console.error('Share Error:', e);
-                alert('Could not generate share link.');
+              } catch (e: any) {
+                console.error('❌ [Share] Client Error:', e);
+                alert(`Could not generate share link: ${e.message}`);
               }
             }}
           >
