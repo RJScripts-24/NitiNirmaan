@@ -12,7 +12,7 @@ interface Cursor {
 
 interface UseRealtimeProps {
     projectId: string;
-    token?: string; // Share token for guests
+    token?: string;
     identity?: { name: string; color: string };
     onNodesChange?: (nodes: Node[]) => void;
     onEdgesChange?: (edges: Edge[]) => void;
@@ -20,6 +20,7 @@ interface UseRealtimeProps {
 
 export function useRealtime({ projectId, token, identity, onNodesChange, onEdgesChange }: UseRealtimeProps) {
     const [cursors, setCursors] = useState<Record<string, Cursor>>({});
+    const [isSubscribed, setIsSubscribed] = useState(false);
     const channelRef = useRef<any>(null);
     const myId = useRef<string>(Math.random().toString(36).substring(7));
 
@@ -27,7 +28,6 @@ export function useRealtime({ projectId, token, identity, onNodesChange, onEdges
     const onNodesChangeRef = useRef(onNodesChange);
     const onEdgesChangeRef = useRef(onEdgesChange);
 
-    // Keep refs updated
     useEffect(() => {
         onNodesChangeRef.current = onNodesChange;
         onEdgesChangeRef.current = onEdgesChange;
@@ -35,17 +35,23 @@ export function useRealtime({ projectId, token, identity, onNodesChange, onEdges
 
     // Main subscription effect
     useEffect(() => {
-        if (!projectId) return;
+        if (!projectId) {
+            console.log('📡 [Realtime] No projectId, skipping subscription');
+            return;
+        }
 
         // Clean up previous subscription
         if (channelRef.current) {
+            console.log('📡 [Realtime] Cleaning up previous channel');
             supabase.removeChannel(channelRef.current);
+            setIsSubscribed(false);
         }
 
-        console.log(`📡 [Realtime] Connecting to channel: project:${projectId}`);
+        console.log(`📡 [Realtime] Creating channel: project:${projectId} (myId: ${myId.current})`);
 
         const channel = supabase.channel(`project:${projectId}`, {
             config: {
+                broadcast: { self: false }, // Don't receive own broadcasts
                 presence: {
                     key: myId.current,
                 },
@@ -54,46 +60,43 @@ export function useRealtime({ projectId, token, identity, onNodesChange, onEdges
 
         channel
             .on('broadcast', { event: 'cursor-move' }, (payload) => {
-                // Update other user's cursor
-                if (payload.payload.id !== myId.current) {
-                    setCursors((prev) => ({
-                        ...prev,
-                        [payload.payload.id]: {
-                            x: payload.payload.x,
-                            y: payload.payload.y,
-                            name: payload.payload.name,
-                            color: payload.payload.color,
-                            lastActive: Date.now(),
-                        },
-                    }));
-                }
+                setCursors((prev) => ({
+                    ...prev,
+                    [payload.payload.id]: {
+                        x: payload.payload.x,
+                        y: payload.payload.y,
+                        name: payload.payload.name,
+                        color: payload.payload.color,
+                        lastActive: Date.now(),
+                    },
+                }));
             })
             .on('broadcast', { event: 'nodes-update' }, (payload) => {
-                // Receive full nodes array from another user
-                if (payload.payload.senderId !== myId.current && onNodesChangeRef.current) {
-                    console.log(`📥 [Realtime] Received nodes update from ${payload.payload.senderId}`);
+                console.log(`📥 [Realtime] Received nodes-update from ${payload.payload.senderId} (I am ${myId.current})`);
+                if (onNodesChangeRef.current) {
                     onNodesChangeRef.current(payload.payload.nodes);
                 }
             })
             .on('broadcast', { event: 'edges-update' }, (payload) => {
-                // Receive full edges array from another user
-                if (payload.payload.senderId !== myId.current && onEdgesChangeRef.current) {
-                    console.log(`📥 [Realtime] Received edges update from ${payload.payload.senderId}`);
+                console.log(`📥 [Realtime] Received edges-update from ${payload.payload.senderId} (I am ${myId.current})`);
+                if (onEdgesChangeRef.current) {
                     onEdgesChangeRef.current(payload.payload.edges);
                 }
             })
-            .subscribe((status) => {
+            .subscribe(async (status) => {
+                console.log(`📡 [Realtime] Subscription status: ${status}`);
                 if (status === 'SUBSCRIBED') {
-                    console.log(`✅ [Realtime] Subscribed to project:${projectId}`);
+                    setIsSubscribed(true);
+                    console.log(`✅ [Realtime] Successfully subscribed to project:${projectId}`);
                     if (identity) {
-                        // Track presence
-                        channel.track({
+                        await channel.track({
                             user: identity.name,
                             online_at: new Date().toISOString(),
                         });
                     }
-                } else {
-                    console.log(`📡 [Realtime] Subscription status: ${status}`);
+                } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+                    setIsSubscribed(false);
+                    console.error(`❌ [Realtime] Channel error or timeout: ${status}`);
                 }
             });
 
@@ -101,9 +104,10 @@ export function useRealtime({ projectId, token, identity, onNodesChange, onEdges
 
         return () => {
             console.log(`📡 [Realtime] Leaving channel: project:${projectId}`);
+            setIsSubscribed(false);
             supabase.removeChannel(channel);
         };
-    }, [projectId, token, identity]); // Removed callback deps, using refs instead
+    }, [projectId, token, identity]);
 
     // Cleanup inactive cursors
     useEffect(() => {
@@ -113,7 +117,7 @@ export function useRealtime({ projectId, token, identity, onNodesChange, onEdges
                 const next = { ...prev };
                 let changed = false;
                 Object.keys(next).forEach(key => {
-                    if (now - next[key].lastActive > 10000) { // 10s timeout
+                    if (now - next[key].lastActive > 10000) {
                         delete next[key];
                         changed = true;
                     }
@@ -126,7 +130,7 @@ export function useRealtime({ projectId, token, identity, onNodesChange, onEdges
 
     // Function to broadcast my cursor
     const broadcastCursor = useCallback((x: number, y: number) => {
-        if (!channelRef.current || !identity) return;
+        if (!channelRef.current || !identity || !isSubscribed) return;
 
         channelRef.current.send({
             type: 'broadcast',
@@ -139,12 +143,15 @@ export function useRealtime({ projectId, token, identity, onNodesChange, onEdges
                 color: identity.color,
             },
         });
-    }, [identity]);
+    }, [identity, isSubscribed]);
 
     // Function to broadcast nodes update
     const broadcastNodes = useCallback((nodes: Node[]) => {
-        if (!channelRef.current) return;
-        console.log(`📤 [Realtime] Broadcasting nodes update (${nodes.length} nodes)`);
+        if (!channelRef.current || !isSubscribed) {
+            console.warn(`⚠️ [Realtime] Cannot broadcast nodes - channel not ready (subscribed: ${isSubscribed})`);
+            return;
+        }
+        console.log(`📤 [Realtime] Sending nodes-update (${nodes.length} nodes, senderId: ${myId.current})`);
         channelRef.current.send({
             type: 'broadcast',
             event: 'nodes-update',
@@ -153,12 +160,15 @@ export function useRealtime({ projectId, token, identity, onNodesChange, onEdges
                 nodes,
             },
         });
-    }, []);
+    }, [isSubscribed]);
 
     // Function to broadcast edges update
     const broadcastEdges = useCallback((edges: Edge[]) => {
-        if (!channelRef.current) return;
-        console.log(`📤 [Realtime] Broadcasting edges update (${edges.length} edges)`);
+        if (!channelRef.current || !isSubscribed) {
+            console.warn(`⚠️ [Realtime] Cannot broadcast edges - channel not ready (subscribed: ${isSubscribed})`);
+            return;
+        }
+        console.log(`📤 [Realtime] Sending edges-update (${edges.length} edges, senderId: ${myId.current})`);
         channelRef.current.send({
             type: 'broadcast',
             event: 'edges-update',
@@ -167,12 +177,13 @@ export function useRealtime({ projectId, token, identity, onNodesChange, onEdges
                 edges,
             },
         });
-    }, []);
+    }, [isSubscribed]);
 
     return {
         cursors,
         broadcastCursor,
         broadcastNodes,
         broadcastEdges,
+        isSubscribed,
     };
 }

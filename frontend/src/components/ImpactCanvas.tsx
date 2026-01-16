@@ -209,15 +209,23 @@ export default function ImpactCanvas({
     } catch { return { name: 'Guest', color: '#888888' }; }
   }, []);
 
+  // Flag to prevent feedback loop (don't broadcast changes received from remote)
+  const isRemoteUpdateRef = useRef(false);
+
   // Callbacks for receiving remote updates
   const handleRemoteNodesUpdate = useCallback((remoteNodes: Node[]) => {
     console.log(`🔄 [ImpactCanvas] Applying ${remoteNodes.length} nodes from remote user`);
+    isRemoteUpdateRef.current = true;
     setNodes(remoteNodes);
+    // Reset flag after a short delay to allow React to process the state update
+    setTimeout(() => { isRemoteUpdateRef.current = false; }, 100);
   }, [setNodes]);
 
   const handleRemoteEdgesUpdate = useCallback((remoteEdges: Edge[]) => {
     console.log(`🔄 [ImpactCanvas] Applying ${remoteEdges.length} edges from remote user`);
+    isRemoteUpdateRef.current = true;
     setEdges(remoteEdges);
+    setTimeout(() => { isRemoteUpdateRef.current = false; }, 100);
   }, [setEdges]);
 
   const { cursors, broadcastCursor, broadcastNodes, broadcastEdges } = useRealtime({
@@ -235,18 +243,28 @@ export default function ImpactCanvas({
     }
   }, [reactFlowInstance, broadcastCursor]);
 
-  // Broadcast nodes/edges when they change locally
+  // Broadcast nodes/edges when they change locally (not from remote)
+  // Use debounce to avoid spamming broadcasts
+  const broadcastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   useEffect(() => {
-    if (projectId && nodes.length > 0) {
-      console.log(`📤 [ImpactCanvas] Nodes changed, broadcasting...`);
-      broadcastNodes(nodes);
+    if (projectId && nodes.length > 0 && !isRemoteUpdateRef.current) {
+      // Debounce to avoid flooding on rapid changes
+      if (broadcastTimeoutRef.current) clearTimeout(broadcastTimeoutRef.current);
+      broadcastTimeoutRef.current = setTimeout(() => {
+        console.log(`📤 [ImpactCanvas] Broadcasting ${nodes.length} nodes (local change)`);
+        broadcastNodes(nodes);
+      }, 200);
     }
   }, [nodes, projectId, broadcastNodes]);
 
   useEffect(() => {
-    if (projectId && edges.length > 0) {
-      console.log(`📤 [ImpactCanvas] Edges changed, broadcasting...`);
-      broadcastEdges(edges);
+    if (projectId && edges.length > 0 && !isRemoteUpdateRef.current) {
+      if (broadcastTimeoutRef.current) clearTimeout(broadcastTimeoutRef.current);
+      broadcastTimeoutRef.current = setTimeout(() => {
+        console.log(`📤 [ImpactCanvas] Broadcasting ${edges.length} edges (local change)`);
+        broadcastEdges(edges);
+      }, 200);
     }
   }, [edges, projectId, broadcastEdges]);
 
