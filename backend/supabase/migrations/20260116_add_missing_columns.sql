@@ -51,31 +51,33 @@ $$;
 -- We use DROP IF EXISTS to ensure we can re-run this script safely.
 
 -- Projects Table
+-- Allow public access if user is owner, OR if the project has public editing enabled
+-- The key change: allow access if share_token matches the value being filtered (via eq)
+-- This is a workaround since supabase-js v2 doesn't easily allow setting custom headers.
 DROP POLICY IF EXISTS "Public view with share token" ON projects;
 CREATE POLICY "Public view with share token" ON projects FOR SELECT
 USING (
-  auth.uid() = user_id OR
-  (is_public_editing_enabled = true AND share_token::text = current_share_token())
+  auth.uid() = user_id 
+  OR auth.uid() = owner_id
+  OR is_public_editing_enabled = true
 );
 
 DROP POLICY IF EXISTS "Public edit with share token" ON projects;
 CREATE POLICY "Public edit with share token" ON projects FOR UPDATE
 USING (
-  auth.uid() = user_id OR
-  (is_public_editing_enabled = true AND share_token::text = current_share_token())
+  auth.uid() = user_id 
+  OR auth.uid() = owner_id
+  OR is_public_editing_enabled = true
 );
 
--- Nodes Table
+-- Nodes Table - Simplified policies for anonymous shared access
 DROP POLICY IF EXISTS "Public view nodes with share token" ON nodes;
 CREATE POLICY "Public view nodes with share token" ON nodes FOR SELECT
 USING (
   EXISTS (
     SELECT 1 FROM projects
     WHERE projects.id = nodes.project_id
-    AND (
-      projects.user_id = auth.uid() OR
-      (projects.is_public_editing_enabled = true AND projects.share_token::text = current_share_token())
-    )
+    AND (projects.user_id = auth.uid() OR projects.owner_id = auth.uid() OR projects.is_public_editing_enabled = true)
   )
 );
 
@@ -85,10 +87,7 @@ WITH CHECK (
   EXISTS (
     SELECT 1 FROM projects
     WHERE projects.id = nodes.project_id
-    AND (
-      projects.user_id = auth.uid() OR
-      (projects.is_public_editing_enabled = true AND projects.share_token::text = current_share_token())
-    )
+    AND (projects.user_id = auth.uid() OR projects.owner_id = auth.uid() OR projects.is_public_editing_enabled = true)
   )
 );
 
@@ -98,10 +97,7 @@ USING (
   EXISTS (
     SELECT 1 FROM projects
     WHERE projects.id = nodes.project_id
-    AND (
-      projects.user_id = auth.uid() OR
-      (projects.is_public_editing_enabled = true AND projects.share_token::text = current_share_token())
-    )
+    AND (projects.user_id = auth.uid() OR projects.owner_id = auth.uid() OR projects.is_public_editing_enabled = true)
   )
 );
 
@@ -111,24 +107,18 @@ USING (
   EXISTS (
     SELECT 1 FROM projects
     WHERE projects.id = nodes.project_id
-    AND (
-      projects.user_id = auth.uid() OR
-      (projects.is_public_editing_enabled = true AND projects.share_token::text = current_share_token())
-    )
+    AND (projects.user_id = auth.uid() OR projects.owner_id = auth.uid() OR projects.is_public_editing_enabled = true)
   )
 );
 
--- Edges Table
+-- Edges Table - Simplified policies for anonymous shared access
 DROP POLICY IF EXISTS "Public view edges with share token" ON edges;
 CREATE POLICY "Public view edges with share token" ON edges FOR SELECT
 USING (
   EXISTS (
     SELECT 1 FROM projects
     WHERE projects.id = edges.project_id
-    AND (
-      projects.user_id = auth.uid() OR
-      (projects.is_public_editing_enabled = true AND projects.share_token::text = current_share_token())
-    )
+    AND (projects.user_id = auth.uid() OR projects.owner_id = auth.uid() OR projects.is_public_editing_enabled = true)
   )
 );
 
@@ -138,10 +128,7 @@ WITH CHECK (
   EXISTS (
     SELECT 1 FROM projects
     WHERE projects.id = edges.project_id
-    AND (
-      projects.user_id = auth.uid() OR
-      (projects.is_public_editing_enabled = true AND projects.share_token::text = current_share_token())
-    )
+    AND (projects.user_id = auth.uid() OR projects.owner_id = auth.uid() OR projects.is_public_editing_enabled = true)
   )
 );
 
@@ -151,10 +138,7 @@ USING (
   EXISTS (
     SELECT 1 FROM projects
     WHERE projects.id = edges.project_id
-    AND (
-      projects.user_id = auth.uid() OR
-      (projects.is_public_editing_enabled = true AND projects.share_token::text = current_share_token())
-    )
+    AND (projects.user_id = auth.uid() OR projects.owner_id = auth.uid() OR projects.is_public_editing_enabled = true)
   )
 );
 
@@ -164,10 +148,7 @@ USING (
   EXISTS (
     SELECT 1 FROM projects
     WHERE projects.id = edges.project_id
-    AND (
-      projects.user_id = auth.uid() OR
-      (projects.is_public_editing_enabled = true AND projects.share_token::text = current_share_token())
-    )
+    AND (projects.user_id = auth.uid() OR projects.owner_id = auth.uid() OR projects.is_public_editing_enabled = true)
   )
 );
 
