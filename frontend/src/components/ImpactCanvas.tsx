@@ -598,12 +598,16 @@ export default function ImpactCanvas({
     const activeProjectId = localStorage.getItem('active_project_id') || 'guest';
 
     try {
+      // Get fresh session token
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+
       // Use the unified backend endpoint
       const response = await fetch(`/api/simulation/${activeProjectId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}` // Ensure auth
+          'Authorization': token ? `Bearer ${token}` : ''
         },
         body: JSON.stringify({
           nodes,
@@ -858,7 +862,10 @@ export default function ImpactCanvas({
             className="px-4 py-2 bg-[#1F2937] hover:bg-[#374151] text-[#E5E7EB] rounded font-medium transition-colors flex items-center gap-2 h-auto border border-[#2D3340]"
             onClick={async () => {
               let activeProjectId = localStorage.getItem('active_project_id');
-              let token = localStorage.getItem('token');
+
+              // Get fresh session token
+              const { data: { session } } = await supabase.auth.getSession();
+              let token = session?.access_token;
 
               // A. Guest Mode (Viewing Shared Link) -> Just Copy URL
               if (guestToken) {
