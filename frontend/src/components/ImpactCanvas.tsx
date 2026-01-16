@@ -315,6 +315,13 @@ export default function ImpactCanvas({
             id: e.id,
             source: e.source,
             target: e.target,
+            sourceHandle: e.source_handle,
+            targetHandle: e.target_handle,
+            type: e.type || 'default',
+            animated: e.animated || false,
+            style: e.style || {},
+            markerEnd: e.marker_end || undefined,
+            data: { indicators: e.indicators, interactionType: e.interaction_type }
           })));
         }
       }
@@ -367,6 +374,13 @@ export default function ImpactCanvas({
             id: e.id,
             source: e.source,
             target: e.target,
+            sourceHandle: e.source_handle,
+            targetHandle: e.target_handle,
+            type: e.type || 'default',
+            animated: e.animated || false,
+            style: e.style || {},
+            markerEnd: e.marker_end || undefined,
+            data: { indicators: e.indicators, interactionType: e.interaction_type }
           })));
         }
 

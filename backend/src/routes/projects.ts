@@ -97,6 +97,16 @@ projectsRouter.get('/:id', authMiddleware, async (req, res) => {
             id: e.id,
             source: e.source,
             target: e.target,
+            sourceHandle: e.source_handle,
+            targetHandle: e.target_handle,
+            type: e.type,
+            animated: e.animated,
+            style: e.style,
+            markerEnd: e.marker_end,
+            data: {
+                interactionType: e.interaction_type,
+                indicators: e.indicators
+            }
         }));
 
         const projectData = project as any; // Cast to avoid never type issues if present
@@ -268,6 +278,14 @@ projectsRouter.put('/:id/graph', authMiddleware, async (req, res) => {
             project_id: projectId,
             source: edge.source,
             target: edge.target,
+            source_handle: edge.sourceHandle,
+            target_handle: edge.targetHandle,
+            type: edge.type || 'default',
+            animated: edge.animated || false,
+            style: edge.style || {},
+            marker_end: edge.markerEnd || null,
+            interaction_type: edge.data?.interactionType || 'connects',
+            indicators: edge.data?.indicators || [],
         }));
 
         const { error: deleteEdgesError } = await supabase.from('edges').delete().eq('project_id', projectId);
