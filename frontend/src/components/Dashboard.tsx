@@ -19,6 +19,55 @@ export default function Dashboard({ onBack, onNavigateToPatterns, onNavigateToIn
   const [sortBy, setSortBy] = useState('Recently Edited');
   const [showMenu, setShowMenu] = useState<string | null>(null);
 
+  // Delete State
+  const [projectToDelete, setProjectToDelete] = useState<any | null>(null);
+  const [deleteConfirmationText, setDeleteConfirmationText] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDeleteClick = (project: any) => {
+    setProjectToDelete(project);
+    setDeleteConfirmationText('');
+    setShowMenu(null);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!projectToDelete) return;
+
+    setIsDeleting(true);
+    try {
+      // 1. Get fresh token
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+
+      if (!token) {
+        alert("Authentication error. Please sign in again.");
+        return;
+      }
+
+      // 2. Call Delete API
+      const response = await fetch(`/api/projects/${projectToDelete.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete project');
+      }
+
+      // 3. Update UI
+      setUserProjects(prev => prev.filter(p => p.id !== projectToDelete.id));
+      setProjectToDelete(null); // Close modal
+
+    } catch (error) {
+      console.error("Delete failed:", error);
+      alert("Failed to delete project. Please try again.");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   // Real Projects State
   const [userProjects, setUserProjects] = useState<any[]>([]);
   const [isLoadingProjects, setIsLoadingProjects] = useState(false);
@@ -429,13 +478,13 @@ linear - gradient(#374151 1px, transparent 1px),
                     window.location.hash = 'builder';
                   }
                 }}
-                className="relative bg-[#2B2F38] rounded-lg overflow-hidden cursor-pointer transition-all hover:bg-[#2F333C]"
+                className={`relative bg-[#2B2F38] rounded-lg cursor-pointer transition-all hover:bg-[#2F333C] ${showMenu === project.id ? 'z-50' : ''}`}
                 style={{
                   boxShadow: '0 2px 8px rgba(0,0,0,0.3)'
                 }}
               >
                 {/* Noise on card */}
-                <div className="absolute inset-0 opacity-[0.04]" style={{
+                <div className="absolute inset-0 opacity-[0.04] rounded-lg overflow-hidden" style={{
                   backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
                 }}></div>
 
@@ -593,19 +642,29 @@ linear - gradient(#374151 1px, transparent 1px),
                     </div>
 
                     {/* Three-dot Menu */}
-                    <Button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setShowMenu(showMenu === project.id ? null : project.id);
-                      }}
-                      className="p-2 h-auto hover:bg-[#1F2937] rounded transition-colors relative bg-transparent"
-                    >
-                      <MoreVertical className="w-5 h-5 text-[#9CA3AF]" />
+                    <div className="relative">
+                      <Button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowMenu(showMenu === project.id ? null : project.id);
+                        }}
+                        className="p-2 h-auto hover:bg-[#1F2937] rounded transition-colors bg-transparent"
+                      >
+                        <MoreVertical className="w-5 h-5 text-[#9CA3AF]" />
+                      </Button>
 
                       {/* Menu Dropdown */}
                       {showMenu === project.id && (
-                        <div className="absolute right-0 top-10 bg-[#1F2937] rounded shadow-lg py-1 z-10 min-w-[160px]">
-                          <div className="w-full px-4 py-2 text-left text-sm text-[#E5E7EB] hover:bg-[#374151] transition-colors cursor-pointer">
+                        <div className="absolute right-0 top-full mt-1 bg-[#1F2937] rounded shadow-lg py-1 z-20 min-w-[160px] border border-[#374151]">
+                          <div className="w-full px-4 py-2 text-left text-sm text-[#E5E7EB] hover:bg-[#374151] transition-colors cursor-pointer" onClick={(e) => {
+                            e.stopPropagation();
+                            if ((project as any).isGuest) {
+                              window.location.hash = 'builder';
+                            } else {
+                              localStorage.setItem('active_project_id', project.id);
+                              window.location.hash = 'builder';
+                            }
+                          }}>
                             Open
                           </div>
                           <div className="w-full px-4 py-2 text-left text-sm text-[#E5E7EB] hover:bg-[#374151] transition-colors cursor-pointer">
@@ -623,9 +682,18 @@ linear - gradient(#374151 1px, transparent 1px),
                           <div className="w-full px-4 py-2 text-left text-sm text-[#E5E7EB] hover:bg-[#374151] transition-colors cursor-pointer">
                             Archive
                           </div>
+                          <div
+                            className="w-full px-4 py-2 text-left text-sm text-red-400 hover:bg-[#374151] hover:text-red-300 transition-colors cursor-pointer"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteClick(project);
+                            }}
+                          >
+                            Delete
+                          </div>
                         </div>
                       )}
-                    </Button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -633,6 +701,47 @@ linear - gradient(#374151 1px, transparent 1px),
           </div>
         </section>
       </div>
+      {/* Delete Confirmation Modal */}
+      {projectToDelete && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-[#1F2937] border border-[#374151] rounded-lg p-6 max-w-md w-full shadow-xl transform transition-all scale-100 opacity-100">
+            <h3 className="text-xl font-semibold text-[#E5E7EB] mb-2">Delete Project?</h3>
+            <p className="text-[#9CA3AF] mb-6">
+              This action cannot be undone. To confirm deletion of <span className="text-white font-medium">{projectToDelete.name}</span>, type <span className="text-[#D97706] font-mono">delete</span> below.
+            </p>
+
+            <input
+              type="text"
+              value={deleteConfirmationText}
+              onChange={(e) => setDeleteConfirmationText(e.target.value)}
+              placeholder="Type 'delete' to confirm"
+              className="w-full px-4 py-2 bg-[#111318] border border-[#374151] rounded text-[#E5E7EB] placeholder-[#6B7280] focus:outline-none focus:border-[#D97706] mb-6"
+              autoFocus
+            />
+
+            <div className="flex justify-end gap-3">
+              <Button
+                variant="ghost"
+                onClick={() => setProjectToDelete(null)}
+                className="text-[#9CA3AF] hover:text-[#E5E7EB]"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleConfirmDelete}
+                disabled={deleteConfirmationText.toLowerCase() !== 'delete' || isDeleting}
+                className={`
+                  ${deleteConfirmationText.toLowerCase() === 'delete'
+                    ? 'bg-red-600 hover:bg-red-700 text-white'
+                    : 'bg-[#374151] text-[#6B7280] cursor-not-allowed'}
+                `}
+              >
+                {isDeleting ? 'Deleting...' : 'Delete Project'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
