@@ -19,6 +19,7 @@ import { Button } from './ui/button';
 import NoiseBackground from './NoiseBackground';
 import HexagonBackground from './HexagonBackground';
 import { LFADocument } from '../lib/fln-compiler';
+import { supabase } from '../lib/supabase';
 
 // Define MissionData interface to match MissionInitialize
 interface MissionData {
@@ -54,6 +55,7 @@ export default function LogicPreview({
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
   const [hoveredSection, setHoveredSection] = useState<string | null>(null);
   const [missionData, setMissionData] = useState<MissionData | null>(null);
+  const [orgDetails, setOrgDetails] = useState<{ name: string, logo: string } | null>(null);
 
   // Load Mission Data from LocalStorage
   useEffect(() => {
@@ -66,6 +68,23 @@ export default function LogicPreview({
         console.error("Failed to parse mission data", e);
       }
     }
+  }, []);
+
+  // Load Org Details from Supabase
+  useEffect(() => {
+    async function loadOrgDetails() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data } = await supabase.from('profiles').select('organization_name, org_logo_url').eq('id', user.id).single();
+        if (data) {
+          setOrgDetails({
+            name: data.organization_name || 'NitiNirmaan',
+            logo: data.org_logo_url || ''
+          });
+        }
+      }
+    }
+    loadOrgDetails();
   }, []);
 
   // Use Mission Data if available, else prop, else default
@@ -116,11 +135,15 @@ export default function LogicPreview({
         <div className="flex items-center justify-between relative" style={{ zIndex: 10, pointerEvents: 'none' }}>
           {/* Left - Branding & Project */}
           <div className="flex items-center gap-6">
-            <img
-              src="/logo-2.png"
-              alt="NitiNirmaan"
-              className="h-12 w-auto object-contain"
-            />
+            {orgDetails?.logo ? (
+              <img src={orgDetails.logo} alt="Org Logo" className="h-12 w-auto object-contain" />
+            ) : (
+              <img
+                src="/logo-2.png"
+                alt="NitiNirmaan"
+                className="h-12 w-auto object-contain"
+              />
+            )}
             <span className="text-[#9CA3AF] text-sm">{displayProjectName}</span>
           </div>
 
@@ -222,6 +245,7 @@ export default function LogicPreview({
               missionData={missionData}
               shortcomings={shortcomings}
               canvasNodes={canvasNodes}
+              orgName={orgDetails?.name}
             />
           </div>
 
@@ -263,6 +287,7 @@ function LFADocumentPreview({
   missionData?: MissionData | null;
   shortcomings: string[];
   canvasNodes?: Node[];
+  orgName?: string;
 }) {
   // --- Section 1: Data Maps ---
   const projectName = missionData?.projectName || 'Project Name';
@@ -300,7 +325,7 @@ function LFADocumentPreview({
           </div>
           <div>
             <span className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Organization</span>
-            <span className="text-lg text-gray-700">NitiNirmaan</span>
+            <span className="text-lg text-gray-700">{orgName || 'NitiNirmaan'}</span>
           </div>
           <div>
             <span className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Geography</span>

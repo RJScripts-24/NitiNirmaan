@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Upload,
   X,
@@ -13,6 +13,7 @@ import {
 import { Button } from './ui/button';
 import NoiseBackground from './NoiseBackground';
 import HexagonBackground from './HexagonBackground';
+import { supabase } from '../lib/supabase';
 
 interface SettingsProps {
   onNavigateToDashboard?: () => void;
@@ -23,16 +24,106 @@ export default function Settings({
   onNavigateToDashboard,
   onNavigateToPatterns,
 }: SettingsProps) {
-  const [organizationName, setOrganizationName] = useState('Shikshagraha Foundation');
-  const [website, setWebsite] = useState('https://shikshagraha.org');
-  const [logoUploaded, setLogoUploaded] = useState(false);
+  const [organizationName, setOrganizationName] = useState('');
+  const [website, setWebsite] = useState('');
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [darkMode, setDarkMode] = useState<'on' | 'off' | 'system'>('on');
   const [defaultCurrency, setDefaultCurrency] = useState('₹');
   const [saveMessage, setSaveMessage] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
 
-  const handleSave = () => {
-    setSaveMessage(true);
-    setTimeout(() => setSaveMessage(false), 2000);
+  // Load initial data
+
+  useEffect(() => {
+    async function loadProfile() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setUserId(user.id);
+        const { data } = await supabase
+          .from('profiles')
+          .select('organization_name, org_website, org_logo_url')
+          .eq('id', user.id)
+          .single();
+
+        if (data) {
+          setOrganizationName(data.organization_name || '');
+          setWebsite(data.org_website || '');
+          setLogoUrl(data.org_logo_url || null);
+        }
+      }
+    }
+    loadProfile();
+  }, []);
+
+  const handleSave = async () => {
+    if (!userId) return;
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({
+        organization_name: organizationName,
+        org_website: website,
+        org_logo_url: logoUrl
+      })
+      .eq('id', userId);
+
+    if (!error) {
+      setSaveMessage(true);
+      setTimeout(() => setSaveMessage(false), 2000);
+    } else {
+      console.error('Error saving settings:', error);
+      alert('Failed to save settings.');
+    }
+  };
+
+  const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!event.target.files || event.target.files.length === 0) {
+      return;
+    }
+
+    setIsUploading(true);
+    const file = event.target.files[0];
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${userId}-${Math.random()}.${fileExt}`;
+    const filePath = `${fileName}`;
+
+    try {
+      const { error: uploadError } = await supabase.storage
+        .from('org-logos')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('org-logos')
+        .getPublicUrl(filePath);
+
+      setLogoUrl(publicUrl);
+
+      // Auto-save after upload
+      if (userId) {
+        const { error: saveError } = await supabase
+          .from('profiles')
+          .update({ org_logo_url: publicUrl })
+          .eq('id', userId);
+
+        if (saveError) {
+          console.error('Error saving logo URL:', saveError);
+          alert('Logo uploaded but failed to save to profile: ' + saveError.message);
+        } else {
+          console.log('Logo URL saved successfully:', publicUrl);
+          setSaveMessage(true);
+          setTimeout(() => setSaveMessage(false), 2000);
+        }
+      }
+
+    } catch (error) {
+      console.error('Error uploading logo:', error);
+      alert('Error uploading logo');
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const teamMembers = [
@@ -75,9 +166,9 @@ export default function Settings({
         </div>
 
         <div className="p-4 lg:p-6 border-b border-[#1F2937] relative" style={{ zIndex: 10, pointerEvents: 'none' }}>
-          <img 
-            src="/logo-2.png" 
-            alt="NitiNirmaan" 
+          <img
+            src="/logo-2.png"
+            alt="NitiNirmaan"
             className="h-10 lg:h-14 w-auto object-contain"
           />
         </div>
@@ -143,22 +234,29 @@ export default function Settings({
                   Organization Logo
                 </label>
                 <div className="flex items-start gap-4">
-                  <div className="w-24 h-24 bg-[#1F2937] border border-[#2D3340] rounded flex items-center justify-center">
-                    {logoUploaded ? (
-                      <div className="w-full h-full flex items-center justify-center text-[#D97706] text-xs">
-                        LOGO
-                      </div>
+                  <div className="w-24 h-24 bg-[#1F2937] border border-[#2D3340] rounded flex items-center justify-center overflow-hidden">
+                    {logoUrl ? (
+                      <img src={logoUrl} alt="Org Logo" className="w-full h-full object-contain" />
                     ) : (
                       <Upload className="w-8 h-8 text-[#6B7280]" />
                     )}
                   </div>
                   <div className="flex-1">
+                    <input
+                      type="file"
+                      id="logo-upload"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleLogoUpload}
+                      disabled={isUploading}
+                    />
                     <Button
                       variant="outline"
-                      onClick={() => setLogoUploaded(true)}
+                      onClick={() => document.getElementById('logo-upload')?.click()}
+                      disabled={isUploading}
                       className="px-4 py-2 bg-[#1F2937] text-[#E5E7EB] border border-[#2D3340] rounded hover:bg-[#2D3340] transition-colors text-sm h-auto"
                     >
-                      Upload Logo
+                      {isUploading ? 'Uploading...' : 'Upload Logo'}
                     </Button>
                     <p className="text-[#6B7280] text-xs mt-2">
                       PNG or SVG. Max 2MB. This logo appears on all exported documents.
@@ -175,10 +273,8 @@ export default function Settings({
                 <input
                   type="text"
                   value={organizationName}
-                  onChange={(e) => {
-                    setOrganizationName(e.target.value);
-                    handleSave();
-                  }}
+                  onChange={(e) => setOrganizationName(e.target.value)}
+                  onBlur={handleSave}
                   className="w-full px-4 py-2 bg-[#1F2937] border border-[#2D3340] rounded text-[#E5E7EB] focus:outline-none focus:border-[#D97706] transition-colors"
                   placeholder="Enter organization name"
                 />
@@ -195,10 +291,8 @@ export default function Settings({
                 <input
                   type="url"
                   value={website}
-                  onChange={(e) => {
-                    setWebsite(e.target.value);
-                    handleSave();
-                  }}
+                  onChange={(e) => setWebsite(e.target.value)}
+                  onBlur={handleSave}
                   className="w-full px-4 py-2 bg-[#1F2937] border border-[#2D3340] rounded text-[#E5E7EB] focus:outline-none focus:border-[#D97706] transition-colors"
                   placeholder="https://example.org"
                 />
@@ -378,9 +472,9 @@ export default function Settings({
             <div className="bg-white rounded shadow-sm p-4 md:p-8 text-[#1F2937]">
               {/* Logo Preview */}
               <div className="mb-4 md:mb-6 flex items-center gap-3 md:gap-4">
-                <div className="w-12 h-12 md:w-16 md:h-16 bg-[#F3F4F6] border border-[#D1D5DB] rounded flex items-center justify-center flex-shrink-0">
-                  {logoUploaded ? (
-                    <span className="text-[#D97706] text-xs">LOGO</span>
+                <div className="w-12 h-12 md:w-16 md:h-16 bg-[#F3F4F6] border border-[#D1D5DB] rounded flex items-center justify-center flex-shrink-0 overflow-hidden">
+                  {logoUrl ? (
+                    <img src={logoUrl} alt="Preview" className="w-full h-full object-contain" />
                   ) : (
                     <Upload className="w-5 h-5 md:w-6 md:h-6 text-[#9CA3AF]" />
                   )}

@@ -51,7 +51,7 @@ export default function AuthPage({ onBack, onAuthSuccess }: AuthPageProps) {
           password,
           options: {
             data: {
-              org_name: orgName,
+              organization_name: orgName,
             }
           }
         });
