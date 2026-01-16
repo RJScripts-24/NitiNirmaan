@@ -53,10 +53,57 @@ export default function MissionInitialize({ onClose, onComplete }: MissionInitia
     }
   };
 
-  const handleInitialize = () => {
-    // Initialize workspace logic here
-    localStorage.setItem('current_mission_data', JSON.stringify(missionData));
-    onComplete?.();
+  const handleInitialize = async () => {
+    try {
+      // 1. Check for Auth Token
+      const token = localStorage.getItem('token');
+
+      if (token) {
+        // Authenticated User: Create Project in DB
+        const response = await fetch('/api/projects', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            projectName: missionData.projectName,
+            description: `Mission for ${missionData.state}, ${missionData.district}. Outcome: ${missionData.outcome}`,
+            domain: missionData.domain,
+            location: `${missionData.district}, ${missionData.state}`
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to create project');
+        }
+
+        const data = await response.json();
+        localStorage.setItem('active_project_id', data.id);
+        // Also Save initial mission data logic if needed? For now just setting active ID.
+
+      } else {
+        // Guest User: Keep Local Storage Logic (or maybe Anonymous Auth later?)
+        // For now, consistent with "Guest" requirement, we might just keep local
+        const guestId = 'guest_' + Date.now();
+        const guestProject = {
+          id: guestId,
+          title: missionData.projectName,
+          ...missionData
+        };
+        localStorage.setItem('guest_active_project', JSON.stringify(guestProject));
+        localStorage.setItem('active_project_id', 'guest');
+      }
+
+      // Persist Mission Data Context locally for Builder to pick up hints
+      localStorage.setItem('current_mission_data', JSON.stringify(missionData));
+
+      onComplete?.();
+
+    } catch (error) {
+      console.error('Initialization Error:', error);
+      alert('Failed to initialize mission. Please try again.');
+    }
   };
 
   const isStep1Valid = missionData.projectName.trim().length > 0 && missionData.domain.length > 0;

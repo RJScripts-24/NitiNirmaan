@@ -11,11 +11,21 @@ interface DashboardProps {
   onNavigateToSettings?: () => void;
 }
 
+import { supabase } from '../lib/supabase';
+
+// ... (keep imports)
+
 export default function Dashboard({ onBack, onNavigateToPatterns, onNavigateToInitialize, onNavigateToSettings }: DashboardProps) {
   const [sortBy, setSortBy] = useState('Recently Edited');
   const [showMenu, setShowMenu] = useState<string | null>(null);
 
-  const projects = [
+  // Real Projects State
+  const [userProjects, setUserProjects] = useState<any[]>([]);
+  const [isLoadingProjects, setIsLoadingProjects] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  // Mock Projects (Only for Guests)
+  const mockProjects = [
     {
       id: '1',
       name: 'FLN Bihar 2026',
@@ -57,24 +67,69 @@ export default function Dashboard({ onBack, onNavigateToPatterns, onNavigateToIn
     return '#047857';
   };
 
-  // Load Guest Project
+  // Load Projects (Real or Guest)
   const [guestProject, setGuestProject] = useState<any>(null);
+
   useEffect(() => {
-    const stored = localStorage.getItem('guest_active_project');
-    if (stored) {
-      setGuestProject(JSON.parse(stored));
-    }
+    const checkAuthAndFetch = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = localStorage.getItem('token');
+
+      if (session || token) {
+        setIsAuthenticated(true);
+        setIsLoadingProjects(true);
+        try {
+          // Fetch real projects
+          // Using Supabase client directly, assuming RLS allows selecting own projects
+          const { data, error } = await supabase
+            .from('projects')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+          if (error) throw error;
+
+          if (data) {
+            // Map DB projects to Dashboard UI format
+            const mappedProjects = data.map(p => ({
+              id: p.id,
+              name: p.title,
+              status: 'Draft', // Default for now
+              edited: new Date(p.updated_at || p.created_at).toLocaleDateString(),
+              logicHealth: 0, // Need to calculate or store this?
+              statusColor: 'neutral'
+            }));
+            setUserProjects(mappedProjects);
+          }
+        } catch (err) {
+          console.error('Error fetching projects:', err);
+        } finally {
+          setIsLoadingProjects(false);
+        }
+      } else {
+        // Guest Mode
+        setIsAuthenticated(false);
+        const stored = localStorage.getItem('guest_active_project');
+        if (stored) {
+          setGuestProject(JSON.parse(stored));
+        }
+      }
+    };
+
+    checkAuthAndFetch();
   }, []);
 
-  const allProjects = guestProject ? [{
-    id: guestProject.id,
-    name: guestProject.title,
-    status: 'Guest Draft',
-    edited: 'Just now',
-    logicHealth: 50,
-    statusColor: 'neutral',
-    isGuest: true
-  }, ...projects] : projects;
+  // Determine which projects to show
+  const allProjects = isAuthenticated
+    ? userProjects
+    : (guestProject ? [{
+      id: guestProject.id,
+      name: guestProject.title,
+      status: 'Guest Draft',
+      edited: 'Just now',
+      logicHealth: 50,
+      statusColor: 'neutral',
+      isGuest: true
+    }, ...mockProjects] : mockProjects);
 
   return (
     <div className="min-h-screen bg-[#0F1216] text-gray-200 relative">

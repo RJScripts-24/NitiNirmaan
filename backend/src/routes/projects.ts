@@ -15,11 +15,15 @@ projectsRouter.post('/', authMiddleware, async (req, res) => {
             return res.status(400).json({ error: 'Project Name is required' });
         }
 
+        // DEBUG: Log user info for RLS troubleshooting
+        console.log('📝 [Create Project] User ID:', user.id);
+        console.log('📝 [Create Project] User Email:', user.email);
+
         // Insert into Projects Table
         const { data, error } = await supabase
             .from('projects')
             .insert({
-                user_id: user.id,
+                owner_id: user.id,  // Changed from user_id to owner_id
                 title: projectName, // Mapping projectName -> title
                 description: description || null,
                 theme: domain || 'GENERAL', // Mapping domain -> theme
@@ -32,14 +36,19 @@ projectsRouter.post('/', authMiddleware, async (req, res) => {
 
         if (error) {
             console.error('Create Project Error:', error);
-            return res.status(500).json({ error: 'Failed to create mission.' });
+            console.error('User ID was:', user.id);
+            return res.status(500).json({ error: 'Failed to create mission.', userIdUsed: user.id });
         }
 
         res.status(201).json({ id: (data as any).id, message: 'Project created successfully' });
 
-    } catch (error) {
+    } catch (error: any) {
         console.error('Create Project Error:', error);
-        res.status(500).json({ error: 'Internal Server Error' });
+        res.status(500).json({
+            error: 'Internal Server Error',
+            details: error.message || error,
+            hint: 'Check backend console for more details'
+        });
     }
 });
 
