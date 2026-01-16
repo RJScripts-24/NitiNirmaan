@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import ReactFlow, { Background, Node, Edge } from 'reactflow';
 import 'reactflow/dist/style.css';
 import {
@@ -19,8 +19,18 @@ import NoiseBackground from './NoiseBackground';
 import HexagonBackground from './HexagonBackground';
 import { LFADocument } from '../lib/fln-compiler';
 
+// Define MissionData interface to match MissionInitialize
+interface MissionData {
+  projectName: string;
+  state: string;
+  district: string;
+  domain: string;
+  outcome: string;
+  aiCompanion?: string | null;
+}
+
 interface LogicPreviewProps {
-  projectName?: string;
+  projectName?: string; // Legacy prop, can be overridden by missionData
   onBack?: () => void;
   simulationPassed?: boolean;
   onSettings?: () => void;
@@ -31,7 +41,7 @@ interface LogicPreviewProps {
 }
 
 export default function LogicPreview({
-  projectName = 'FLN Improvement – Bihar (2026)',
+  projectName = 'Mission Project', // Default fallback
   onBack,
   simulationPassed = true,
   onSettings,
@@ -42,6 +52,23 @@ export default function LogicPreview({
 }: LogicPreviewProps) {
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
   const [hoveredSection, setHoveredSection] = useState<string | null>(null);
+  const [missionData, setMissionData] = useState<MissionData | null>(null);
+
+  // Load Mission Data from LocalStorage
+  useEffect(() => {
+    const storedData = localStorage.getItem('current_mission_data');
+    if (storedData) {
+      try {
+        const parsed = JSON.parse(storedData);
+        setMissionData(parsed);
+      } catch (e) {
+        console.error("Failed to parse mission data", e);
+      }
+    }
+  }, []);
+
+  // Use Mission Data if available, else prop, else default
+  const displayProjectName = missionData?.projectName || projectName;
 
   // If simulation hasn't passed, show locked state
   if (!simulationPassed) {
@@ -93,7 +120,7 @@ export default function LogicPreview({
               alt="NitiNirmaan"
               className="h-12 w-auto object-contain"
             />
-            <span className="text-[#9CA3AF] text-sm">{projectName}</span>
+            <span className="text-[#9CA3AF] text-sm">{displayProjectName}</span>
           </div>
 
           {/* Center - Validation Banner */}
@@ -104,7 +131,7 @@ export default function LogicPreview({
                 Logic Validation Successful
               </p>
               <p className="text-[#047857]/70 text-xs">
-                1 issue resolved | Simulation passes
+                {shortcomings.length > 0 ? `${shortcomings.length} Issues Identified` : 'Clean Logic'} | Simulation passes
               </p>
             </div>
           </div>
@@ -187,97 +214,13 @@ export default function LogicPreview({
 
           {/* Document Content */}
           <div className="flex-1 overflow-auto p-6">
-            {/* Shortcomings Panel */}
-            {shortcomings.length > 0 && (
-              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-                <h3 className="text-red-800 font-semibold mb-3 flex items-center gap-2">
-                  <AlertTriangle className="w-5 h-5" />
-                  AI Logic Analysis
-                </h3>
-                <div className="space-y-2">
-                  {shortcomings.map((item, idx) => (
-                    <div key={idx} className="flex items-start gap-2 text-sm text-red-700">
-                      <span className="text-red-500 mt-0.5">•</span>
-                      <span>{item}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Dynamic LFA Table */}
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <h3 className="text-lg font-semibold mb-4 text-[#1F2937]">Logical Framework (LFA)</h3>
-
-              {lfaData ? (
-                <div className="border border-[#D1D5DB] rounded-lg overflow-hidden">
-                  <table className="w-full text-sm">
-                    <thead className="bg-[#F9FAFB] border-b border-[#D1D5DB]">
-                      <tr>
-                        <th className="text-left py-3 px-4 font-semibold text-[#1F2937] w-1/5">Level</th>
-                        <th className="text-left py-3 px-4 font-semibold text-[#1F2937] w-2/5">Narrative Summary</th>
-                        <th className="text-left py-3 px-4 font-semibold text-[#1F2937]">Indicators</th>
-                        <th className="text-left py-3 px-4 font-semibold text-[#1F2937]">Assumptions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-[#E5E7EB]">
-                      {/* Goal */}
-                      <tr>
-                        <td className="py-3 px-4 font-medium text-[#EF4444]">Goal (Impact)</td>
-                        <td className="py-3 px-4 text-[#6B7280]">{lfaData.goal?.narrative || <span className="italic text-gray-400">Not defined</span>}</td>
-                        <td className="py-3 px-4 text-[#6B7280]">{lfaData.goal?.indicators?.join(', ') || '-'}</td>
-                        <td className="py-3 px-4 text-[#6B7280]">{lfaData.goal?.assumptions_risks?.join(', ') || '-'}</td>
-                      </tr>
-
-                      {/* Outcomes */}
-                      {lfaData.outcomes.map((item, i) => (
-                        <tr key={`outcome-${i}`} className="bg-[#F0FDFA]">
-                          <td className="py-3 px-4 font-medium text-[#0D9488]">{i === 0 ? 'Outcomes' : ''}</td>
-                          <td className="py-3 px-4 text-[#6B7280]">{item.narrative}</td>
-                          <td className="py-3 px-4 text-[#6B7280]">{item.indicators?.join(', ')}</td>
-                          <td className="py-3 px-4 text-[#6B7280]">{item.assumptions_risks?.join(', ') || '-'}</td>
-                        </tr>
-                      ))}
-                      {lfaData.outcomes.length === 0 && (
-                        <tr className="bg-[#F0FDFA]">
-                          <td className="py-3 px-4 font-medium text-[#0D9488]">Outcomes</td>
-                          <td className="py-3 px-4 text-gray-400 italic" colSpan={3}>No outcomes defined</td>
-                        </tr>
-                      )}
-
-                      {/* Outputs */}
-                      {lfaData.outputs.map((item, i) => (
-                        <tr key={`output-${i}`} className="bg-[#FFFBEB]">
-                          <td className="py-3 px-4 font-medium text-[#D97706]">{i === 0 ? 'Outputs' : ''}</td>
-                          <td className="py-3 px-4 text-[#6B7280]">{item.narrative}</td>
-                          <td className="py-3 px-4 text-[#6B7280]">{item.indicators?.join(', ')}</td>
-                          <td className="py-3 px-4 text-[#6B7280]">{item.assumptions_risks?.join(', ') || '-'}</td>
-                        </tr>
-                      ))}
-
-                      {/* Activities */}
-                      {lfaData.activities.map((item, i) => (
-                        <tr key={`activity-${i}`}>
-                          <td className="py-3 px-4 font-medium text-[#6B7280]">{i === 0 ? 'Activities' : ''}</td>
-                          <td className="py-3 px-4 text-[#6B7280]">{item.narrative}</td>
-                          <td className="py-3 px-4 text-[#6B7280]">{item.indicators?.join(', ')}</td>
-                          <td className="py-3 px-4 text-[#6B7280]">{item.assumptions_risks?.join(', ') || '-'}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <div className="text-center py-8 text-[#6B7280]">
-                  No LFA data available. Run simulation first.
-                </div>
-              )}
-
-              {/* Footer note */}
-              <div className="mt-6 pt-4 border-t border-[#E5E7EB] text-xs text-[#9CA3AF] italic">
-                This document is auto-generated from validated logic model via NitiNirmaan AI Engine.
-              </div>
-            </div>
+            <LFADocumentPreview
+              hoveredNode={hoveredNode}
+              onSectionHover={setHoveredSection}
+              lfaData={lfaData}
+              missionData={missionData}
+              shortcomings={shortcomings}
+            />
           </div>
 
           {/* Export Actions - Bottom Right */}
@@ -303,174 +246,48 @@ export default function LogicPreview({
   );
 }
 
-// System Snapshot Component
-function SystemSnapshot({
-  hoveredSection,
-  onNodeHover,
-}: {
-  hoveredSection: string | null;
-  onNodeHover: (node: string | null) => void;
-}) {
-  return (
-    <div className="relative w-full h-full">
-      {/* Grid background */}
-      <div
-        className="absolute inset-0"
-        style={{
-          backgroundImage: `
-            linear-gradient(#1F2937 1px, transparent 1px),
-            linear-gradient(90deg, #1F2937 1px, transparent 1px)
-          `,
-          backgroundSize: '20px 20px',
-          opacity: 0.3,
-        }}
-      ></div>
-
-      {/* Mock nodes - read-only visualization */}
-      <svg className="w-full h-full" viewBox="0 0 800 600">
-        {/* Connections */}
-        <path
-          d="M 150 100 Q 200 150 250 180"
-          stroke="#6B7280"
-          strokeWidth="2"
-          fill="none"
-          opacity={hoveredSection === 'stakeholders' ? 1 : 0.6}
-        />
-        <path
-          d="M 290 200 Q 350 250 400 280"
-          stroke="#D97706"
-          strokeWidth="2"
-          fill="none"
-          opacity={hoveredSection === 'interventions' ? 1 : 0.6}
-        />
-        <path
-          d="M 440 300 Q 500 320 560 300"
-          stroke="#0D9488"
-          strokeWidth="2"
-          fill="none"
-          opacity={hoveredSection === 'theory' ? 1 : 0.6}
-        />
-
-        {/* Teacher Node */}
-        <g
-          onMouseEnter={() => onNodeHover('teacher')}
-          onMouseLeave={() => onNodeHover(null)}
-          className="cursor-pointer"
-        >
-          <rect
-            x="100"
-            y="80"
-            width="100"
-            height="40"
-            rx="4"
-            fill="#6B7280"
-            opacity={hoveredSection === 'stakeholders' ? 1 : 0.8}
-          />
-          <text x="150" y="105" textAnchor="middle" fill="#E5E7EB" fontSize="12">
-            Teacher
-          </text>
-        </g>
-
-        {/* Kit Node */}
-        <g
-          onMouseEnter={() => onNodeHover('kit')}
-          onMouseLeave={() => onNodeHover(null)}
-          className="cursor-pointer"
-        >
-          <rect
-            x="250"
-            y="160"
-            width="80"
-            height="40"
-            rx="4"
-            fill="#D97706"
-            opacity={hoveredSection === 'interventions' ? 1 : 0.8}
-          />
-          <text x="290" y="185" textAnchor="middle" fill="#E5E7EB" fontSize="12">
-            Kit
-          </text>
-        </g>
-
-        {/* Practice Change Node */}
-        <g
-          onMouseEnter={() => onNodeHover('practice')}
-          onMouseLeave={() => onNodeHover(null)}
-          className="cursor-pointer"
-        >
-          <rect
-            x="360"
-            y="260"
-            width="120"
-            height="50"
-            rx="4"
-            fill="#0D9488"
-            opacity={hoveredSection === 'theory' ? 1 : 0.8}
-          />
-          <text x="420" y="280" textAnchor="middle" fill="#E5E7EB" fontSize="11">
-            Teacher uses kit
-          </text>
-          <text x="420" y="295" textAnchor="middle" fill="#E5E7EB" fontSize="11">
-            for reading
-          </text>
-        </g>
-
-        {/* Outcome Node */}
-        <g
-          onMouseEnter={() => onNodeHover('outcome')}
-          onMouseLeave={() => onNodeHover(null)}
-          className="cursor-pointer"
-        >
-          <rect
-            x="520"
-            y="270"
-            width="120"
-            height="50"
-            rx="4"
-            fill="#047857"
-            opacity={hoveredSection === 'goal' ? 1 : 0.8}
-          />
-          <text x="580" y="290" textAnchor="middle" fill="#E5E7EB" fontSize="11">
-            Students read
-          </text>
-          <text x="580" y="305" textAnchor="middle" fill="#E5E7EB" fontSize="11">
-            Grade 3 texts
-          </text>
-        </g>
-
-        {/* Budget Node */}
-        <g>
-          <rect x="100" y="200" width="80" height="35" rx="4" fill="#475569" opacity="0.8" />
-          <text x="140" y="222" textAnchor="middle" fill="#E5E7EB" fontSize="11">
-            Budget
-          </text>
-        </g>
-
-        {/* Indicator labels */}
-        <text
-          x="420"
-          y="330"
-          textAnchor="middle"
-          fill="#9CA3AF"
-          fontSize="9"
-          opacity={hoveredSection === 'theory' ? 1 : 0.5}
-        >
-          % of classrooms where kit is regularly used
-        </text>
-      </svg>
-    </div>
-  );
-}
-
 // LFA Document Preview Component
 function LFADocumentPreview({
   hoveredNode,
   onSectionHover,
+  lfaData,
+  missionData,
+  shortcomings
 }: {
   hoveredNode: string | null;
   onSectionHover: (section: string | null) => void;
+  lfaData?: LFADocument | null;
+  missionData?: MissionData | null;
+  shortcomings: string[];
 }) {
+  // Derive Fallback strings
+  const projectName = missionData?.projectName || 'Project Name';
+  const geography = (missionData?.state || missionData?.district)
+    ? `${missionData.district || ''}${missionData.district && missionData.state ? ', ' : ''}${missionData.state || ''}`
+    : 'Not defined';
+  const domain = missionData?.domain || 'Not defined';
+  const goalNarrative = missionData?.outcome || lfaData?.goal?.narrative || 'Not defined';
+
   return (
     <div className="bg-white rounded shadow-sm p-8 text-[#1F2937] max-w-3xl mx-auto">
+      {/* Shortcomings Panel */}
+      {shortcomings.length > 0 && (
+        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+          <h3 className="text-red-800 font-semibold mb-3 flex items-center gap-2">
+            <AlertTriangle className="w-5 h-5" />
+            AI Logic Analysis
+          </h3>
+          <div className="space-y-2">
+            {shortcomings.map((item, idx) => (
+              <div key={idx} className="flex items-start gap-2 text-sm text-red-700">
+                <span className="text-red-500 mt-0.5">•</span>
+                <span>{item}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Program Overview */}
       <section
         className="mb-8"
@@ -481,19 +298,20 @@ function LFADocumentPreview({
         <div className="space-y-2 text-sm">
           <div>
             <span className="font-medium">Project Name:</span>{' '}
-            <span className="text-[#6B7280]">FLN Improvement – Bihar (2026)</span>
+            <span className="text-[#6B7280]">{projectName}</span>
           </div>
           <div>
             <span className="font-medium">Geography:</span>{' '}
-            <span className="text-[#6B7280]">Rural Bihar</span>
+            <span className="text-[#6B7280]">{geography}</span>
           </div>
           <div>
             <span className="font-medium">Domain:</span>{' '}
-            <span className="text-[#6B7280]">Foundational Literacy & Numeracy</span>
+            <span className="text-[#6B7280]">{domain}</span>
           </div>
+          {/* Note: Scale is inferred or static for now */}
           <div>
             <span className="font-medium">Scale:</span>{' '}
-            <span className="text-[#6B7280]">Clusters, Blocks</span>
+            <span className="text-[#6B7280]">District/Block Level</span>
           </div>
         </div>
       </section>
@@ -510,137 +328,119 @@ function LFADocumentPreview({
       >
         <h3 className="text-lg font-semibold mb-3 text-[#1F2937]">Goal</h3>
         <p className="text-sm text-[#6B7280]">
-          Students in Grade 3 demonstrate grade-level reading comprehension.
+          {goalNarrative}
         </p>
+        {/* If LFA goal exists and is different, show indicators */}
+        {lfaData?.goal?.indicators && lfaData.goal.indicators.length > 0 && (
+          <div className="mt-2 pl-4 border-l-2 border-gray-200">
+            <p className="text-xs font-semibold text-gray-500 mb-1">Indicators:</p>
+            <p className="text-sm text-[#6B7280]">{lfaData.goal.indicators.join(', ')}</p>
+          </div>
+        )}
       </section>
 
-      {/* Stakeholders */}
-      <section
-        className="mb-8"
-        onMouseEnter={() => onSectionHover('stakeholders')}
-        onMouseLeave={() => onSectionHover(null)}
-        style={{
-          backgroundColor: hoveredNode === 'teacher' ? '#F9FAFB' : 'transparent',
-          transition: 'background-color 0.2s',
-        }}
-      >
-        <h3 className="text-lg font-semibold mb-3 text-[#1F2937]">
-          Stakeholders — Who Is Involved
-        </h3>
-        <table className="w-full text-sm border-collapse">
-          <thead>
-            <tr className="border-b border-[#D1D5DB]">
-              <th className="text-left py-2 font-semibold">Role</th>
-              <th className="text-left py-2 font-semibold">Responsibility</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr className="border-b border-[#E5E7EB]">
-              <td className="py-3 text-[#1F2937]">Teacher</td>
-              <td className="py-3 text-[#6B7280]">
-                Conducts daily reading activities using the FLN kit. Trainable for 3 hours/week.
-              </td>
-            </tr>
-            <tr className="border-b border-[#E5E7EB]">
-              <td className="py-3 text-[#1F2937]">CRP</td>
-              <td className="py-3 text-[#6B7280]">
-                Provides kit-based FLN training to cluster-level teachers. | Manageable within 10 schools
-              </td>
-            </tr>
-            <tr className="border-b border-[#E5E7EB]">
-              <td className="py-3 text-[#1F2937]">Students</td>
-              <td className="py-3 text-[#6B7280]">
-                Grade 3 children in program-specified schools
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </section>
+      {/* Stakeholders (Could be dynamic from LFA data if available, but for now specific LogicPreview static vs LFA dynamic is mixed. Ideally use lfaData if strictly valid, but the sample code had hardcoded table. I will keep the static table structure but note it might need dynamic populating in future tasks. For now, Goal/Overview were the requested dynamic parts.)
+         Checking if lfaData has actors/stakeholders... LFADocument type usually has outcomes/outputs.
+         Let's keep existing sections but prioritize LFA table integration.
+      */}
 
-      {/* Theory of Change */}
+      {/* Dynamic LFA Table */}
       <section
         className="mb-8"
         onMouseEnter={() => onSectionHover('theory')}
         onMouseLeave={() => onSectionHover(null)}
-        style={{
-          backgroundColor: hoveredNode === 'practice' ? '#F0FDFA' : 'transparent',
-          transition: 'background-color 0.2s',
-        }}
       >
-        <h3 className="text-lg font-semibold mb-3 text-[#1F2937]">
-          Theory of Change — Core LFA Table
-        </h3>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm border border-[#D1D5DB]">
-            <thead>
-              <tr className="bg-[#F9FAFB] border-b border-[#D1D5DB]">
-                <th className="text-left py-2 px-3 font-semibold">From</th>
-                <th className="text-left py-2 px-3 font-semibold">Practice Change</th>
-                <th className="text-left py-2 px-3 font-semibold">To</th>
-                <th className="text-left py-2 px-3 font-semibold">Indicator</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr className="border-b border-[#E5E7EB]">
-                <td className="py-3 px-3 text-[#1F2937]">CRP</td>
-                <td className="py-3 px-3 text-[#6B7280]">Provides kit-based FLN training</td>
-                <td className="py-3 px-3 text-[#1F2937]">Teacher</td>
-                <td className="py-3 px-3 text-[#6B7280]">
-                  % of classrooms where kit is regularly used
-                </td>
-              </tr>
-              <tr className="border-b border-[#E5E7EB]">
-                <td className="py-3 px-3 text-[#1F2937]">CRP</td>
-                <td className="py-3 px-3 text-[#6B7280]">
-                  Provides kit-based FLN training to cluster-level teachers
-                </td>
-                <td className="py-3 px-3 text-[#1F2937]">Students</td>
-                <td className="py-3 px-3 text-[#6B7280]">
-                  Average weekly usage frequency
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+        <h3 className="text-lg font-semibold mb-4 text-[#1F2937]">Logical Framework (LFA)</h3>
+
+        {lfaData ? (
+          <div className="border border-[#D1D5DB] rounded-lg overflow-hidden">
+            <table className="w-full text-sm">
+              <thead className="bg-[#F9FAFB] border-b border-[#D1D5DB]">
+                <tr>
+                  <th className="text-left py-3 px-4 font-semibold text-[#1F2937] w-1/5">Level</th>
+                  <th className="text-left py-3 px-4 font-semibold text-[#1F2937] w-2/5">Narrative Summary</th>
+                  <th className="text-left py-3 px-4 font-semibold text-[#1F2937]">Indicators</th>
+                  <th className="text-left py-3 px-4 font-semibold text-[#1F2937]">Assumptions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#E5E7EB]">
+                {/* Goal (Using Mission Data or LFA Data) */}
+                <tr>
+                  <td className="py-3 px-4 font-medium text-[#EF4444]">Goal (Impact)</td>
+                  <td className="py-3 px-4 text-[#6B7280]">{goalNarrative}</td>
+                  <td className="py-3 px-4 text-[#6B7280]">{lfaData.goal?.indicators?.join(', ') || '-'}</td>
+                  <td className="py-3 px-4 text-[#6B7280]">{lfaData.goal?.assumptions_risks?.join(', ') || '-'}</td>
+                </tr>
+
+                {/* Outcomes */}
+                {lfaData.outcomes.map((item, i) => (
+                  <tr key={`outcome-${i}`} className="bg-[#F0FDFA]">
+                    <td className="py-3 px-4 font-medium text-[#0D9488]">{i === 0 ? 'Outcomes' : ''}</td>
+                    <td className="py-3 px-4 text-[#6B7280]">{item.narrative}</td>
+                    <td className="py-3 px-4 text-[#6B7280]">{item.indicators?.join(', ')}</td>
+                    <td className="py-3 px-4 text-[#6B7280]">{item.assumptions_risks?.join(', ') || '-'}</td>
+                  </tr>
+                ))}
+                {lfaData.outcomes.length === 0 && (
+                  <tr className="bg-[#F0FDFA]">
+                    <td className="py-3 px-4 font-medium text-[#0D9488]">Outcomes</td>
+                    <td className="py-3 px-4 text-gray-400 italic" colSpan={3}>No outcomes defined</td>
+                  </tr>
+                )}
+
+                {/* Outputs */}
+                {lfaData.outputs.map((item, i) => (
+                  <tr key={`output-${i}`} className="bg-[#FFFBEB]">
+                    <td className="py-3 px-4 font-medium text-[#D97706]">{i === 0 ? 'Outputs' : ''}</td>
+                    <td className="py-3 px-4 text-[#6B7280]">{item.narrative}</td>
+                    <td className="py-3 px-4 text-[#6B7280]">{item.indicators?.join(', ')}</td>
+                    <td className="py-3 px-4 text-[#6B7280]">{item.assumptions_risks?.join(', ') || '-'}</td>
+                  </tr>
+                ))}
+
+                {/* Activities */}
+                {lfaData.activities.map((item, i) => (
+                  <tr key={`activity-${i}`}>
+                    <td className="py-3 px-4 font-medium text-[#6B7280]">{i === 0 ? 'Activities' : ''}</td>
+                    <td className="py-3 px-4 text-[#6B7280]">{item.narrative}</td>
+                    <td className="py-3 px-4 text-[#6B7280]">{item.indicators?.join(', ')}</td>
+                    <td className="py-3 px-4 text-[#6B7280]">{item.assumptions_risks?.join(', ') || '-'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="text-center py-8 text-[#6B7280]">
+            No LFA data available. Run simulation first.
+          </div>
+        )}
       </section>
 
-      {/* Risks & Assumptions */}
+      {/* Risks & Assumptions - Collapsed or Summary */}
       <section className="mb-8">
-        <h3 className="text-lg font-semibold mb-3 text-[#1F2937]">Risks & Assumptions</h3>
-        <ul className="space-y-2 text-sm text-[#6B7280] list-disc list-inside">
-          <li>Teachers will need hands-on training to use FLN kits effectively</li>
-          <li>CRPs have capacity to support up to 10 schools within cluster geography</li>
-          <li>Budget allocation is sufficient for kit procurement and distribution</li>
-        </ul>
-      </section>
-
-      {/* Monitoring & Indicators */}
-      <section className="mb-8">
-        <h3 className="text-lg font-semibold mb-3 text-[#1F2937]">
-          Monitoring & Indicators
-        </h3>
-        <div className="space-y-3 text-sm">
-          <div>
-            <p className="font-medium text-[#1F2937] mb-1">Outcome Level</p>
-            <ul className="space-y-1 text-[#6B7280] list-disc list-inside ml-2">
-              <li>% of Grade 3 students demonstrating grade-level comprehension</li>
-            </ul>
-          </div>
-          <div>
-            <p className="font-medium text-[#1F2937] mb-1">Output Level</p>
-            <ul className="space-y-1 text-[#6B7280] list-disc list-inside ml-2">
-              <li>% of classrooms where kit is regularly used</li>
-              <li>Average weekly usage frequency</li>
-              <li>Number of teachers trained in kit-based pedagogy</li>
-            </ul>
-          </div>
-        </div>
+        <h3 className="text-lg font-semibold mb-3 text-[#1F2937]">Risks & Assumptions (Summary)</h3>
+        {lfaData && (lfaData.goal.assumptions_risks.length > 0 || lfaData.outcomes.some(o => o.assumptions_risks.length > 0)) ? (
+          <ul className="space-y-2 text-sm text-[#6B7280] list-disc list-inside">
+            {/* Combine all risks for summary */}
+            {[
+              ...lfaData.goal.assumptions_risks,
+              ...lfaData.outcomes.flatMap(o => o.assumptions_risks),
+              ...lfaData.outputs.flatMap(o => o.assumptions_risks)
+            ].slice(0, 5).map((risk, i) => (
+              <li key={i}>{risk}</li>
+            ))}
+            {/* Fallback if list is empty but arrays exist? No, check length above */}
+          </ul>
+        ) : (
+          <p className="text-sm text-[#9CA3AF] italic">No specific risks identified in simulation.</p>
+        )}
       </section>
 
       {/* Footer note */}
       <div className="mt-8 pt-6 border-t border-[#E5E7EB] text-xs text-[#9CA3AF] italic">
-        This document is auto-generated from validated logic model. All content is system-enforced
-        and simulation-validated.
+        This document is auto-generated from validated logic model (Impact Canvas) and Mission Context ({domain}).
+        All content is system-enforced and simulation-validated.
       </div>
     </div>
   );

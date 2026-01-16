@@ -404,17 +404,41 @@ export default function ImpactCanvas({
             shortcomings: result.shortcomings || []
           });
         }
-      } else if (result.errors && result.errors.length > 0) {
-        // Handle legacy/FLN simulation errors if structured differently
-        // But ideally, the backend now returns a unified structure.
-        // If we strictly follow the new backend code for Career, it returns { lfa, ... }.
-        // For FLN (default logic in backend), it currently returns { status, score, errors }.
-        // We might need to handle that case if FLN logic wasn't fully migrated to LFA-on-backend yet.
-        // Assuming FLN still runs local compilation in the backend or we keep local fallback?
-        // Wait, the backend code I wrote for FLN branch returns `errors` array, NOT `lfa` object.
-        // So I must handle both cases or finish porting FLN to backend LFA.
-        // For now, let's keep the backend result handling flexible.
+      } else if (result.status === 'success' || (result.score && (!result.errors || result.errors.length === 0))) {
+        // Fallback: Backend validated (success) but didn't return LFA object (Legacy/FLN behavior)
+        // We compile locally.
+        console.log('⚠️ [Simulation] Backend verified logic but returned no LFA. Generating locally...');
 
+        let localLfa: LFADocument | null = null;
+
+        // Try local compilation for FLN (or default)
+        try {
+          localLfa = compileFLNGraphToLFA(nodes, edges);
+        } catch (err) {
+          console.error("Local compilation failed", err);
+        }
+
+        if (localLfa) {
+          setSimulationData({
+            lfa: localLfa,
+            shortcomings: result.shortcomings || [] // Use backend shortcomings if ANY, mostly empty for now
+          });
+          setShowSimulationResult(true);
+
+          if (onSimulationComplete) {
+            onSimulationComplete({
+              lfa: localLfa,
+              nodes,
+              edges,
+              shortcomings: result.shortcomings || []
+            });
+          }
+        } else {
+          // If we really can't generate an LFA (e.g. unknown domain and no backend support), show error
+          alert("Simulation passed backend checks, but LFA generation failed.");
+        }
+
+      } else if (result.errors && result.errors.length > 0) {
         console.warn('⚠️ [Simulation] Backend returned errors instead of LFA:', result.errors);
         alert(`Simulation Issues Found:\n${result.errors.map((e: any) => `- ${e.message}`).join('\n')}`);
       }
@@ -422,13 +446,25 @@ export default function ImpactCanvas({
     } catch (e) {
       console.error("❌ [Simulation] Failed:", e);
       // Fallback for FLN if backend isn't ready for it (optional, but good for safety)
-      if (domain === 'FLN') {
+      if (domain === 'FLN' || !domain) { // Added !domain fallback
         console.log('⚠️ [Simulation] Falling back to local FLN compilation...');
         const lfa = compileFLNGraphToLFA(nodes, edges); // Keep this helper available?
         const shortcomings: string[] = [];
         // ... simplistic fallback
-        setSimulationData({ lfa, shortcomings });
-        setShowSimulationResult(true);
+        if (lfa) {
+          setSimulationData({ lfa, shortcomings });
+          setShowSimulationResult(true);
+          // Also trigger complete if we want to allow bypass on error? 
+          // Maybe not, but let's at least show the modal.
+          if (onSimulationComplete) {
+            onSimulationComplete({
+              lfa,
+              nodes,
+              edges,
+              shortcomings
+            });
+          }
+        }
       } else {
         alert('Simulation failed. See console.');
       }

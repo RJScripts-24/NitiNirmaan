@@ -220,21 +220,30 @@ function ContextStep({
 }) {
   const [statesList, setStatesList] = useState<any[]>([]);
   const [districtsList, setDistrictsList] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loadingStates, setLoadingStates] = useState(false);
+  const [loadingDistricts, setLoadingDistricts] = useState(false);
+  const [districtsCache, setDistrictsCache] = useState<Record<string, any[]>>({});
 
   // Fetch States on Mount
   useEffect(() => {
     const fetchStates = async () => {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('master_states')
-        .select('*')
-        .order('name');
+      setLoadingStates(true);
+      try {
+        const { data, error } = await supabase
+          .from('master_states')
+          .select('id, name')
+          .order('name');
 
-      if (data) {
-        setStatesList(data);
+        if (error) throw error;
+
+        if (data) {
+          setStatesList(data);
+        }
+      } catch (error) {
+        console.error('Error fetching states:', error);
+      } finally {
+        setLoadingStates(false);
       }
-      setLoading(false);
     };
 
     fetchStates();
@@ -248,14 +257,39 @@ function ContextStep({
         return;
       }
 
-      const { data, error } = await supabase
-        .from('master_districts')
-        .select('*')
-        .eq('state_id', missionData.state)
-        .order('name');
+      // Check cache first
+      if (districtsCache[missionData.state]) {
+        console.log("Loading districts from cache for state:", missionData.state);
+        setDistrictsList(districtsCache[missionData.state]);
+        return;
+      }
 
-      if (data) {
-        setDistrictsList(data);
+      setLoadingDistricts(true);
+      setDistrictsList([]); // Clear current list while loading to avoid confusion
+
+      try {
+        console.log("Fetching districts from Supabase for state:", missionData.state);
+        const { data, error } = await supabase
+          .from('master_districts')
+          .select('id, name, state_id')
+          .eq('state_id', missionData.state)
+          .order('name');
+
+        if (error) throw error;
+
+        if (data) {
+          setDistrictsList(data);
+          // Update cache
+          setDistrictsCache(prev => ({
+            ...prev,
+            [missionData.state]: data
+          }));
+        }
+      } catch (error) {
+        console.error('Error fetching districts:', error);
+        // Optional: Set some error state to show to user
+      } finally {
+        setLoadingDistricts(false);
       }
     };
 
@@ -309,9 +343,10 @@ function ContextStep({
                     // Reset district when state changes
                     setMissionData({ ...missionData, state: newState, district: '' });
                   }}
-                  className="w-full px-4 py-3 bg-[#0F1216] border border-[#374151] rounded text-[#E5E7EB] focus:outline-none focus:border-[#D97706] transition-colors"
+                  disabled={loadingStates}
+                  className={`w-full px-4 py-3 bg-[#0F1216] border border-[#374151] rounded text-[#E5E7EB] focus:outline-none focus:border-[#D97706] transition-colors ${loadingStates ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
-                  <option value="">Select State</option>
+                  <option value="">{loadingStates ? 'Loading States...' : 'Select State'}</option>
                   {statesList.map(state => (
                     <option key={state.id} value={state.id}>{state.name}</option>
                   ))}
@@ -322,11 +357,11 @@ function ContextStep({
                   onChange={(e) =>
                     setMissionData({ ...missionData, district: e.target.value })
                   }
-                  disabled={!missionData.state}
-                  className={`w-full px-4 py-3 bg-[#0F1216] border border-[#374151] rounded text-[#E5E7EB] focus:outline-none focus:border-[#D97706] transition-colors ${!missionData.state ? 'opacity-50 cursor-not-allowed' : ''
+                  disabled={!missionData.state || loadingDistricts}
+                  className={`w-full px-4 py-3 bg-[#0F1216] border border-[#374151] rounded text-[#E5E7EB] focus:outline-none focus:border-[#D97706] transition-colors ${!missionData.state || loadingDistricts ? 'opacity-50 cursor-not-allowed' : ''
                     }`}
                 >
-                  <option value="">Select District</option>
+                  <option value="">{loadingDistricts ? 'Loading Districts...' : 'Select District'}</option>
                   {districtsList.map(district => (
                     <option key={district.id} value={district.name}>{district.name}</option>
                   ))}
