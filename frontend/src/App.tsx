@@ -23,7 +23,7 @@ type PageType = 'landing' | 'auth' | 'dashboard' | 'patterns' | 'initialize' | '
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState<PageType>('landing');
-  const [simulationPassed, setSimulationPassed] = useState(false);
+  const [simulationPassed, setSimulationPassed] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [simulationResults, setSimulationResults] = useState<{
     lfa: LFADocument;

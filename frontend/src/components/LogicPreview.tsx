@@ -337,7 +337,10 @@ function LFADocumentPreview({
   orgName?: string;
   orgLogo?: string;
 }) {
-  // --- Section 1: Data Maps ---
+  // --- Mode Detection ---
+  const isFLN = missionData?.domain !== 'Career Readiness';
+
+  // --- Data Maps ---
   const projectName = missionData?.projectName || 'Project Name';
   const geography = (missionData?.state || missionData?.district)
     ? `${missionData.district || ''}${missionData.district && missionData.state ? ', ' : ''}${missionData.state || ''}`
@@ -350,7 +353,6 @@ function LFADocumentPreview({
   const problemStatement = problemNode?.data?.label || "Grade 3 students lack reading fluency due to rote-based teaching.";
 
   // Build Theory of Change statement
-  // Logic: "IF [Activities] AND [Outputs], THEN [Outcomes] LEADING TO [Goal]"
   const activities = lfaData?.activities?.slice(0, 2).map(a => a.narrative.split(' ').slice(0, 3).join(' ')).join(', ') || "interventions are implemented";
   const outcomes = lfaData?.outcomes?.slice(0, 2).map(o => o.narrative).join(' and ') || "practices improve";
   const tocStatement = `IF we ${activities.toLowerCase()}... THEN ${outcomes.toLowerCase()}, LEADING TO ${goalNarrative}.`;
@@ -359,6 +361,242 @@ function LFADocumentPreview({
   const shiftNodes = canvasNodes.filter(n =>
     ['pedagogy_shift', 'bridge', 'tlm_usage'].includes(n.data?.type || n.type)
   );
+
+  // --- FLN SPECIFIC RENDER ---
+  if (isFLN) {
+    return (
+      <div className="bg-white rounded shadow-sm p-10 text-[#1F2937] max-w-4xl mx-auto font-sans">
+
+        {/* Header - Org & Logo */}
+        <div className="flex justify-between items-start mb-8 border-b pb-4">
+          <div className="flex items-center gap-4">
+            {orgLogo ? (
+              <img src={orgLogo} alt="Org Logo" className="h-16 w-auto object-contain" />
+            ) : (
+              <div className="h-16 w-16 bg-gray-100 flex items-center justify-center text-xs text-gray-400 rounded">
+                No Logo
+              </div>
+            )}
+            <div>
+              <h1 className="text-2xl font-bold text-[#111827]">{orgName || 'NitiNirmaan'}</h1>
+              <p className="text-sm text-gray-500">{projectName}</p>
+            </div>
+          </div>
+          <div className="text-right">
+            <span className="inline-block px-3 py-1 bg-blue-100 text-blue-800 text-xs font-semibold rounded-full">
+              FLN Mode
+            </span>
+            <p className="text-xs text-gray-500 mt-1">{geography}</p>
+          </div>
+        </div>
+
+        {/* --- Section 1: Program Identity (Header) --- */}
+        <section className="mb-10 border-b-2 border-gray-100 pb-6">
+          <h2 className="text-xl font-bold text-[#111827] mb-6 border-l-4 border-[#047857] pl-3">1. Program Identity</h2>
+          <div className="grid grid-cols-2 gap-y-4 gap-x-8 text-sm">
+            <div>
+              <span className="block font-semibold text-gray-900">Focus:</span>
+              <span className="text-gray-700">School System, Pedagogy, and Early Learning.</span>
+            </div>
+            <div>
+              <span className="block font-semibold text-gray-900">Key Metric:</span>
+              <span className="text-gray-700">NIPUN Lakshya (Grade-level competency).</span>
+            </div>
+            <div>
+              <span className="block font-semibold text-gray-900">Domain:</span>
+              <span className="text-gray-700">School Education (FLN)</span>
+            </div>
+            <div>
+              <span className="block font-semibold text-gray-900">Aligned Mission:</span>
+              <span className="text-gray-700">NIPUN Bharat Mission</span>
+            </div>
+            <div className="col-span-2">
+              <span className="block font-semibold text-gray-900">Target Group:</span>
+              <span className="text-gray-700">Students (Grade 1-3), Teachers, CRCCs.</span>
+            </div>
+          </div>
+        </section>
+
+        {/* --- Section 2: The FLN LogFrame Matrix --- */}
+        <section className="mb-10">
+          <h2 className="text-xl font-bold text-[#111827] mb-6 border-l-4 border-[#B91C1C] pl-3">2. The FLN LogFrame Matrix</h2>
+
+          {lfaData ? (
+            <div className="border border-gray-300 rounded overflow-hidden">
+              <table className="w-full text-sm text-left border-collapse">
+                <thead className="bg-[#1f2937] text-white font-semibold">
+                  <tr>
+                    <th className="py-3 px-4 w-[15%] border-r border-gray-600">Objective Level</th>
+                    <th className="py-3 px-4 w-[30%] border-r border-gray-600">Narrative Summary (The Logic)</th>
+                    <th className="py-3 px-4 w-[20%] border-r border-gray-600">Indicators (KPIs)</th>
+                    <th className="py-3 px-4 w-[15%] border-r border-gray-600">Means of Verification (MoV)</th>
+                    <th className="py-3 px-4 w-[20%]">Assumptions & Risks</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {/* GOAL */}
+                  <tr className="bg-red-50/30">
+                    <td className="py-3 px-4 font-bold text-[#B91C1C] border-r border-gray-200">GOAL (Impact)</td>
+                    <td className="py-3 px-4 border-r border-gray-200">
+                      <div className="font-semibold mb-1">Students achieve grade-level proficiency.</div>
+                      <div className="text-gray-600 text-xs">{goalNarrative}</div>
+                    </td>
+                    <td className="py-3 px-4 border-r border-gray-200 text-xs">
+                      {lfaData.goal?.indicators?.length ? lfaData.goal.indicators.map((i, idx) => <div key={idx}>• {i}</div>) :
+                        <div>
+                          <div>• % of Gr 3 students reading Gr 2 text fluently.</div>
+                          <div>• % of students solving 2-digit subtraction.</div>
+                        </div>}
+                    </td>
+                    <td className="py-3 px-4 border-r border-gray-200 text-xs">
+                      {lfaData.goal?.means_of_verification?.length ? lfaData.goal.means_of_verification.map((m, idx) => <div key={idx}>• {m}</div>) :
+                        <div>
+                          <div>• Annual ASER Survey</div>
+                          <div>• State Achievement Survey (SAS)</div>
+                          <div>• 3rd Party Endline</div>
+                        </div>}
+                    </td>
+                    <td className="py-3 px-4 text-xs italic text-gray-600">
+                      <div>Risk: Schools are closed due to external factors (Pandemic/Climate).</div>
+                      <div>Assumption: State continues to prioritize FLN.</div>
+                    </td>
+                  </tr>
+
+                  {/* OUTCOMES */}
+                  <tr className="bg-emerald-50/30">
+                    <td className="py-3 px-4 font-bold text-[#047857] border-r border-gray-200">OUTCOMES (Practice)</td>
+                    <td className="py-3 px-4 border-r border-gray-200">
+                      <div className="font-semibold mb-1">Teachers adopt activity-based pedagogy.</div>
+                      <div className="text-gray-600 text-xs">Teachers shift from rote learning to using TLM and targeted teaching (TaRL) daily.</div>
+                    </td>
+                    <td className="py-3 px-4 border-r border-gray-200 text-xs">
+                      {lfaData.outcomes?.length > 0 && lfaData.outcomes[0].indicators?.length ? lfaData.outcomes[0].indicators.map((i, idx) => <div key={idx}>• {i}</div>) :
+                        <>
+                          <div>• % of Teachers scoring &gt;3 on Pedagogy Observation Tool.</div>
+                          <div>• % of classrooms with functional Library Corners.</div>
+                        </>
+                      }
+                    </td>
+                    <td className="py-3 px-4 border-r border-gray-200 text-xs">
+                      <div>• Classroom Observation App Data</div>
+                      <div>• Monthly Cluster Review Minutes</div>
+                    </td>
+                    <td className="py-3 px-4 text-xs italic text-gray-600">
+                      <div>Risk: Trained teachers are transferred out.</div>
+                      <div>Assumption: Teachers accept the new method.</div>
+                    </td>
+                  </tr>
+
+                  {/* OUTPUTS */}
+                  <tr className="bg-amber-50/30">
+                    <td className="py-3 px-4 font-bold text-[#B45309] border-r border-gray-200">OUTPUTS (Deliverables)</td>
+                    <td className="py-3 px-4 border-r border-gray-200 text-sm">
+                      <ol className="list-decimal list-inside space-y-1">
+                        <li>Capacity Building: Teachers trained.</li>
+                        <li>Resources: TLM Kits distributed.</li>
+                        <li>Monitoring: CRCCs conduct visits.</li>
+                      </ol>
+                    </td>
+                    <td className="py-3 px-4 border-r border-gray-200 text-xs">
+                      <div>• # of Teachers certified.</div>
+                      <div>• # of FLN Kits distributed.</div>
+                      <div>• # of CRCC visits conducted/month.</div>
+                    </td>
+                    <td className="py-3 px-4 border-r border-gray-200 text-xs">
+                      <div>• Training Attendance Register</div>
+                      <div>• Stock Receipt Vouchers</div>
+                      <div>• Visiting Officer App Log</div>
+                    </td>
+                    <td className="py-3 px-4 text-xs italic text-gray-600">
+                      <div>Assumption: Master Trainers are available.</div>
+                      <div>Assumption: Vendors supply kits on time.</div>
+                    </td>
+                  </tr>
+
+                  {/* ACTIVITIES */}
+                  <tr className="bg-white">
+                    <td className="py-3 px-4 font-bold text-[#4B5563] border-r border-gray-200">ACTIVITIES (Inputs)</td>
+                    <td className="py-3 px-4 border-r border-gray-200 text-sm">
+                      <ul className="list-disc list-inside space-y-1">
+                        {lfaData.activities?.slice(0, 4).map((a, i) => <li key={i}>{a.narrative}</li>)}
+                        {(!lfaData.activities || lfaData.activities.length === 0) && (
+                          <>
+                            <li>Conduct 4-day Residential Training.</li>
+                            <li>Procure & Distribute Math Kits.</li>
+                            <li>Hold Monthly "Shiksha Chaupal".</li>
+                          </>
+                        )}
+                        <li className="font-semibold mt-2">Budget: INR [Amount]</li>
+                        <li className="font-semibold">Timeline: [Dates]</li>
+                      </ul>
+                    </td>
+                    <td className="py-3 px-4 border-r border-gray-200 text-xs bg-gray-50 text-center text-gray-500 italic">
+                      N/A (Inputs)
+                    </td>
+                    <td className="py-3 px-4 border-r border-gray-200 text-xs">
+                      <div>• Utilization Certificates (UC)</div>
+                      <div>• Invoices</div>
+                    </td>
+                    <td className="py-3 px-4 text-xs italic text-gray-600">
+                      <div>Risk: Funds release delayed.</div>
+                    </td>
+                  </tr>
+
+
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="text-center py-12 bg-gray-50 border border-dashed border-gray-300 rounded-lg text-gray-500">
+              Run simulation to generate the FLN LogFrame Matrix.
+            </div>
+          )}
+
+        </section>
+
+        {/* --- Section 3: FLN Stakeholder Shift Map --- */}
+        <section>
+          <h2 className="text-xl font-bold text-[#111827] mb-6 border-l-4 border-blue-600 pl-3">3. FLN Stakeholder Shift Map</h2>
+          <div className="overflow-hidden rounded-lg border border-gray-200 shadow-sm">
+            <table className="w-full text-sm text-left">
+              <thead className="bg-[#F3F4F6] text-gray-700 font-semibold text-xs uppercase tracking-wider">
+                <tr>
+                  <th className="py-3 px-4 w-[20%]">Actor</th>
+                  <th className="py-3 px-4 w-[40%]">Current Practice (FROM)</th>
+                  <th className="py-3 px-4 w-[40%]">Desired Practice (TO)</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200 bg-white">
+                {/* Teacher Row */}
+                <tr className="hover:bg-gray-50">
+                  <td className="py-3 px-4 font-bold text-gray-900">Teacher</td>
+                  <td className="py-3 px-4 text-red-600 bg-red-50/30">"Completing the Syllabus" (Rote)</td>
+                  <td className="py-3 px-4 text-green-600 bg-green-50/30 font-semibold">"Teaching at the Right Level" (Activity)</td>
+                </tr>
+                {/* CRCC Row */}
+                <tr className="hover:bg-gray-50">
+                  <td className="py-3 px-4 font-bold text-gray-900">CRCC</td>
+                  <td className="py-3 px-4 text-red-600 bg-red-50/30">Inspection / Fault-finding</td>
+                  <td className="py-3 px-4 text-green-600 bg-green-50/30 font-semibold">Academic Mentoring / Demo Lessons</td>
+                </tr>
+                {/* Parent Row */}
+                <tr className="hover:bg-gray-50">
+                  <td className="py-3 px-4 font-bold text-gray-900">Parent</td>
+                  <td className="py-3 px-4 text-red-600 bg-red-50/30">Disengaged from learning</td>
+                  <td className="py-3 px-4 text-green-600 bg-green-50/30 font-semibold">Ensures 15-min reading at home</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <div className="mt-12 pt-6 border-t border-gray-200 text-xs text-center text-gray-400">
+          Generated by NitiNirmaan Logic Engine | Validated against FLN Framework
+        </div>
+
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white rounded shadow-sm p-10 text-[#1F2937] max-w-4xl mx-auto font-sans">
