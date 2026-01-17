@@ -70,7 +70,10 @@ export default function MissionInitialize({ onClose, onComplete }: MissionInitia
             projectName: missionData.projectName,
             description: `Mission for ${missionData.state}, ${missionData.district}. Outcome: ${missionData.outcome}`,
             domain: missionData.domain,
-            location: `${missionData.district}, ${missionData.state}`
+            location: `${missionData.district}, ${missionData.state}`,
+            state: missionData.state,
+            district: missionData.district,
+            outcome: missionData.outcome
           })
         });
 

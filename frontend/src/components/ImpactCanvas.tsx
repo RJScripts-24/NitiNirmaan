@@ -298,7 +298,10 @@ export default function ImpactCanvas({
       async function loadProject() {
         setProjectId(activeProjectId); // Set Realtime ID
         const { data: project } = await supabase.from('projects').select('*').eq('id', activeProjectId).single();
-        if (project) setCurrentProjectName(project.title);
+        if (project) {
+          setCurrentProjectName(project.title);
+          setDomain(project.theme || 'FLN'); // 'theme' stores the domain
+        }
 
         const { data: nodesData, error: nodesError } = await supabase.from('nodes').select('*').eq('project_id', activeProjectId);
         const { data: edgesData, error: edgesError } = await supabase.from('edges').select('*').eq('project_id', activeProjectId);

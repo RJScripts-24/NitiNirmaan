@@ -87,17 +87,53 @@ export default function LogicPreview({
     }
   };
 
-  // Load Mission Data from LocalStorage
+  // Load Mission Data from Database (if logged in) or LocalStorage (guest)
   useEffect(() => {
-    const storedData = localStorage.getItem('current_mission_data');
-    if (storedData) {
-      try {
-        const parsed = JSON.parse(storedData);
-        setMissionData(parsed);
-      } catch (e) {
-        console.error("Failed to parse mission data", e);
+    async function loadMissionData() {
+      const projectId = localStorage.getItem('active_project_id');
+
+      // If we have a valid project ID (not 'guest'), fetch from database
+      if (projectId && projectId !== 'guest') {
+        try {
+          const { data: project, error } = await supabase
+            .from('projects')
+            .select('title, theme, location, state, district, outcome')
+            .eq('id', projectId)
+            .single();
+
+          if (project && !error) {
+            // Use separate columns if available, otherwise parse from location for backward compatibility
+            const locationParts = (project.location || '').split(', ');
+            const dbMissionData: MissionData = {
+              projectName: project.title || 'Project Name',
+              domain: project.theme || 'FLN', // 'theme' column stores the domain
+              state: project.state || locationParts[1] || '',
+              district: project.district || locationParts[0] || '',
+              outcome: project.outcome || '',
+            };
+            setMissionData(dbMissionData);
+            // Also update localStorage to keep it in sync
+            localStorage.setItem('current_mission_data', JSON.stringify(dbMissionData));
+            return;
+          }
+        } catch (e) {
+          console.error("Failed to load project from database", e);
+        }
+      }
+
+      // Fallback to localStorage for guest users or if DB fetch fails
+      const storedData = localStorage.getItem('current_mission_data');
+      if (storedData) {
+        try {
+          const parsed = JSON.parse(storedData);
+          setMissionData(parsed);
+        } catch (e) {
+          console.error("Failed to parse mission data", e);
+        }
       }
     }
+
+    loadMissionData();
   }, []);
 
   // Load Org Details from Supabase

@@ -9,7 +9,7 @@ projectsRouter.post('/', authMiddleware, async (req, res) => {
         const supabase = req.supabaseClient! as any;
         const user = req.user!;
 
-        const { projectName, description, domain, location } = req.body;
+        const { projectName, description, domain, location, state, district, outcome } = req.body;
 
         if (!projectName) {
             return res.status(400).json({ error: 'Project Name is required' });
@@ -26,8 +26,11 @@ projectsRouter.post('/', authMiddleware, async (req, res) => {
                 owner_id: user.id,  // Changed from user_id to owner_id
                 title: projectName, // Mapping projectName -> title
                 description: description || null,
-                theme: domain || 'GENERAL', // Mapping domain -> theme
+                theme: domain || 'FLN', // domain stored in theme column
                 location: location || null,
+                state: state || null,
+                district: district || null,
+                outcome: outcome || null,
                 status: 'draft',
                 logic_health_score: 0, // Starts at 0
             } as any)
@@ -118,10 +121,10 @@ projectsRouter.get('/:id', authMiddleware, async (req, res) => {
             status: projectData.status, // draft etc.
             editedAt: projectData.updated_at, // Map updated_at -> editedAt
             logicHealth: projectData.logic_health_score, // Map logic_health_score -> logicHealth
-            state: projectData.status, // Alias
-            district: projectData.location, // Map location -> district
-            domain: projectData.theme, // Map theme -> domain
-            outcome: 'TBD', // Placeholder if not in DB
+            state: projectData.state || projectData.location?.split(', ')[1] || '', // Use state column or parse from location
+            district: projectData.district || projectData.location?.split(', ')[0] || '', // Use district column or parse from location
+            domain: projectData.theme || 'FLN', // Map theme -> domain
+            outcome: projectData.outcome || '',
             aiCompanion: 'supportive', // Placeholder
 
             // Retaining these for frontend compatibility if needed, or remove if strictly following contract
