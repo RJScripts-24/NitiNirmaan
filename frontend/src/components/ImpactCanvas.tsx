@@ -15,6 +15,7 @@ import ReactFlow, {
   ConnectionMode,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
+import ReactMarkdown from 'react-markdown';
 import { FLN_TOOLBOX, ToolNode } from '../config/domains/fln/toolbox';
 import { CAREER_TOOLBOX } from '../config/domains/career/toolbox';
 import { compileFLNGraphToLFA, LFADocument } from '../lib/fln-compiler';
@@ -2330,9 +2331,15 @@ function AICompanionWidget({ show, onToggle, nodes, edges }: { show: boolean; on
               <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${msg.role === 'assistant' ? 'bg-[#D97706]/20' : 'bg-[#374151]'}`}>
                 {msg.role === 'assistant' ? <Bot className="w-4 h-4 text-[#D97706]" /> : <User className="w-4 h-4 text-[#E5E7EB]" />}
               </div>
-              <div className={`max-w-[85%] rounded-lg p-3 text-sm leading-relaxed ${msg.role === 'assistant' ? 'bg-[#1F2937] text-[#E5E7EB]' : 'bg-[#D97706] text-[#0F1216]'}`}>
-                {msg.content}
-              </div>
+              {msg.role === 'assistant' ? (
+                <div className="max-w-[85%] rounded-lg p-3 text-sm leading-relaxed bg-[#1F2937] text-[#E5E7EB] prose prose-invert prose-sm prose-headings:text-[#D97706] prose-headings:font-semibold prose-headings:mt-3 prose-headings:mb-2 prose-p:my-1 prose-ul:my-1 prose-li:my-0.5 prose-strong:text-[#F59E0B] prose-code:text-[#22D3EE] prose-code:bg-[#0F1216] prose-code:px-1 prose-code:rounded max-w-none">
+                  <ReactMarkdown>{msg.content}</ReactMarkdown>
+                </div>
+              ) : (
+                <div className="max-w-[85%] rounded-lg p-3 text-sm leading-relaxed bg-[#D97706] text-[#0F1216]">
+                  {msg.content}
+                </div>
+              )}
             </div>
           ))}
           {isLoading && (
