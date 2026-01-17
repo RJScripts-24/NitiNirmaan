@@ -13,6 +13,7 @@ import ReactFlow, {
   Handle,
   Position,
   ConnectionMode,
+  useReactFlow,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import ReactMarkdown from 'react-markdown';
@@ -200,6 +201,14 @@ export default function ImpactCanvas({
   const [domain, setDomain] = useState<string>('');
   const [simulationData, setSimulationData] = useState<{ lfa: LFADocument; shortcomings: string[] } | null>(null);
   const [projectId, setProjectId] = useState<string | null>(null);
+
+  // Undo/Redo History
+  const [history, setHistory] = useState<{ nodes: Node[]; edges: Edge[] }[]>([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
+  const isUndoRedoRef = useRef(false);
+
+  // Zoom state
+  const [zoomLevel, setZoomLevel] = useState(100);
 
   // Identity for Realtime
   const identity = useMemo(() => {
@@ -546,6 +555,101 @@ export default function ImpactCanvas({
     setShowInspector(false);
   }, [setNodes, setEdges]);
 
+  // History tracking for undo/redo
+  const lastHistoryRef = useRef<string>('');
+
+  useEffect(() => {
+    if (isUndoRedoRef.current || isRemoteUpdateRef.current) return;
+
+    // Create a serialized snapshot for comparison
+    const newStateJson = JSON.stringify({ nodes, edges });
+
+    // Skip if state hasn't actually changed
+    if (newStateJson === lastHistoryRef.current) return;
+    lastHistoryRef.current = newStateJson;
+
+    const newState = { nodes: [...nodes], edges: [...edges] };
+
+    setHistory(prev => {
+      // If we're in the middle of history (after undo), truncate future
+      const truncated = historyIndex >= 0 ? prev.slice(0, historyIndex + 1) : [];
+      return [...truncated, newState];
+    });
+    setHistoryIndex(prev => {
+      // If this is the first entry, set to 0, otherwise increment
+      return prev < 0 ? 0 : prev + 1;
+    });
+  }, [nodes, edges]);
+
+  // Undo function
+  const handleUndo = useCallback(() => {
+    console.log('Undo called. historyIndex:', historyIndex, 'history.length:', history.length);
+    if (historyIndex <= 0 || history.length <= 1) {
+      console.log('Cannot undo - at beginning of history');
+      return;
+    }
+    isUndoRedoRef.current = true;
+    const prevIndex = historyIndex - 1;
+    const prevState = history[prevIndex];
+    console.log('Restoring to index:', prevIndex, 'state:', prevState);
+    if (prevState) {
+      setNodes(prevState.nodes);
+      setEdges(prevState.edges);
+      setHistoryIndex(prevIndex);
+      lastHistoryRef.current = JSON.stringify(prevState);
+    }
+    setTimeout(() => { isUndoRedoRef.current = false; }, 150);
+  }, [history, historyIndex, setNodes, setEdges]);
+
+  // Redo function
+  const handleRedo = useCallback(() => {
+    console.log('Redo called. historyIndex:', historyIndex, 'history.length:', history.length);
+    if (historyIndex >= history.length - 1) {
+      console.log('Cannot redo - at end of history');
+      return;
+    }
+    isUndoRedoRef.current = true;
+    const nextIndex = historyIndex + 1;
+    const nextState = history[nextIndex];
+    console.log('Restoring to index:', nextIndex, 'state:', nextState);
+    if (nextState) {
+      setNodes(nextState.nodes);
+      setEdges(nextState.edges);
+      setHistoryIndex(nextIndex);
+      lastHistoryRef.current = JSON.stringify(nextState);
+    }
+    setTimeout(() => { isUndoRedoRef.current = false; }, 150);
+  }, [history, historyIndex, setNodes, setEdges]);
+
+  // Zoom functions
+  const handleZoomIn = useCallback(() => {
+    if (reactFlowInstance) {
+      reactFlowInstance.zoomIn();
+      setTimeout(() => {
+        const zoom = reactFlowInstance.getZoom();
+        setZoomLevel(Math.round(zoom * 100));
+      }, 50);
+    }
+  }, [reactFlowInstance]);
+
+  const handleZoomOut = useCallback(() => {
+    if (reactFlowInstance) {
+      reactFlowInstance.zoomOut();
+      setTimeout(() => {
+        const zoom = reactFlowInstance.getZoom();
+        setZoomLevel(Math.round(zoom * 100));
+      }, 50);
+    }
+  }, [reactFlowInstance]);
+
+  // Update zoom level when viewport changes
+  useEffect(() => {
+    if (reactFlowInstance) {
+      const zoom = reactFlowInstance.getZoom();
+      setZoomLevel(Math.round(zoom * 100));
+    }
+  }, [reactFlowInstance]);
+
   // Context Menu State
   const [menu, setMenu] = useState<{ id: string; top: number; left: number; type: 'node' | 'edge' } | null>(null);
 
@@ -827,18 +931,44 @@ export default function ImpactCanvas({
 
         {/* Center Controls */}
         <div className="flex items-center gap-2 relative" style={{ zIndex: 10, pointerEvents: 'auto' }}>
-          <Button variant="ghost" size="icon" className="w-10 h-10 hover:bg-[#1F2937] border border-[#2D3340]">
+          <Button
+            variant="ghost"
+            size="icon"
+            className={`w-10 h-10 hover:bg-[#1F2937] border border-[#2D3340] ${historyIndex <= 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+            onClick={handleUndo}
+            disabled={historyIndex <= 0}
+            title="Undo (Ctrl+Z)"
+          >
             <Undo2 className="w-5 h-5 text-[#9CA3AF]" />
           </Button>
-          <Button variant="ghost" size="icon" className="w-10 h-10 hover:bg-[#1F2937] border border-[#2D3340]">
+          <Button
+            variant="ghost"
+            size="icon"
+            className={`w-10 h-10 hover:bg-[#1F2937] border border-[#2D3340] ${historyIndex >= history.length - 1 ? 'opacity-50 cursor-not-allowed' : ''}`}
+            onClick={handleRedo}
+            disabled={historyIndex >= history.length - 1}
+            title="Redo (Ctrl+Shift+Z)"
+          >
             <Redo2 className="w-5 h-5 text-[#9CA3AF]" />
           </Button>
           <div className="w-px h-8 bg-[#374151] mx-2"></div>
-          <Button variant="ghost" size="icon" className="w-10 h-10 hover:bg-[#1F2937] border border-[#2D3340]">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="w-10 h-10 hover:bg-[#1F2937] border border-[#2D3340]"
+            onClick={handleZoomOut}
+            title="Zoom Out"
+          >
             <ZoomOut className="w-5 h-5 text-[#9CA3AF]" />
           </Button>
-          <span className="text-[#9CA3AF] text-sm min-w-[60px] text-center">60%</span>
-          <Button variant="ghost" size="icon" className="w-10 h-10 hover:bg-[#1F2937] border border-[#2D3340]">
+          <span className="text-[#9CA3AF] text-sm min-w-[60px] text-center">{zoomLevel}%</span>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="w-10 h-10 hover:bg-[#1F2937] border border-[#2D3340]"
+            onClick={handleZoomIn}
+            title="Zoom In"
+          >
             <ZoomIn className="w-5 h-5 text-[#9CA3AF]" />
           </Button>
         </div>
