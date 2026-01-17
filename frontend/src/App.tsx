@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Network, Activity, Bot, ArrowRight, User } from 'lucide-react';
+import { Network, Activity, Bot, ArrowRight, User, Users, FileText, Layout } from 'lucide-react';
 import { gsap } from 'gsap';
 import { useGSAP } from '@gsap/react';
 import AuthPage from './components/AuthPage';
@@ -15,6 +15,7 @@ import Settings from './components/Settings';
 import HexagonBackground from './components/HexagonBackground';
 import BeeBackground from './components/BeeBackground';
 import ScrollReveal from './components/ScrollReveal';
+import TechStack from './components/TechStack';
 import { Button } from './components/ui/button';
 import Loader from './components/Loader';
 import { checkBackEndHealth } from './lib/api';
@@ -449,9 +450,123 @@ export default function App() {
                   </div>
                 </div>
               </ScrollReveal>
+
+              {/* Card 4 - Real-time Collaboration */}
+              <ScrollReveal delay={0.1}>
+                <div className="bg-[#171B21] border border-[#1F2937] rounded-lg p-6 md:p-8 relative" style={{
+                  backgroundImage: `
+                  linear-gradient(#1F2937 1px, transparent 1px),
+                  linear-gradient(90deg, #1F2937 1px, transparent 1px)
+                `,
+                  backgroundSize: '20px 20px',
+                  backgroundPosition: 'center'
+                }}>
+                  <div className="relative z-10 bg-[#171B21] p-2 -m-2">
+                    <Users className="w-8 h-8 md:w-10 md:h-10 text-[#8B5CF6] mb-3 md:mb-4" />
+                    <h3 className="text-[#E5E7EB] text-lg md:text-xl font-semibold mb-2 md:mb-3">
+                      Real-time Collaboration
+                      <div className="h-1 w-12 md:w-16 bg-[#8B5CF6] mt-2"></div>
+                    </h3>
+                    <p className="text-[#9CA3AF] mb-3 md:mb-4 text-sm md:text-base">
+                      Multiplayer System Design
+                    </p>
+
+                    {/* Mini Visual */}
+                    <div className="my-4 md:my-6 flex justify-center items-center -space-x-3">
+                      <div className="w-10 h-10 rounded-full bg-[#1F2937] border-2 border-[#171B21] flex items-center justify-center">
+                        <User className="w-5 h-5 text-[#9CA3AF]" />
+                      </div>
+                      <div className="w-10 h-10 rounded-full bg-[#374151] border-2 border-[#171B21] flex items-center justify-center">
+                        <User className="w-5 h-5 text-[#E5E7EB]" />
+                      </div>
+                      <div className="w-10 h-10 rounded-full bg-[#8B5CF6] border-2 border-[#171B21] flex items-center justify-center text-[#1F2937] text-xs font-bold">
+                        +3
+                      </div>
+                    </div>
+
+                    <p className="text-[#6B7280] text-xs md:text-sm italic">
+                      "Build systems together, miles apart."
+                    </p>
+                  </div>
+                </div>
+              </ScrollReveal>
+
+              {/* Card 5 - Instant Documentation */}
+              <ScrollReveal delay={0.3}>
+                <div className="bg-[#171B21] border border-[#1F2937] rounded-lg p-6 md:p-8 relative" style={{
+                  backgroundImage: `
+                  linear-gradient(#1F2937 1px, transparent 1px),
+                  linear-gradient(90deg, #1F2937 1px, transparent 1px)
+                `,
+                  backgroundSize: '20px 20px',
+                  backgroundPosition: 'center'
+                }}>
+                  <div className="relative z-10 bg-[#171B21] p-2 -m-2">
+                    <FileText className="w-8 h-8 md:w-10 md:h-10 text-[#3B82F6] mb-3 md:mb-4" />
+                    <h3 className="text-[#E5E7EB] text-lg md:text-xl font-semibold mb-2 md:mb-3">
+                      Instant Documentation
+                      <div className="h-1 w-12 md:w-16 bg-[#3B82F6] mt-2"></div>
+                    </h3>
+                    <p className="text-[#9CA3AF] mb-3 md:mb-4 text-sm md:text-base">
+                      Automated LFA Generation
+                    </p>
+
+                    {/* Mini Visual */}
+                    <div className="my-4 md:my-6 flex flex-col gap-2 p-3 bg-[#1F2937] rounded border border-[#374151] w-2/3 mx-auto transform rotate-[-3deg]">
+                      <div className="h-1.5 bg-[#4B5563] rounded w-full"></div>
+                      <div className="h-1.5 bg-[#4B5563] rounded w-5/6"></div>
+                      <div className="h-1.5 bg-[#4B5563] rounded w-4/6"></div>
+                    </div>
+
+                    <p className="text-[#6B7280] text-xs md:text-sm italic">
+                      "From chaos to contract in seconds."
+                    </p>
+                  </div>
+                </div>
+              </ScrollReveal>
+
+              {/* Card 6 - Smart Templates */}
+              <ScrollReveal delay={0.5}>
+                <div className="bg-[#171B21] border border-[#1F2937] rounded-lg p-6 md:p-8 relative" style={{
+                  backgroundImage: `
+                  linear-gradient(#1F2937 1px, transparent 1px),
+                  linear-gradient(90deg, #1F2937 1px, transparent 1px)
+                `,
+                  backgroundSize: '20px 20px',
+                  backgroundPosition: 'center'
+                }}>
+                  <div className="relative z-10 bg-[#171B21] p-2 -m-2">
+                    <Layout className="w-8 h-8 md:w-10 md:h-10 text-[#EC4899] mb-3 md:mb-4" />
+                    <h3 className="text-[#E5E7EB] text-lg md:text-xl font-semibold mb-2 md:mb-3">
+                      Smart Templates
+                      <div className="h-1 w-12 md:w-16 bg-[#EC4899] mt-2"></div>
+                    </h3>
+                    <p className="text-[#9CA3AF] mb-3 md:mb-4 text-sm md:text-base">
+                      Proven Logic Models
+                    </p>
+
+                    {/* Mini Visual */}
+                    <div className="my-4 md:my-6 grid grid-cols-2 gap-2">
+                      <div className="h-10 border border-[#EC4899]/30 bg-[#EC4899]/10 rounded flex items-center justify-center cursor-pointer hover:bg-[#EC4899]/20 transition-colors">
+                        <div className="w-4 h-4 rounded-sm border border-[#EC4899]/50"></div>
+                      </div>
+                      <div className="h-10 border border-[#374151] bg-[#1F2937] rounded flex items-center justify-center opacity-50"></div>
+                      <div className="h-10 border border-[#374151] bg-[#1F2937] rounded flex items-center justify-center opacity-50"></div>
+                      <div className="h-10 border border-[#374151] bg-[#1F2937] rounded flex items-center justify-center opacity-50"></div>
+                    </div>
+
+                    <p className="text-[#6B7280] text-xs md:text-sm italic">
+                      "Don't start from scratch."
+                    </p>
+                  </div>
+                </div>
+              </ScrollReveal>
             </div>
           </div>
         </section>
+
+        {/* Technologies Used */}
+        <TechStack />
 
         {/* Footer Spacing */}
         <div className="h-12 md:h-20"></div>
