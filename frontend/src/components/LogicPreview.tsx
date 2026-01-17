@@ -614,23 +614,23 @@ function LFADocumentPreview({
         <div className="grid grid-cols-2 gap-y-4 gap-x-8 text-sm">
           <div>
             <span className="block font-semibold text-gray-900">Focus:</span>
-            <span className="text-gray-700">Skills, Employment, and Industry Linkage.</span>
+            <span className="text-gray-700">{missionData?.outcome ? 'Skill Development & Livelihood' : ''}</span>
           </div>
           <div>
             <span className="block font-semibold text-gray-900">Key Metric:</span>
-            <span className="text-gray-700">Placement & Retention Rate.</span>
+            <span className="text-gray-700">{lfaData?.goal?.indicators?.[1] || ''}</span>
           </div>
           <div>
             <span className="block font-semibold text-gray-900">Domain:</span>
-            <span className="text-gray-700">Skill Development & Livelihood</span>
+            <span className="text-gray-700">{missionData?.domain || ''}</span>
           </div>
           <div>
             <span className="block font-semibold text-gray-900">Aligned Mission:</span>
-            <span className="text-gray-700">Skill India / PMKVY</span>
+            <span className="text-gray-700">{missionData?.domain === 'Career Readiness' ? 'Skill India / PMKVY' : ''}</span>
           </div>
           <div className="col-span-2">
             <span className="block font-semibold text-gray-900">Target Group:</span>
-            <span className="text-gray-700">Youth (18-25 Years), Employers, TVET Institutes.</span>
+            <span className="text-gray-700">{/* Derived from nodes? If not, leave blank */}{canvasNodes.some(n => n.data?.label?.toLowerCase().includes('youth')) ? 'Youth (18-25 Years)' : ''}</span>
           </div>
         </div>
       </section>
@@ -681,9 +681,9 @@ function LFADocumentPreview({
                 <tr className="bg-white hover:bg-gray-50">
                   <td className="py-3 px-4 font-bold text-[#B91C1C]">Goal (Impact)</td>
                   <td className="py-3 px-4 font-medium text-gray-900">{goalNarrative}</td>
-                  <td className="py-3 px-4 text-gray-600">{lfaData.goal?.indicators?.join('; ') || '-'}</td>
-                  <td className="py-3 px-4 text-gray-600">{lfaData.goal?.means_of_verification?.join('; ') || '-'}</td>
-                  <td className="py-3 px-4 text-gray-600 italic">{lfaData.goal?.assumptions_risks?.join('; ') || '-'}</td>
+                  <td className="py-3 px-4 text-gray-600">{lfaData.goal?.indicators?.join('; ') || ''}</td>
+                  <td className="py-3 px-4 text-gray-600">{lfaData.goal?.means_of_verification?.join('; ') || ''}</td>
+                  <td className="py-3 px-4 text-gray-600 italic">{lfaData.goal?.assumptions_risks?.join('; ') || ''}</td>
                 </tr>
 
                 {/* Outcomes */}
@@ -692,8 +692,8 @@ function LFADocumentPreview({
                     <td className="py-3 px-4 font-bold text-[#047857]">{i === 0 ? 'Outcomes (Behavior)' : ''}</td>
                     <td className="py-3 px-4 text-gray-800">{item.narrative}</td>
                     <td className="py-3 px-4 text-gray-600">{item.indicators?.join('; ')}</td>
-                    <td className="py-3 px-4 text-gray-600">{item.means_of_verification?.join('; ') || 'COT'}</td>
-                    <td className="py-3 px-4 text-gray-600 italic">{item.assumptions_risks?.join('; ') || '-'}</td>
+                    <td className="py-3 px-4 text-gray-600">{item.means_of_verification?.join('; ') || ''}</td>
+                    <td className="py-3 px-4 text-gray-600 italic">{item.assumptions_risks?.join('; ') || ''}</td>
                   </tr>
                 )) : (
                   <tr className="bg-emerald-50/30">
@@ -708,8 +708,8 @@ function LFADocumentPreview({
                     <td className="py-3 px-4 font-bold text-[#B45309]">{i === 0 ? 'Outputs (Deliverables)' : ''}</td>
                     <td className="py-3 px-4 text-gray-800">{item.narrative}</td>
                     <td className="py-3 px-4 text-gray-600">{item.indicators?.join('; ')}</td>
-                    <td className="py-3 px-4 text-gray-600">{item.means_of_verification?.join('; ') || 'Project Records'}</td>
-                    <td className="py-3 px-4 text-gray-600 italic">{item.assumptions_risks?.join('; ') || '-'}</td>
+                    <td className="py-3 px-4 text-gray-600">{item.means_of_verification?.join('; ') || ''}</td>
+                    <td className="py-3 px-4 text-gray-600 italic">{item.assumptions_risks?.join('; ') || ''}</td>
                   </tr>
                 )) : null}
 
@@ -719,8 +719,8 @@ function LFADocumentPreview({
                     <td className="py-3 px-4 font-bold text-[#4B5563]">{i === 0 ? 'Activities (Tasks)' : ''}</td>
                     <td className="py-3 px-4 text-gray-800">{item.narrative}</td>
                     <td className="py-3 px-4 text-gray-600">{item.indicators?.join('; ')}</td>
-                    <td className="py-3 px-4 text-gray-600">{item.means_of_verification?.join('; ') || 'Admin Records'}</td>
-                    <td className="py-3 px-4 text-gray-600 italic">{item.assumptions_risks?.join('; ') || '-'}</td>
+                    <td className="py-3 px-4 text-gray-600">{item.means_of_verification?.join('; ') || ''}</td>
+                    <td className="py-3 px-4 text-gray-600 italic">{item.assumptions_risks?.join('; ') || ''}</td>
                   </tr>
                 )) : null}
               </tbody>
@@ -752,10 +752,10 @@ function LFADocumentPreview({
                 return youthNode ? (
                   <tr className="hover:bg-gray-50">
                     <td className="py-3 px-4 font-bold text-gray-900">Youth</td>
-                    <td className="py-3 px-4 text-red-600 bg-red-50/30">Unaware of career paths / Passive</td>
+                    <td className="py-3 px-4 text-red-600 bg-red-50/30">{youthNode.data?.from_behavior || ''}</td>
                     <td className="py-3 px-4 text-green-600 bg-green-50/30 font-semibold flex items-center gap-2">
                       <ArrowRight className="w-3 h-3 text-green-400" />
-                      Proactive / Career-aligned Goals
+                      {youthNode.data?.to_behavior || ''}
                     </td>
                   </tr>
                 ) : null;
@@ -767,10 +767,10 @@ function LFADocumentPreview({
                 return employerNode ? (
                   <tr className="hover:bg-gray-50">
                     <td className="py-3 px-4 font-bold text-gray-900">Employer</td>
-                    <td className="py-3 px-4 text-red-600 bg-red-50/30">Reluctant to hire freshers</td>
+                    <td className="py-3 px-4 text-red-600 bg-red-50/30">{employerNode.data?.from_behavior || ''}</td>
                     <td className="py-3 px-4 text-green-600 bg-green-50/30 font-semibold flex items-center gap-2">
                       <ArrowRight className="w-3 h-3 text-green-400" />
-                      Willing to offer Internships/OJT
+                      {employerNode.data?.to_behavior || ''}
                     </td>
                   </tr>
                 ) : null;
@@ -782,10 +782,10 @@ function LFADocumentPreview({
                 return parentNode ? (
                   <tr className="hover:bg-gray-50">
                     <td className="py-3 px-4 font-bold text-gray-900">Parent</td>
-                    <td className="py-3 px-4 text-red-600 bg-red-50/30">Prioritizes "Govt Job" only</td>
+                    <td className="py-3 px-4 text-red-600 bg-red-50/30">{parentNode.data?.from_behavior || ''}</td>
                     <td className="py-3 px-4 text-green-600 bg-green-50/30 font-semibold flex items-center gap-2">
                       <ArrowRight className="w-3 h-3 text-green-400" />
-                      Supports private sector placement
+                      {parentNode.data?.to_behavior || ''}
                     </td>
                   </tr>
                 ) : null;
