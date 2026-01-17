@@ -61,185 +61,127 @@ export const compileCareerGraphToLFA = (nodes: Node[], edges: Edge[]): LFADocume
     };
 
     // --- Step B: Level 1 - The Goal (Impact) ---
-    // Search: Find node of type sustainable_income OR self_employment
+    // User Requirement: "Youth achieve sustainable livelihoods."
+    // Trigger: Presence of 'sustainable_income' or 'self_employment' node.
     const goalNode = nodes.find(n => {
         const nodeType = getNodeType(n);
         return nodeType === 'sustainable_income' || nodeType === 'self_employment';
     });
 
     if (!goalNode) {
-        throw new Error("Graph must have a Goal node (Sustainable Income or Self Employment).");
+        // Fallback for simulation safety, but ideally should throw or warn.
+        // We will return a partial LFA so the frontend doesn't crash, but with a warning in indicators.
+        lfa.goal = {
+            narrative: "Youth achieve sustainable livelihoods.",
+            indicators: ["Warning: Add 'Sustainable Income' node to define targets."],
+            means_of_verification: ["Salary Slips / Bank Statements"],
+            assumptions_risks: ["Assumption: Local industry demand exists."]
+        };
+    } else {
+        const goalData = goalNode.data;
+        lfa.goal = {
+            narrative: "Youth achieve sustainable livelihoods.",
+            indicators: [
+                "Target youth secure and retain formal employment or sustainable self-employment.",
+                "% of youth placed in jobs retaining them for >6 months.",
+                `Avg. Monthly Income increase (Pre vs Post).`
+            ],
+            means_of_verification: ["Salary Slips / Bank Statements", "6-Month Tracking Call Log"],
+            assumptions_risks: ["Risk: Economic recession reduces hiring.", "Assumption: Local industry demand exists."]
+        };
     }
 
-    const goalData = goalNode.data;
-    let goalNarrative = '';
-    let goalIndicators: string[] = [];
-    let goalMoV: string[] = [];
+    // --- Step C: Level 2 - Outcomes (Practice) ---
+    // User Requirement: "Youth demonstrate workplace readiness."
+    // Trigger: Any bridge nodes (aspiration, interview, etc.) or just default for this mode.
+    // We will verify if relevant nodes exist to make it dynamic.
+    const hasReadinessNodes = nodes.some(n =>
+        ['interview_readiness', 'soft_skills', 'tech_bootcamp'].includes(getNodeType(n))
+    );
 
-    const goalType = getNodeType(goalNode);
-    if (goalType === 'sustainable_income') {
-        const salary = goalData.target_salary || '[TARGET_SALARY]';
-        const retention = goalData.retention_period || '[PERIOD]';
-        goalNarrative = `Youth achieve sustainable income > INR ${salary}`;
-        goalIndicators.push(`Retention rate at ${retention} > 70%`);
-        goalMoV.push('Salary Slips / Bank Statements / Tracking Call Logs');
-
-    } else if (goalType === 'self_employment') {
-        goalNarrative = "Youth establish viable micro-enterprises";
-        // Prompt didn't specify indicators for Self-Emp but let's infer reasonable defaults or use generic
-        goalIndicators.push(`Average Monthly Profit > INR ${goalData.avg_monthly_profit || 0}`);
-        goalMoV.push('Business Ledgers / Bank Statements');
+    if (hasReadinessNodes) {
+        lfa.outcomes.push({
+            narrative: "Youth demonstrate workplace readiness.",
+            indicators: [
+                "Youth acquire technical skills AND professional soft skills (communication/punctuality).",
+                "% of youth passing Mock Interviews.",
+                "% of youth with 90% attendance in training."
+            ],
+            means_of_verification: ["Mock Interview Scorecards", "Training Center Biometrics"],
+            assumptions_risks: ["Risk: Youth drop out due to migration/family pressure.", "Assumption: Families support female employment."]
+        });
     }
 
-    lfa.goal = {
-        narrative: goalNarrative,
-        indicators: goalIndicators,
-        means_of_verification: goalMoV,
-        assumptions_risks: []
-    };
+    // --- Step D: Level 3 - Outputs (Deliverables) ---
+    // User Requirement: 
+    // 1. Skilling: Training Batches completed.
+    // 2. Linkages: Job Fairs organized.
+    // 3. Counseling: Career goals mapped.
 
-    // --- Step C: Level 2 - Outcomes (Readiness & Linkages) ---
-    // Search: Find nodes of category 'bridge' connected upstream to the Goal.
-    // Logic: Node -> Goal
-    const bridgeTypes = ['aspiration_alignment', 'family_consent', 'interview_readiness'];
-    const outcomeNodes = getUpstreamNodes(goalNode.id, nodes, edges).filter(n => {
-        const nodeType = getNodeType(n);
-        return n.data?.category === 'bridge' || bridgeTypes.includes(nodeType);
-    });
+    // 1. Skilling
+    const skillingNode = nodes.find(n => getNodeType(n) === 'tech_bootcamp');
+    if (skillingNode) {
+        lfa.outputs.push({
+            narrative: "1. Skilling: Training Batches completed.",
+            indicators: ["# of Youth Certified (NSDC)."],
+            means_of_verification: ["Certification Database"],
+            assumptions_risks: ["Assumption: Training centers meet infrastructure norms."]
+        });
+    }
 
-    outcomeNodes.forEach(node => {
-        const data = node.data;
-        const cell: LFACell = {
-            narrative: '',
-            indicators: [],
-            means_of_verification: [],
+    // 2. Linkages
+    const linkageNode = nodes.find(n => ['job_fair', 'internship_ojt'].includes(getNodeType(n)));
+    if (linkageNode) {
+        lfa.outputs.push({
+            narrative: "2. Linkages: Job Fairs organized.",
+            indicators: ["# of Offer Letters generated."],
+            means_of_verification: ["Offer Letter Copies"],
             assumptions_risks: []
-        };
+        });
+    }
 
-        const nodeType = getNodeType(node);
-        if (nodeType === 'aspiration_alignment') {
-            cell.narrative = `Youth aspirations aligned with market reality (${data?.final_match || 'Matched'})`;
-            cell.indicators.push('Aspiration Match Score > 80%'); // Default added
-            cell.means_of_verification.push('Counseling Records');
-        } else if (nodeType === 'family_consent') {
-            cell.narrative = "Families approve migration for work";
-            cell.indicators.push("100% Consent Forms Signed");
-            cell.means_of_verification.push('Signed Consent Forms');
-        } else if (nodeType === 'interview_readiness') {
-            cell.narrative = "Youth demonstrate workplace professionalism";
-            cell.indicators.push(`Mock Interview Score > ${data?.mock_score_avg || 0}`);
-            cell.means_of_verification.push('Mock Interview Rubrics');
-        }
-
-        if (cell.narrative) {
-            lfa.outcomes.push(cell);
-        }
-    });
-
-
-    // --- Step D: Level 3 - Outputs (The Deliverables) ---
-    // Search: Find nodes of category 'intervention' connected upstream to Outcomes.
-    // Logic: Intervention -> Outcome
-    // We need to look at all outcome nodes we found, and find their parents.
-    // OR we can iterate all interventions and see if they connect to an outcome.
-
-    // Let's iterate all Intervention nodes to build unique Outputs/Activities
-    const interventionTypes = ['tech_bootcamp', 'job_fair', 'internship_ojt', 'career_counseling', 'mock_interview', 'migration_support', 'tracking_call'];
-    const interventionNodes = nodes.filter(n => {
-        const nodeType = getNodeType(n);
-        return n.data?.category === 'intervention' || interventionTypes.includes(nodeType);
-    });
-
-    interventionNodes.forEach(node => {
-        const data = node.data;
-        const nodeType = getNodeType(node);
-
-        // --- OUTPUTS ---
-        const outputCell: LFACell = {
-            narrative: '',
-            indicators: [],
-            means_of_verification: [],
+    // 3. Counseling
+    const counselingNode = nodes.find(n => ['career_counseling', 'aspiration_alignment'].includes(getNodeType(n)));
+    if (counselingNode) {
+        lfa.outputs.push({
+            narrative: "3. Counseling: Career goals mapped.",
+            indicators: ["# of Counseling sessions held."],
+            means_of_verification: ["Counselor Logs"],
             assumptions_risks: []
-        };
+        });
+    }
 
-        let isOutput = false;
+    // --- Step E: Level 4 - Activities (Inputs) ---
+    // User Requirement:
+    // • Mobilize youth (Door-to-door).
+    // • Conduct 300-hour Bootcamp.
+    // • Organize Industry Exposure Visits.
 
-        if (nodeType === 'tech_bootcamp') {
-            outputCell.narrative = `Youth certified in ${data.curriculum_standard || 'Standard'} curriculum`;
-            outputCell.indicators.push("# of certificates issued");
-            outputCell.means_of_verification.push("Training Certificates");
-            isOutput = true;
-        } else if (nodeType === 'job_fair') {
-            outputCell.narrative = `Market linkages established with ${data.employer_count || 0} employers`;
-            outputCell.indicators.push("# of offer letters generated");
-            outputCell.means_of_verification.push("Event Report");
-            isOutput = true;
-        } else if (nodeType === 'internship_ojt') {
-            outputCell.narrative = `Apprenticeships completed (${data.duration_weeks || 0} weeks)`;
-            outputCell.indicators.push("% Completion of OJT");
-            outputCell.means_of_verification.push("OJT Completion Log");
-            isOutput = true;
-        }
-
-        if (isOutput) {
-            lfa.outputs.push(outputCell);
-        }
-
-        // --- ACTIVITIES ---
-        // Same nodes map to activities too
-        const activityCell: LFACell = {
-            narrative: '',
-            indicators: [], // Activities usually process indicators like "Hours conducted"
-            means_of_verification: [],
-            assumptions_risks: []
-        };
-
-        if (nodeType === 'tech_bootcamp') {
-            activityCell.narrative = `Conduct ${data.hours || 0} hours of technical training`;
-        } else if (nodeType === 'job_fair') {
-            activityCell.narrative = "Organize placement drives";
-        } else if (nodeType === 'migration_support') {
-            activityCell.narrative = "Provide housing/travel support";
-        } else if (nodeType === 'internship_ojt') {
-            activityCell.narrative = "Facilitate OJT placements"; // Added for consistency
-        }
-
-        if (activityCell.narrative) {
-            // Map Assumptions (step E)
-            // Find risk nodes connected to this intervention. 
-            // Warning: Prompt says "Risk nodes connected to this intervention". 
-            // In graph: Risk -> Intervention (Risk affects Intervention) or Intervention -> Risk?
-            // Usually Risk is a floater or points to the node it modifies. Let's assume Risk -> Intervention.
-            const riskTypes = ['market_slump', 'migration_shock', 'wage_mismatch'];
-            const riskNodes = getUpstreamNodes(node.id, nodes, edges).filter(n => {
-                const riskNodeType = getNodeType(n);
-                return n.data?.category === 'risk' || riskTypes.includes(riskNodeType);
-            });
-
-            riskNodes.forEach(risk => {
-                activityCell.assumptions_risks.push(`Assumption: ${risk.data.mitigation_plan || 'Mitigated'} (Risk: ${risk.id})`);
-            });
-
-            // Implicit Assumption
-            if (nodeType === 'job_fair') {
-                activityCell.assumptions_risks.push("Local employers willing to hire freshers");
-            }
-
-            // Warning Check
-            if (nodeType === 'tech_bootcamp') {
-                // Check if job_fair or internship exists in the whole graph
-                const hasLinkage = nodes.some(n => {
-                    const t = getNodeType(n);
-                    return t === 'job_fair' || t === 'internship_ojt';
-                });
-                if (!hasLinkage) {
-                    activityCell.narrative += " [WARNING: Training exists without Market Linkage]";
-                }
-            }
-
-            lfa.activities.push(activityCell);
-        }
+    // Mobilization (Always added if we have any inputs, or check for mobilization node)
+    lfa.activities.push({
+        narrative: "• Mobilize youth (Door-to-door).",
+        indicators: ["Mobilization Reports"],
+        means_of_verification: ["Mobilization Database"],
+        assumptions_risks: ["Risk: Mobilizers face community resistance."]
     });
+
+    if (skillingNode) {
+        lfa.activities.push({
+            narrative: `• Conduct ${skillingNode.data.hours || '300'}-hour Bootcamp.`,
+            indicators: ["Budget: INR [Amount]", "Timeline: [Dates]"],
+            means_of_verification: ["Transport/Event Vouchers"],
+            assumptions_risks: []
+        });
+    }
+
+    if (linkageNode) {
+        lfa.activities.push({
+            narrative: "• Organize Industry Exposure Visits.",
+            indicators: ["Budget: INR [Amount]"],
+            means_of_verification: ["Transport Vouchers"],
+            assumptions_risks: []
+        });
+    }
 
     return lfa;
 };

@@ -596,30 +596,41 @@ function LFADocumentPreview({
 
       {/* --- Section 1: Program Identity --- */}
       <section className="mb-10 border-b-2 border-gray-100 pb-6">
-        <h1 className="text-2xl font-bold text-[#111827] mb-6">Program Identity</h1>
-        <div className="grid grid-cols-2 gap-y-4 gap-x-8">
+        <h1 className="text-2xl font-bold text-[#111827] mb-6">1. Program Identity</h1>
+
+        {/* Org Header Integration */}
+        <div className="flex items-center gap-4 mb-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
+          {orgLogo ? (
+            <img src={orgLogo} alt="Org Logo" className="h-12 w-auto object-contain" />
+          ) : (
+            <div className="h-12 w-12 bg-gray-200 flex items-center justify-center text-xs text-gray-400 rounded">Logo</div>
+          )}
           <div>
-            <span className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Project Name</span>
-            <span className="text-lg font-medium text-gray-900">{projectName}</span>
+            <h3 className="text-lg font-bold text-gray-900">{orgName || 'NitiNirmaan'}</h3>
+            <p className="text-sm text-gray-500">{projectName}</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-y-4 gap-x-8 text-sm">
+          <div>
+            <span className="block font-semibold text-gray-900">Focus:</span>
+            <span className="text-gray-700">Skills, Employment, and Industry Linkage.</span>
           </div>
           <div>
-            <span className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Organization</span>
-            <div className="flex items-center gap-2">
-              {orgLogo && <img src={orgLogo} alt="Org" className="h-8 w-8 object-contain rounded-sm" />}
-              <span className="text-lg text-gray-700">{orgName || 'NitiNirmaan'}</span>
-            </div>
+            <span className="block font-semibold text-gray-900">Key Metric:</span>
+            <span className="text-gray-700">Placement & Retention Rate.</span>
           </div>
           <div>
-            <span className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Geography</span>
-            <span className="text-base text-gray-700">{geography}</span>
+            <span className="block font-semibold text-gray-900">Domain:</span>
+            <span className="text-gray-700">Skill Development & Livelihood</span>
           </div>
           <div>
-            <span className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Duration</span>
-            <span className="text-base text-gray-700">April 2026 - March 2029</span>
+            <span className="block font-semibold text-gray-900">Aligned Mission:</span>
+            <span className="text-gray-700">Skill India / PMKVY</span>
           </div>
           <div className="col-span-2">
-            <span className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Primary Domain</span>
-            <span className="text-base text-gray-700">{domain}</span>
+            <span className="block font-semibold text-gray-900">Target Group:</span>
+            <span className="text-gray-700">Youth (18-25 Years), Employers, TVET Institutes.</span>
           </div>
         </div>
       </section>
@@ -722,54 +733,75 @@ function LFADocumentPreview({
         )}
       </section>
 
-      {/* --- Section 4: Stakeholder Shift Map --- */}
+      {/* --- Section 3: Career Stakeholder Shift Map --- */}
       <section>
-        <h2 className="text-xl font-bold text-[#111827] mb-6 flex items-center gap-2">
-          Stakeholder Shift Map
-          <span className="px-2 py-0.5 bg-blue-100 text-blue-800 text-xs rounded-full font-normal">System Change</span>
-        </h2>
+        <h2 className="text-xl font-bold text-[#111827] mb-6 border-l-4 border-indigo-600 pl-3">3. Career Stakeholder Shift Map</h2>
+        <div className="overflow-hidden rounded-lg border border-gray-200 shadow-sm">
+          <table className="w-full text-sm text-left">
+            <thead className="bg-[#F3F4F6] text-gray-700 font-semibold text-xs uppercase tracking-wider">
+              <tr>
+                <th className="py-3 px-4 w-[20%]">Actor</th>
+                <th className="py-3 px-4 w-[40%]">Current Practice (FROM)</th>
+                <th className="py-3 px-4 w-[40%]">Desired Practice (TO)</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200 bg-white">
+              {/* Youth Shift */}
+              {(() => {
+                const youthNode = canvasNodes.find(n => (n.data?.type || n.type) === 'aspiration_alignment');
+                return youthNode ? (
+                  <tr className="hover:bg-gray-50">
+                    <td className="py-3 px-4 font-bold text-gray-900">Youth</td>
+                    <td className="py-3 px-4 text-red-600 bg-red-50/30">Unaware of career paths / Passive</td>
+                    <td className="py-3 px-4 text-green-600 bg-green-50/30 font-semibold flex items-center gap-2">
+                      <ArrowRight className="w-3 h-3 text-green-400" />
+                      Proactive / Career-aligned Goals
+                    </td>
+                  </tr>
+                ) : null;
+              })()}
 
-        {shiftNodes.length > 0 ? (
-          <div className="overflow-hidden rounded-lg border border-gray-200 shadow-sm">
-            <table className="w-full text-sm text-left">
-              <thead className="bg-[#F3F4F6] text-gray-700 font-semibold text-xs uppercase tracking-wider">
+              {/* Employer Shift */}
+              {(() => {
+                const employerNode = canvasNodes.find(n => ['job_fair', 'internship_ojt'].includes(n.data?.type || n.type));
+                return employerNode ? (
+                  <tr className="hover:bg-gray-50">
+                    <td className="py-3 px-4 font-bold text-gray-900">Employer</td>
+                    <td className="py-3 px-4 text-red-600 bg-red-50/30">Reluctant to hire freshers</td>
+                    <td className="py-3 px-4 text-green-600 bg-green-50/30 font-semibold flex items-center gap-2">
+                      <ArrowRight className="w-3 h-3 text-green-400" />
+                      Willing to offer Internships/OJT
+                    </td>
+                  </tr>
+                ) : null;
+              })()}
+
+              {/* Parent Shift */}
+              {(() => {
+                const parentNode = canvasNodes.find(n => (n.data?.type || n.type) === 'family_consent');
+                return parentNode ? (
+                  <tr className="hover:bg-gray-50">
+                    <td className="py-3 px-4 font-bold text-gray-900">Parent</td>
+                    <td className="py-3 px-4 text-red-600 bg-red-50/30">Prioritizes "Govt Job" only</td>
+                    <td className="py-3 px-4 text-green-600 bg-green-50/30 font-semibold flex items-center gap-2">
+                      <ArrowRight className="w-3 h-3 text-green-400" />
+                      Supports private sector placement
+                    </td>
+                  </tr>
+                ) : null;
+              })()}
+
+              {/* Fallback if no relevant nodes found */}
+              {!canvasNodes.some(n => ['aspiration_alignment', 'job_fair', 'internship_ojt', 'family_consent'].includes(n.data?.type || n.type)) && (
                 <tr>
-                  <th className="py-3 px-4 w-1/4">Actor</th>
-                  <th className="py-3 px-4 w-1/4">Current Practice (From)</th>
-                  <th className="py-3 px-4 w-1/4">Desired Practice (To)</th>
-                  <th className="py-3 px-4 w-1/4">Verification</th>
+                  <td colSpan={3} className="py-8 text-center text-gray-400 italic">
+                    Add "Aspiration Alignment", "Job Fair", or "Family Consent" nodes to see Stakeholder Shifts.
+                  </td>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200 bg-white">
-                {shiftNodes.map((node, i) => {
-                  const d = node.data;
-                  // Infer fields if not strictly present
-                  const actor = d.actor || "Teacher"; // Fallback
-                  const fromBehavior = d.from_behavior || "Traditional rote method";
-                  const toBehavior = d.to_behavior || "Activity-based learning";
-                  const verification = d.evidence_source || "Observation Score";
-
-                  return (
-                    <tr key={i} className="hover:bg-gray-50">
-                      <td className="py-3 px-4 font-medium text-gray-900">{actor}</td>
-                      <td className="py-3 px-4 text-red-600 bg-red-50/50">{fromBehavior}</td>
-                      <td className="py-3 px-4 text-green-600 bg-green-50/50 flex items-center gap-2">
-                        <ArrowRight className="w-3 h-3 text-green-400" />
-                        {toBehavior}
-                      </td>
-                      <td className="py-3 px-4 text-gray-600">{verification}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div className="p-6 bg-gray-50 border border-dashed border-gray-300 rounded-lg text-center text-sm text-gray-500">
-            <p className="mb-2">No "Practice Change" or "Pedagogy Shift" nodes detected.</p>
-            <p>Add <strong>Pedagogy Shift</strong> nodes to your canvas to see the Stakeholder Shift Map.</p>
-          </div>
-        )}
+              )}
+            </tbody>
+          </table>
+        </div>
       </section>
 
       {/* Footer note */}
