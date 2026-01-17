@@ -2,6 +2,14 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { Node, Edge } from 'reactflow';
 
+export interface RealtimeUser {
+    id: string; // The ephemeral presence ID (myId)
+    name: string;
+    color: string;
+    accessLevel: 'edit' | 'view';
+    isCurrentUser: boolean;
+}
+
 interface Cursor {
     x: number;
     y: number;
@@ -20,7 +28,10 @@ interface UseRealtimeProps {
 
 export function useRealtime({ projectId, token, identity, onNodesChange, onEdgesChange }: UseRealtimeProps) {
     const [cursors, setCursors] = useState<Record<string, Cursor>>({});
+    const [activeUsers, setActiveUsers] = useState<RealtimeUser[]>([]);
+    const [accessLevel, setAccessLevel] = useState<'edit' | 'view'>('edit');
     const [isSubscribed, setIsSubscribed] = useState(false);
+
     const channelRef = useRef<any>(null);
     const myId = useRef<string>(Math.random().toString(36).substring(7));
 
@@ -59,6 +70,26 @@ export function useRealtime({ projectId, token, identity, onNodesChange, onEdges
         });
 
         channel
+            .on('presence', { event: 'sync' }, () => {
+                const state = channel.presenceState();
+                const users: RealtimeUser[] = [];
+
+                Object.keys(state).forEach(key => {
+                    const presence = state[key][0] as any; // Supabase presence is an array per key
+                    if (presence) {
+                        users.push({
+                            id: key,
+                            name: presence.user || 'Anonymous',
+                            color: presence.color || '#ccc',
+                            accessLevel: presence.accessLevel || 'edit',
+                            isCurrentUser: key === myId.current
+                        });
+                    }
+                });
+
+                setActiveUsers(users);
+                console.log('👥 [Realtime] Active users updated:', users.length);
+            })
             .on('broadcast', { event: 'cursor-move' }, (payload) => {
                 setCursors((prev) => ({
                     ...prev,
@@ -72,15 +103,28 @@ export function useRealtime({ projectId, token, identity, onNodesChange, onEdges
                 }));
             })
             .on('broadcast', { event: 'nodes-update' }, (payload) => {
-                console.log(`📥 [Realtime] Received nodes-update from ${payload.payload.senderId} (I am ${myId.current})`);
+                // Determine if we should accept this update based on local access level?
+                // Ideally backend policies enforce this too, but for UI sync:
+                console.log(`📥 [Realtime] Received nodes-update from ${payload.payload.senderId}`);
                 if (onNodesChangeRef.current) {
                     onNodesChangeRef.current(payload.payload.nodes);
                 }
             })
             .on('broadcast', { event: 'edges-update' }, (payload) => {
-                console.log(`📥 [Realtime] Received edges-update from ${payload.payload.senderId} (I am ${myId.current})`);
+                console.log(`📥 [Realtime] Received edges-update from ${payload.payload.senderId}`);
                 if (onEdgesChangeRef.current) {
                     onEdgesChangeRef.current(payload.payload.edges);
+                }
+            })
+            .on('broadcast', { event: 'permission-change' }, (payload) => {
+                const { targetUserId, newAccessLevel } = payload.payload;
+                console.log(`🔒 [Realtime] Permission change received. Target: ${targetUserId}, MyId: ${myId.current}, NewLevel: ${newAccessLevel}`);
+
+                if (targetUserId === myId.current) {
+                    console.log('✅ [Realtime] Applying new access level to ME');
+                    setAccessLevel(newAccessLevel);
+                } else {
+                    console.log('ℹ️ [Realtime] Ignoring permission change for another user');
                 }
             })
             .subscribe(async (status) => {
@@ -88,12 +132,15 @@ export function useRealtime({ projectId, token, identity, onNodesChange, onEdges
                 if (status === 'SUBSCRIBED') {
                     setIsSubscribed(true);
                     console.log(`✅ [Realtime] Successfully subscribed to project:${projectId}`);
-                    if (identity) {
-                        await channel.track({
-                            user: identity.name,
-                            online_at: new Date().toISOString(),
-                        });
-                    }
+
+                    // Initial presence track
+                    await channel.track({
+                        user: identity?.name || 'Guest',
+                        color: identity?.color || '#888',
+                        accessLevel: 'edit', // Default start as edit, unless logic overrides later
+                        online_at: new Date().toISOString(),
+                    });
+
                 } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
                     setIsSubscribed(false);
                     console.error(`❌ [Realtime] Channel error or timeout: ${status}`);
@@ -107,7 +154,19 @@ export function useRealtime({ projectId, token, identity, onNodesChange, onEdges
             setIsSubscribed(false);
             supabase.removeChannel(channel);
         };
-    }, [projectId, token, identity]);
+    }, [projectId, token, identity]); // Re-subscribe if identity changes (unlikely) or project changes
+
+    // Track access level changes
+    useEffect(() => {
+        if (isSubscribed && channelRef.current) {
+            channelRef.current.track({
+                user: identity?.name || 'Guest',
+                color: identity?.color || '#888',
+                accessLevel: accessLevel,
+                online_at: new Date().toISOString(),
+            }).catch((err: any) => console.error('Failed to update presence access level', err));
+        }
+    }, [accessLevel, isSubscribed, identity]);
 
     // Cleanup inactive cursors
     useEffect(() => {
@@ -147,11 +206,7 @@ export function useRealtime({ projectId, token, identity, onNodesChange, onEdges
 
     // Function to broadcast nodes update
     const broadcastNodes = useCallback((nodes: Node[]) => {
-        if (!channelRef.current || !isSubscribed) {
-            console.warn(`⚠️ [Realtime] Cannot broadcast nodes - channel not ready (subscribed: ${isSubscribed})`);
-            return;
-        }
-        console.log(`📤 [Realtime] Sending nodes-update (${nodes.length} nodes, senderId: ${myId.current})`);
+        if (!channelRef.current || !isSubscribed) return;
         channelRef.current.send({
             type: 'broadcast',
             event: 'nodes-update',
@@ -164,11 +219,7 @@ export function useRealtime({ projectId, token, identity, onNodesChange, onEdges
 
     // Function to broadcast edges update
     const broadcastEdges = useCallback((edges: Edge[]) => {
-        if (!channelRef.current || !isSubscribed) {
-            console.warn(`⚠️ [Realtime] Cannot broadcast edges - channel not ready (subscribed: ${isSubscribed})`);
-            return;
-        }
-        console.log(`📤 [Realtime] Sending edges-update (${edges.length} edges, senderId: ${myId.current})`);
+        if (!channelRef.current || !isSubscribed) return;
         channelRef.current.send({
             type: 'broadcast',
             event: 'edges-update',
@@ -179,8 +230,32 @@ export function useRealtime({ projectId, token, identity, onNodesChange, onEdges
         });
     }, [isSubscribed]);
 
+    // Function to change another user's permission
+    const changeUserPermission = useCallback((targetUserId: string, newAccessLevel: 'edit' | 'view') => {
+        console.log(`📤 [Realtime] ADMIN: Sending permission change. Target: ${targetUserId}, Level: ${newAccessLevel}`);
+        if (!channelRef.current || !isSubscribed) {
+            console.error('❌ [Realtime] Cannot send permission change - channel not ready');
+            return;
+        }
+        channelRef.current.send({
+            type: 'broadcast',
+            event: 'permission-change',
+            payload: {
+                targetUserId,
+                newAccessLevel
+            }
+        }).then(() => {
+            console.log('✅ [Realtime] Permission change broadcast sent successfully');
+        }).catch((err: any) => {
+            console.error('❌ [Realtime] Permission change broadcast failed:', err);
+        });
+    }, [isSubscribed]);
+
     return {
         cursors,
+        activeUsers,
+        accessLevel,
+        changeUserPermission,
         broadcastCursor,
         broadcastNodes,
         broadcastEdges,

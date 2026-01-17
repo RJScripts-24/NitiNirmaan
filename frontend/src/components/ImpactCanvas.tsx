@@ -80,6 +80,14 @@ import { supabase } from '../lib/supabase';
 import { useRealtime } from '../hooks/useRealtime';
 
 import HexagonBackground from './HexagonBackground';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
+} from './ui/dropdown-menu';
 
 interface ImpactCanvasProps {
   projectName?: string;
@@ -182,8 +190,12 @@ export default function ImpactCanvas({
   const shouldFetch = !propNodes && (guestToken || (typeof localStorage !== 'undefined' && localStorage.getItem('active_project_id')));
 
   // Use propNodes if available, otherwise empty if fetching, otherwise default
-  const [nodes, setNodes, onNodesChange] = useNodesState(propNodes || (shouldFetch ? [] : initialNodes));
-  const [edges, setEdges, onEdgesChange] = useEdgesState(propEdges || (shouldFetch ? [] : initialEdges));
+  const [nodes, setNodes, onNodesChangeInternal] = useNodesState(propNodes || (shouldFetch ? [] : initialNodes));
+  const [edges, setEdges, onEdgesChangeInternal] = useEdgesState(propEdges || (shouldFetch ? [] : initialEdges));
+
+  // Access level state (will be set by useRealtime hook later)
+  // We need to track it here to guard node/edge changes
+  const accessLevelRef = useRef<'edit' | 'view'>('edit');
 
   const [isLoadingProject, setIsLoadingProject] = useState(!!shouldFetch);
 
@@ -201,6 +213,15 @@ export default function ImpactCanvas({
   const [domain, setDomain] = useState<string>('');
   const [simulationData, setSimulationData] = useState<{ lfa: LFADocument; shortcomings: string[] } | null>(null);
   const [projectId, setProjectId] = useState<string | null>(null);
+  const [projectOwnerId, setProjectOwnerId] = useState<string | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  // Fetch current user on mount
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      if (data?.user) setCurrentUserId(data.user.id);
+    });
+  }, []);
 
   // Undo/Redo History
   const [history, setHistory] = useState<{ nodes: Node[]; edges: Edge[] }[]>([]);
@@ -243,13 +264,48 @@ export default function ImpactCanvas({
     setTimeout(() => { isRemoteUpdateRef.current = false; }, 100);
   }, [setEdges]);
 
-  const { cursors, broadcastCursor, broadcastNodes, broadcastEdges } = useRealtime({
+  const { cursors, activeUsers, accessLevel, changeUserPermission, broadcastCursor, broadcastNodes, broadcastEdges } = useRealtime({
     projectId: projectId || '',
     token: guestToken,
     identity,
     onNodesChange: handleRemoteNodesUpdate,
     onEdgesChange: handleRemoteEdgesUpdate,
   });
+
+  // Derived Admin Status
+  const isAdmin = useMemo(() => {
+    if (!projectOwnerId || !currentUserId) return false;
+    return projectOwnerId === currentUserId;
+  }, [projectOwnerId, currentUserId]);
+
+  // Combined ReadOnly State
+  const isReadOnly = readOnly || accessLevel === 'view';
+
+  // Keep ref in sync for use in callbacks
+  useEffect(() => {
+    accessLevelRef.current = accessLevel;
+  }, [accessLevel]);
+
+  // Guarded change handlers - block changes when in view-only mode
+  const onNodesChange = useCallback((changes: any) => {
+    if (accessLevelRef.current === 'view') {
+      console.log('🚫 [ImpactCanvas] Node change blocked - View Only mode');
+      return;
+    }
+    onNodesChangeInternal(changes);
+  }, [onNodesChangeInternal]);
+
+  const onEdgesChange = useCallback((changes: any) => {
+    if (accessLevelRef.current === 'view') {
+      console.log('🚫 [ImpactCanvas] Edge change blocked - View Only mode');
+      return;
+    }
+    onEdgesChangeInternal(changes);
+  }, [onEdgesChangeInternal]);
+
+  useEffect(() => {
+    console.log(`🔒 [ImpactCanvas] ReadOnly Mode: ${isReadOnly} (AccessLevel: ${accessLevel})`);
+  }, [isReadOnly, accessLevel]);
 
   const onMouseMove = useCallback((e: React.MouseEvent) => {
     if (reactFlowInstance) {
@@ -263,6 +319,11 @@ export default function ImpactCanvas({
   const broadcastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
+    // Don't broadcast if in view-only mode
+    if (isReadOnly) {
+      console.log('🔒 [ImpactCanvas] Blocking broadcast - View Only mode');
+      return;
+    }
     if (projectId && nodes.length > 0 && !isRemoteUpdateRef.current) {
       // Debounce to avoid flooding on rapid changes
       if (broadcastTimeoutRef.current) clearTimeout(broadcastTimeoutRef.current);
@@ -271,9 +332,11 @@ export default function ImpactCanvas({
         broadcastNodes(nodes);
       }, 200);
     }
-  }, [nodes, projectId, broadcastNodes]);
+  }, [nodes, projectId, broadcastNodes, isReadOnly]);
 
   useEffect(() => {
+    // Don't broadcast if in view-only mode
+    if (isReadOnly) return;
     if (projectId && edges.length > 0 && !isRemoteUpdateRef.current) {
       if (broadcastTimeoutRef.current) clearTimeout(broadcastTimeoutRef.current);
       broadcastTimeoutRef.current = setTimeout(() => {
@@ -281,7 +344,7 @@ export default function ImpactCanvas({
         broadcastEdges(edges);
       }, 200);
     }
-  }, [edges, projectId, broadcastEdges]);
+  }, [edges, projectId, broadcastEdges, isReadOnly]);
 
   // Sync state if props change (for template selection) or load from Storage/DB
   useEffect(() => {
@@ -311,6 +374,7 @@ export default function ImpactCanvas({
         if (project) {
           setCurrentProjectName(project.title);
           setDomain(project.theme || 'FLN'); // 'theme' stores the domain
+          setProjectOwnerId(project.user_id);
         }
 
         const { data: nodesData, error: nodesError } = await supabase.from('nodes').select('*').eq('project_id', activeProjectId);
@@ -376,6 +440,7 @@ export default function ImpactCanvas({
         // But mark as guest-access
         localStorage.setItem('active_project_id', project.id);
         localStorage.setItem('is_guest_access', 'true'); // Flag for other logic
+        setProjectOwnerId(project.user_id);
 
         const { data: nodesData } = await supabase.from('nodes').select('*').eq('project_id', project.id);
         const { data: edgesData } = await supabase.from('edges').select('*').eq('project_id', project.id);
@@ -1107,6 +1172,73 @@ export default function ImpactCanvas({
             Share
           </Button>
 
+          {/* Active Users List */}
+          <div className="flex items-center space-x-[-8px] mr-4">
+            {activeUsers.map((user) => {
+              const initials = user.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+              const isMe = user.isCurrentUser;
+
+              // If I am admin, and this user is NOT me, I can edit them
+              const canEditValues = isAdmin && !isMe;
+
+              const content = (
+                <div
+                  key={user.id}
+                  className={`relative w-8 h-8 rounded-full border-2 border-[#0F1216] flex items-center justify-center text-xs font-medium text-white cursor-pointer hover:z-10 transition-transform hover:scale-110 ${canEditValues ? 'cursor-pointer' : 'cursor-default'}`}
+                  style={{ backgroundColor: user.color }}
+                  title={`${user.name} (${user.accessLevel})`}
+                >
+                  {initials}
+                  {user.accessLevel === 'view' && (
+                    <div className="absolute -bottom-1 -right-1 bg-gray-700 rounded-full p-0.5 border border-[#0F1216]">
+                      <Lock size={8} />
+                    </div>
+                  )}
+                </div>
+              );
+
+              if (canEditValues) {
+                return (
+                  <DropdownMenu key={user.id}>
+                    <DropdownMenuTrigger asChild>
+                      {content}
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-48 bg-[#1F2937] border-[#374151] text-gray-200">
+                      <DropdownMenuLabel>{user.name}</DropdownMenuLabel>
+                      <DropdownMenuSeparator className="bg-[#374151]" />
+                      <DropdownMenuItem
+                        className="hover:bg-[#374151] cursor-pointer"
+                        onClick={() => {
+                          console.log(`🎯 [ImpactCanvas] Admin clicked 'Allow Edit' for user: ${user.id}`);
+                          changeUserPermission(user.id, 'edit');
+                        }}
+                      >
+                        <div className="flex items-center justify-between w-full">
+                          <span>Allow Edit</span>
+                          {user.accessLevel === 'edit' && <Check size={14} className="text-green-500" />}
+                        </div>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        className="hover:bg-[#374151] cursor-pointer"
+                        onClick={() => {
+                          console.log(`🎯 [ImpactCanvas] Admin clicked 'View Only' for user: ${user.id}`);
+                          changeUserPermission(user.id, 'view');
+                        }}
+                      >
+                        <div className="flex items-center justify-between w-full">
+                          <span>View Only</span>
+                          {user.accessLevel === 'view' && <Check size={14} className="text-yellow-500" />}
+                        </div>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                );
+              }
+
+              return content;
+            })}
+          </div>
+
           {/* Run Simulation */}
           <Button
             onClick={handleRunSimulation}
@@ -1138,10 +1270,11 @@ export default function ImpactCanvas({
             nodes={nodes}
             edges={edges}
             connectionMode={ConnectionMode.Loose}
-            nodesDraggable={true}
-            nodesConnectable={true}
+            nodesDraggable={!isReadOnly}
+            nodesConnectable={!isReadOnly}
             selectNodesOnDrag={false}
             panOnDrag={true}
+            elementsSelectable={!isReadOnly}
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             onConnect={onConnect}
