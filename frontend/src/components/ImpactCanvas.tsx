@@ -2216,9 +2216,13 @@ function AICompanionWidget({ show, onToggle, nodes, edges }: { show: boolean; on
         missionContext = parsed;
       }
 
+      // Determine toolbox based on domain
+      const toolbox = (missionContext as any).domain === 'Career Readiness' ? CAREER_TOOLBOX : FLN_TOOLBOX;
+
       // Serialize Nodes and Edges for Context
       const graphData = {
         mission: missionContext,
+        toolbox: toolbox.map(t => ({ id: t.id, label: t.label, category: t.category })), // Send available tools
         nodes: nodes.map(n => ({
           id: n.id,
           type: n.data.type || n.type,
