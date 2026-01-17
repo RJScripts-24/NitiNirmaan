@@ -506,8 +506,8 @@ function LFADocumentPreview({
     return (
       <div className="bg-white rounded shadow-sm p-10 text-[#1F2937] max-w-4xl mx-auto font-sans">
 
-        {/* Header - Org & Logo */}
-        <div className="flex justify-between items-start mb-8 border-b pb-4">
+        {/* --- Section 1: Program Identity (Header) --- */}
+        <section data-pdf-section="header" className="flex justify-between items-start mb-8 border-b pb-4">
           <div className="flex items-center gap-4">
             {orgLogo ? (
               <img src={orgLogo} alt="Org Logo" className="h-16 w-auto object-contain" />
@@ -527,9 +527,9 @@ function LFADocumentPreview({
             </span>
             <p className="text-xs text-gray-500 mt-1">{geography}</p>
           </div>
-        </div>
+        </section>
 
-        {/* --- Section 1: Program Identity (Header) --- */}
+        {/* --- Section 2: Program Identity (Details) --- */}
         <section data-pdf-section="program-identity" className="mb-10 border-b-2 border-gray-100 pb-6">
           <h2 className="text-xl font-bold text-[#111827] mb-6 border-l-4 border-[#047857] pl-3">1. Program Identity</h2>
           <div className="grid grid-cols-2 gap-y-4 gap-x-8 text-sm">
