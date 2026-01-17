@@ -14,12 +14,15 @@ import {
   Presentation,
   AlertTriangle,
   ArrowRight,
+  Sparkles,
 } from 'lucide-react';
 import { Button } from './ui/button';
 import NoiseBackground from './NoiseBackground';
 import HexagonBackground from './HexagonBackground';
 import { LFADocument } from '../lib/fln-compiler';
 import { supabase } from '../lib/supabase';
+import { AiInsightsPanel } from './simulation/AiInsightsPanel';
+import axios from 'axios';
 
 // Define MissionData interface to match MissionInitialize
 interface MissionData {
@@ -56,6 +59,31 @@ export default function LogicPreview({
   const [hoveredSection, setHoveredSection] = useState<string | null>(null);
   const [missionData, setMissionData] = useState<MissionData | null>(null);
   const [orgDetails, setOrgDetails] = useState<{ name: string, logo: string } | null>(null);
+
+  // AI Audit State
+  const [isAuditing, setIsAuditing] = useState(false);
+  const [auditResult, setAuditResult] = useState(null);
+  const [showAuditPanel, setShowAuditPanel] = useState(false);
+
+  const handleAudit = async () => {
+    setIsAuditing(true);
+    setShowAuditPanel(true);
+    try {
+      const response = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/ai-audit`, {
+        graphData: { nodes: canvasNodes, edges: canvasEdges },
+        projectContext: {
+          mode: missionData?.domain === 'Employment' ? 'Career' : 'FLN', // Simple heuristic mapping
+          region: missionData?.state || 'Bihar',
+          problemStatement: canvasNodes.find(n => n.type === 'problem')?.data?.label || ''
+        }
+      });
+      setAuditResult(response.data);
+    } catch (error) {
+      console.error("AI Audit missed:", error);
+    } finally {
+      setIsAuditing(false);
+    }
+  };
 
   // Load Mission Data from LocalStorage
   useEffect(() => {
@@ -135,15 +163,11 @@ export default function LogicPreview({
         <div className="flex items-center justify-between relative" style={{ zIndex: 10, pointerEvents: 'none' }}>
           {/* Left - Branding & Project */}
           <div className="flex items-center gap-6">
-            {orgDetails?.logo ? (
-              <img src={orgDetails.logo} alt="Org Logo" className="h-12 w-auto object-contain" />
-            ) : (
-              <img
-                src="/logo-2.png"
-                alt="NitiNirmaan"
-                className="h-12 w-auto object-contain"
-              />
-            )}
+            <img
+              src="/logo-2.png"
+              alt="NitiNirmaan"
+              className="h-12 w-auto object-contain"
+            />
             <span className="text-[#9CA3AF] text-sm">{displayProjectName}</span>
           </div>
 
@@ -162,6 +186,20 @@ export default function LogicPreview({
 
           {/* Right - Collaborators & Actions */}
           <div className="flex items-center gap-3" style={{ pointerEvents: 'auto' }}>
+            {/* AI Audit Button */}
+            {/* AI Audit Button */}
+            {/* AI Audit Button */}
+            {/* AI Audit Button */}
+            <Button
+              onClick={handleAudit}
+              variant={null}
+              style={{ backgroundColor: '#ea580c' }}
+              className="hover:!bg-[#c2410c] text-white flex items-center gap-2 h-9 px-4 rounded shadow-lg shadow-[#f97316]/20 border border-[#f97316]/50"
+            >
+              <Sparkles className="w-4 h-4" />
+              Bee Audit
+            </Button>
+
             {/* Collaborators */}
             <div className="flex items-center -space-x-2">
               <div className="w-8 h-8 rounded-full bg-[#D97706] border-2 border-[#171B21] flex items-center justify-center">
@@ -246,6 +284,7 @@ export default function LogicPreview({
               shortcomings={shortcomings}
               canvasNodes={canvasNodes}
               orgName={orgDetails?.name}
+              orgLogo={orgDetails?.logo}
             />
           </div>
 
@@ -268,6 +307,12 @@ export default function LogicPreview({
           </div>
         </div>
       </div>
+      <AiInsightsPanel
+        isOpen={showAuditPanel}
+        onClose={() => setShowAuditPanel(false)}
+        isLoading={isAuditing}
+        auditResult={auditResult}
+      />
     </div>
   );
 }
@@ -279,7 +324,9 @@ function LFADocumentPreview({
   lfaData,
   missionData,
   shortcomings,
-  canvasNodes = []
+  canvasNodes = [],
+  orgName,
+  orgLogo
 }: {
   hoveredNode: string | null;
   onSectionHover: (section: string | null) => void;
@@ -288,6 +335,7 @@ function LFADocumentPreview({
   shortcomings: string[];
   canvasNodes?: Node[];
   orgName?: string;
+  orgLogo?: string;
 }) {
   // --- Section 1: Data Maps ---
   const projectName = missionData?.projectName || 'Project Name';
@@ -325,7 +373,10 @@ function LFADocumentPreview({
           </div>
           <div>
             <span className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Organization</span>
-            <span className="text-lg text-gray-700">{orgName || 'NitiNirmaan'}</span>
+            <div className="flex items-center gap-2">
+              {orgLogo && <img src={orgLogo} alt="Org" className="h-8 w-8 object-contain rounded-sm" />}
+              <span className="text-lg text-gray-700">{orgName || 'NitiNirmaan'}</span>
+            </div>
           </div>
           <div>
             <span className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Geography</span>
