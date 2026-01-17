@@ -348,9 +348,9 @@ function LFADocumentPreview({
   const domain = missionData?.domain || 'Not defined';
   const goalNarrative = missionData?.outcome || lfaData?.goal?.narrative || 'Not defined';
 
-  // Find Problem Statement from nodes
+  // Find Problem Statement from nodes OR use outcome from missionData
   const problemNode = canvasNodes.find(n => n.type === 'problem' || n.data?.type === 'problem');
-  const problemStatement = problemNode?.data?.label || "Grade 3 students lack reading fluency due to rote-based teaching.";
+  const problemStatement = problemNode?.data?.label || missionData?.outcome || '';
 
   // Build Theory of Change statement
   const activities = lfaData?.activities?.slice(0, 2).map(a => a.narrative.split(' ').slice(0, 3).join(' ')).join(', ') || "interventions are implemented";
@@ -596,7 +596,7 @@ function LFADocumentPreview({
 
       {/* --- Section 1: Program Identity --- */}
       <section className="mb-10 border-b-2 border-gray-100 pb-6">
-        <h1 className="text-2xl font-bold text-[#111827] mb-6">1. Program Identity</h1>
+        <h1 className="text-2xl font-bold text-[#111827] mb-6">Program Identity</h1>
 
         {/* Org Header Integration */}
         <div className="flex items-center gap-4 mb-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
@@ -629,8 +629,12 @@ function LFADocumentPreview({
             <span className="text-gray-700">{missionData?.domain === 'Career Readiness' ? 'Skill India / PMKVY' : ''}</span>
           </div>
           <div className="col-span-2">
+            <span className="block font-semibold text-gray-900">Geography:</span>
+            <span className="text-gray-700">{geography}</span>
+          </div>
+          <div className="col-span-2">
             <span className="block font-semibold text-gray-900">Target Group:</span>
-            <span className="text-gray-700">{/* Derived from nodes? If not, leave blank */}{canvasNodes.some(n => n.data?.label?.toLowerCase().includes('youth')) ? 'Youth (18-25 Years)' : ''}</span>
+            <span className="text-gray-700">{canvasNodes.some(n => n.data?.label?.toLowerCase().includes('youth')) ? 'Youth (18-25 Years)' : ''}</span>
           </div>
         </div>
       </section>
