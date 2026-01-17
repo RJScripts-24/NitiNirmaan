@@ -421,136 +421,123 @@ function LFADocumentPreview({
         <section className="mb-10">
           <h2 className="text-xl font-bold text-[#111827] mb-6 border-l-4 border-[#B91C1C] pl-3">2. The FLN LogFrame Matrix</h2>
 
-          {lfaData ? (
-            <div className="border border-gray-300 rounded overflow-hidden">
-              <table className="w-full text-sm text-left border-collapse">
-                <thead className="bg-[#1f2937] text-white font-semibold">
-                  <tr>
-                    <th className="py-3 px-4 w-[15%] border-r border-gray-600">Objective Level</th>
-                    <th className="py-3 px-4 w-[30%] border-r border-gray-600">Narrative Summary (The Logic)</th>
-                    <th className="py-3 px-4 w-[20%] border-r border-gray-600">Indicators (KPIs)</th>
-                    <th className="py-3 px-4 w-[15%] border-r border-gray-600">Means of Verification (MoV)</th>
-                    <th className="py-3 px-4 w-[20%]">Assumptions & Risks</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {/* GOAL */}
-                  <tr className="bg-red-50/30">
-                    <td className="py-3 px-4 font-bold text-[#B91C1C] border-r border-gray-200">GOAL (Impact)</td>
-                    <td className="py-3 px-4 border-r border-gray-200">
-                      <div className="font-semibold mb-1">Students achieve grade-level proficiency.</div>
-                      <div className="text-gray-600 text-xs">{goalNarrative}</div>
-                    </td>
-                    <td className="py-3 px-4 border-r border-gray-200 text-xs">
-                      {lfaData.goal?.indicators?.length ? lfaData.goal.indicators.map((i, idx) => <div key={idx}>• {i}</div>) :
-                        <div>
-                          <div>• % of Gr 3 students reading Gr 2 text fluently.</div>
-                          <div>• % of students solving 2-digit subtraction.</div>
-                        </div>}
-                    </td>
-                    <td className="py-3 px-4 border-r border-gray-200 text-xs">
-                      {lfaData.goal?.means_of_verification?.length ? lfaData.goal.means_of_verification.map((m, idx) => <div key={idx}>• {m}</div>) :
-                        <div>
-                          <div>• Annual ASER Survey</div>
-                          <div>• State Achievement Survey (SAS)</div>
-                          <div>• 3rd Party Endline</div>
-                        </div>}
-                    </td>
-                    <td className="py-3 px-4 text-xs italic text-gray-600">
-                      <div>Risk: Schools are closed due to external factors (Pandemic/Climate).</div>
-                      <div>Assumption: State continues to prioritize FLN.</div>
-                    </td>
-                  </tr>
+          <div className="border border-gray-300 rounded overflow-hidden">
+            <table className="w-full text-sm text-left border-collapse">
+              <thead style={{ backgroundColor: '#1f2937' }}>
+                <tr>
+                  <th style={{ color: '#ffffff', padding: '12px 16px', borderRight: '1px solid #4B5563', fontWeight: 600, width: '15%' }}>Objective Level</th>
+                  <th style={{ color: '#ffffff', padding: '12px 16px', borderRight: '1px solid #4B5563', fontWeight: 600, width: '30%' }}>Narrative Summary (The Logic)</th>
+                  <th style={{ color: '#ffffff', padding: '12px 16px', borderRight: '1px solid #4B5563', fontWeight: 600, width: '20%' }}>Indicators (KPIs)</th>
+                  <th style={{ color: '#ffffff', padding: '12px 16px', borderRight: '1px solid #4B5563', fontWeight: 600, width: '15%' }}>Means of Verification (MoV)</th>
+                  <th style={{ color: '#ffffff', padding: '12px 16px', fontWeight: 600, width: '20%' }}>Assumptions & Risks</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {/* GOAL */}
+                <tr className="bg-red-50/30">
+                  <td className="py-3 px-4 font-bold text-[#B91C1C] border-r border-gray-200">GOAL (Impact)</td>
+                  <td className="py-3 px-4 border-r border-gray-200">
+                    <div className="text-gray-800">{goalNarrative || <span className="text-gray-400 italic">Reference Goal from Simulation</span>}</div>
+                  </td>
+                  <td className="py-3 px-4 border-r border-gray-200 text-xs">
+                    {lfaData?.goal?.indicators?.map((i, idx) => <div key={idx}>• {i}</div>)}
+                  </td>
+                  <td className="py-3 px-4 border-r border-gray-200 text-xs">
+                    {lfaData?.goal?.means_of_verification?.map((m, idx) => <div key={idx}>• {m}</div>)}
+                  </td>
+                  <td className="py-3 px-4 text-xs italic text-gray-600">
+                    {lfaData?.goal?.assumptions_risks?.map((r, idx) => <div key={idx}>• {r}</div>)}
+                  </td>
+                </tr>
 
-                  {/* OUTCOMES */}
+                {/* OUTCOMES - Dynamic Mapping */}
+                {lfaData?.outcomes?.length ? (
+                  lfaData.outcomes.map((item, i) => (
+                    <tr key={`outcome-${i}`} className="bg-emerald-50/30">
+                      <td className="py-3 px-4 font-bold text-[#047857] border-r border-gray-200">
+                        {i === 0 ? 'OUTCOMES (Practice)' : ''}
+                      </td>
+                      <td className="py-3 px-4 border-r border-gray-200">
+                        <div className="text-gray-800">{item.narrative}</div>
+                      </td>
+                      <td className="py-3 px-4 border-r border-gray-200 text-xs">
+                        {item.indicators?.map((ind, k) => <div key={k}>• {ind}</div>)}
+                      </td>
+                      <td className="py-3 px-4 border-r border-gray-200 text-xs">
+                        {item.means_of_verification?.map((mov, k) => <div key={k}>• {mov}</div>)}
+                      </td>
+                      <td className="py-3 px-4 text-xs italic text-gray-600">
+                        {item.assumptions_risks?.map((r, k) => <div key={k}>• {r}</div>)}
+                      </td>
+                    </tr>
+                  ))
+                ) : (
                   <tr className="bg-emerald-50/30">
                     <td className="py-3 px-4 font-bold text-[#047857] border-r border-gray-200">OUTCOMES (Practice)</td>
-                    <td className="py-3 px-4 border-r border-gray-200">
-                      <div className="font-semibold mb-1">Teachers adopt activity-based pedagogy.</div>
-                      <div className="text-gray-600 text-xs">Teachers shift from rote learning to using TLM and targeted teaching (TaRL) daily.</div>
-                    </td>
-                    <td className="py-3 px-4 border-r border-gray-200 text-xs">
-                      {lfaData.outcomes?.length > 0 && lfaData.outcomes[0].indicators?.length ? lfaData.outcomes[0].indicators.map((i, idx) => <div key={idx}>• {i}</div>) :
-                        <>
-                          <div>• % of Teachers scoring &gt;3 on Pedagogy Observation Tool.</div>
-                          <div>• % of classrooms with functional Library Corners.</div>
-                        </>
-                      }
-                    </td>
-                    <td className="py-3 px-4 border-r border-gray-200 text-xs">
-                      <div>• Classroom Observation App Data</div>
-                      <div>• Monthly Cluster Review Minutes</div>
-                    </td>
-                    <td className="py-3 px-4 text-xs italic text-gray-600">
-                      <div>Risk: Trained teachers are transferred out.</div>
-                      <div>Assumption: Teachers accept the new method.</div>
-                    </td>
+                    <td className="py-3 px-4 border-r border-gray-200 text-gray-400 italic">No outcomes defined</td>
+                    <td className="py-3 px-4 border-r border-gray-200"></td>
+                    <td className="py-3 px-4 border-r border-gray-200"></td>
+                    <td className="py-3 px-4"></td>
                   </tr>
+                )}
 
-                  {/* OUTPUTS */}
+                {/* OUTPUTS - Dynamic Mapping */}
+                {lfaData?.outputs?.length ? (
+                  lfaData.outputs.map((item, i) => (
+                    <tr key={`output-${i}`} className="bg-amber-50/30">
+                      <td className="py-3 px-4 font-bold text-[#B45309] border-r border-gray-200">
+                        {i === 0 ? 'OUTPUTS (Deliverables)' : ''}
+                      </td>
+                      <td className="py-3 px-4 border-r border-gray-200 text-sm">
+                        <div className="text-gray-800">{item.narrative}</div>
+                      </td>
+                      <td className="py-3 px-4 border-r border-gray-200 text-xs">
+                        {item.indicators?.map((ind, k) => <div key={k}>• {ind}</div>)}
+                      </td>
+                      <td className="py-3 px-4 border-r border-gray-200 text-xs">
+                        {item.means_of_verification?.map((mov, k) => <div key={k}>• {mov}</div>)}
+                      </td>
+                      <td className="py-3 px-4 text-xs italic text-gray-600">
+                        {item.assumptions_risks?.map((r, k) => <div key={k}>• {r}</div>)}
+                      </td>
+                    </tr>
+                  ))
+                ) : (
                   <tr className="bg-amber-50/30">
                     <td className="py-3 px-4 font-bold text-[#B45309] border-r border-gray-200">OUTPUTS (Deliverables)</td>
-                    <td className="py-3 px-4 border-r border-gray-200 text-sm">
-                      <ol className="list-decimal list-inside space-y-1">
-                        <li>Capacity Building: Teachers trained.</li>
-                        <li>Resources: TLM Kits distributed.</li>
-                        <li>Monitoring: CRCCs conduct visits.</li>
-                      </ol>
-                    </td>
-                    <td className="py-3 px-4 border-r border-gray-200 text-xs">
-                      <div>• # of Teachers certified.</div>
-                      <div>• # of FLN Kits distributed.</div>
-                      <div>• # of CRCC visits conducted/month.</div>
-                    </td>
-                    <td className="py-3 px-4 border-r border-gray-200 text-xs">
-                      <div>• Training Attendance Register</div>
-                      <div>• Stock Receipt Vouchers</div>
-                      <div>• Visiting Officer App Log</div>
-                    </td>
-                    <td className="py-3 px-4 text-xs italic text-gray-600">
-                      <div>Assumption: Master Trainers are available.</div>
-                      <div>Assumption: Vendors supply kits on time.</div>
-                    </td>
+                    <td className="py-3 px-4 border-r border-gray-200 text-gray-400 italic">No outputs defined</td>
+                    <td className="py-3 px-4 border-r border-gray-200"></td>
+                    <td className="py-3 px-4 border-r border-gray-200"></td>
+                    <td className="py-3 px-4"></td>
                   </tr>
+                )}
 
-                  {/* ACTIVITIES */}
-                  <tr className="bg-white">
-                    <td className="py-3 px-4 font-bold text-[#4B5563] border-r border-gray-200">ACTIVITIES (Inputs)</td>
-                    <td className="py-3 px-4 border-r border-gray-200 text-sm">
+                {/* ACTIVITIES - Dynamic Mapping */}
+                <tr className="bg-white">
+                  <td className="py-3 px-4 font-bold text-[#4B5563] border-r border-gray-200">ACTIVITIES (Inputs)</td>
+                  <td className="py-3 px-4 border-r border-gray-200 text-sm">
+                    {lfaData?.activities?.length ? (
                       <ul className="list-disc list-inside space-y-1">
-                        {lfaData.activities?.slice(0, 4).map((a, i) => <li key={i}>{a.narrative}</li>)}
-                        {(!lfaData.activities || lfaData.activities.length === 0) && (
-                          <>
-                            <li>Conduct 4-day Residential Training.</li>
-                            <li>Procure & Distribute Math Kits.</li>
-                            <li>Hold Monthly "Shiksha Chaupal".</li>
-                          </>
-                        )}
-                        <li className="font-semibold mt-2">Budget: INR [Amount]</li>
-                        <li className="font-semibold">Timeline: [Dates]</li>
+                        {lfaData.activities.map((a, i) => <li key={i}>{a.narrative}</li>)}
                       </ul>
-                    </td>
-                    <td className="py-3 px-4 border-r border-gray-200 text-xs bg-gray-50 text-center text-gray-500 italic">
-                      N/A (Inputs)
-                    </td>
-                    <td className="py-3 px-4 border-r border-gray-200 text-xs">
-                      <div>• Utilization Certificates (UC)</div>
-                      <div>• Invoices</div>
-                    </td>
-                    <td className="py-3 px-4 text-xs italic text-gray-600">
-                      <div>Risk: Funds release delayed.</div>
-                    </td>
-                  </tr>
+                    ) : (
+                      <div className="text-gray-400 italic">No activities defined</div>
+                    )}
+                  </td>
+                  <td className="py-3 px-4 border-r border-gray-200 text-xs bg-gray-50 text-center text-gray-500 italic">
+                    N/A (Inputs)
+                  </td>
+                  <td className="py-3 px-4 border-r border-gray-200 text-xs">
+                    {/* Activities MoV */}
+                  </td>
+                  <td className="py-3 px-4 text-xs italic text-gray-600">
+                    {/* Risk for activities */}
+                  </td>
+                </tr>
 
-
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <div className="text-center py-12 bg-gray-50 border border-dashed border-gray-300 rounded-lg text-gray-500">
-              Run simulation to generate the FLN LogFrame Matrix.
-            </div>
-          )}
+              </tbody>
+            </table>
+          </div>
 
         </section>
 
@@ -567,24 +554,30 @@ function LFADocumentPreview({
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 bg-white">
-                {/* Teacher Row */}
-                <tr className="hover:bg-gray-50">
-                  <td className="py-3 px-4 font-bold text-gray-900">Teacher</td>
-                  <td className="py-3 px-4 text-red-600 bg-red-50/30">"Completing the Syllabus" (Rote)</td>
-                  <td className="py-3 px-4 text-green-600 bg-green-50/30 font-semibold">"Teaching at the Right Level" (Activity)</td>
-                </tr>
-                {/* CRCC Row */}
-                <tr className="hover:bg-gray-50">
-                  <td className="py-3 px-4 font-bold text-gray-900">CRCC</td>
-                  <td className="py-3 px-4 text-red-600 bg-red-50/30">Inspection / Fault-finding</td>
-                  <td className="py-3 px-4 text-green-600 bg-green-50/30 font-semibold">Academic Mentoring / Demo Lessons</td>
-                </tr>
-                {/* Parent Row */}
-                <tr className="hover:bg-gray-50">
-                  <td className="py-3 px-4 font-bold text-gray-900">Parent</td>
-                  <td className="py-3 px-4 text-red-600 bg-red-50/30">Disengaged from learning</td>
-                  <td className="py-3 px-4 text-green-600 bg-green-50/30 font-semibold">Ensures 15-min reading at home</td>
-                </tr>
+                {shiftNodes.length > 0 ? (
+                  shiftNodes.map((node, i) => {
+                    const d = node.data;
+                    const actor = d.actor || "Stakeholder";
+                    const fromBehavior = d.from_behavior || "Current behavior";
+                    const toBehavior = d.to_behavior || "Desired behavior";
+                    return (
+                      <tr key={i} className="hover:bg-gray-50">
+                        <td className="py-3 px-4 font-bold text-gray-900">{actor}</td>
+                        <td className="py-3 px-4 text-red-600 bg-red-50/30">{fromBehavior}</td>
+                        <td className="py-3 px-4 text-green-600 bg-green-50/30 font-semibold flex items-center gap-2">
+                          <ArrowRight className="w-3 h-3 text-green-400" />
+                          {toBehavior}
+                        </td>
+                      </tr>
+                    );
+                  })
+                ) : (
+                  <tr>
+                    <td colSpan={3} className="py-8 text-center text-gray-400 italic">
+                      No matching actors or shifts found. Add "Pedagogy Shift" nodes.
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
