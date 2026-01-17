@@ -72,9 +72,9 @@ export default function LogicPreview({
       const response = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/ai-audit`, {
         graphData: { nodes: canvasNodes, edges: canvasEdges },
         projectContext: {
-          mode: missionData?.domain === 'Employment' ? 'Career' : 'FLN', // Simple heuristic mapping
+          mode: missionData?.domain === 'Career Readiness' ? 'Career' : 'FLN',
           region: missionData?.state || 'Bihar',
-          problemStatement: canvasNodes.find(n => n.type === 'problem')?.data?.label || ''
+          problemStatement: missionData?.outcome || canvasNodes.find(n => n.type === 'problem')?.data?.label || ''
         }
       });
       setAuditResult(response.data);

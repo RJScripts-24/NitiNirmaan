@@ -14,6 +14,8 @@ interface AuditResult {
     summary: string;
     critical_gaps: string[];
     warnings: string[];
+    missing_nodes?: string[];
+    needs_detailing?: string[];
     regional_insights: string[];
     suggestions: string[];
 }
@@ -28,7 +30,6 @@ interface AiInsightsPanelProps {
 export function AiInsightsPanel({ isOpen, onClose, isLoading, auditResult }: AiInsightsPanelProps) {
     if (!isOpen) return null;
 
-    // Helper to determine score color
     const getScoreColor = (score: number) => {
         if (score >= 80) return 'text-[#22c55e]';
         if (score >= 50) return 'text-[#eab308]';
@@ -36,9 +37,9 @@ export function AiInsightsPanel({ isOpen, onClose, isLoading, auditResult }: AiI
     };
 
     return (
-        <div className="fixed inset-y-0 right-0 w-[450px] bg-[#0F1216] shadow-2xl z-50 transform transition-transform duration-300 ease-in-out border-l border-[#1F2937] flex flex-col font-sans">
+        <div className="fixed inset-y-0 right-0 w-[450px] bg-[#0F1216] shadow-2xl z-50 border-l border-[#1F2937] flex flex-col font-sans">
             {/* Header */}
-            <div className="p-6 border-b border-[#1F2937] flex items-center justify-between bg-[#171B21]">
+            <div className="p-6 border-b border-[#1F2937] flex items-center justify-between bg-[#171B21] shrink-0">
                 <div className="flex items-center gap-3">
                     <div className="p-2 bg-[#1F2937] rounded-lg border border-[#374151]/50">
                         <Lightbulb className="w-5 h-5 text-[#818CF8]" />
@@ -48,13 +49,20 @@ export function AiInsightsPanel({ isOpen, onClose, isLoading, auditResult }: AiI
                         <p className="text-xs text-[#9CA3AF] font-medium tracking-wide uppercase">Niti Aayog Impact Lens</p>
                     </div>
                 </div>
-                <Button variant="ghost" size="icon" onClick={onClose} className="hover:bg-[#1F2937] text-[#9CA3AF] hover:text-[#E5E7EB] rounded-full h-8 w-8 transition-colors">
+                <Button variant="ghost" size="icon" onClick={onClose} className="hover:bg-[#1F2937] text-[#9CA3AF] hover:text-[#E5E7EB] rounded-full h-8 w-8">
                     <X className="w-4 h-4" />
                 </Button>
             </div>
 
-            {/* Content */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-8 scrollbar-thin scrollbar-thumb-[#374151] scrollbar-track-transparent">
+            {/* Content - Scrollable */}
+            <div
+                className="overflow-y-auto p-6 space-y-8"
+                style={{
+                    height: 'calc(100vh - 140px)',
+                    scrollbarWidth: 'thin',
+                    scrollbarColor: '#6B7280 #1F2937'
+                }}
+            >
                 {isLoading ? (
                     <div className="space-y-6 animate-pulse px-4">
                         <div className="h-32 bg-[#1F2937] rounded-full w-32 mx-auto opacity-50"></div>
@@ -103,9 +111,27 @@ export function AiInsightsPanel({ isOpen, onClose, isLoading, auditResult }: AiI
                                 </h3>
                                 <div className="space-y-2">
                                     {auditResult.critical_gaps.map((gap, i) => (
-                                        <div key={i} className="p-3 bg-[#7F1D1D]/10 border border-[#7F1D1D]/30 rounded-lg text-sm text-[#FCA5A5] flex gap-3 items-start hover:bg-[#7F1D1D]/20 transition-colors">
-                                            <div className="w-1.5 h-1.5 rounded-full bg-[#EF4444] mt-1.5 flex-shrink-0 shadow-[0_0_8px_rgba(239,68,68,0.5)]"></div>
+                                        <div key={i} className="p-3 bg-[#7F1D1D]/10 border border-[#7F1D1D]/30 rounded-lg text-sm text-[#FCA5A5] flex gap-3 items-start">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-[#EF4444] mt-1.5 flex-shrink-0"></div>
                                             <span className="leading-relaxed">{gap}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Missing Nodes */}
+                        {auditResult.missing_nodes && auditResult.missing_nodes.length > 0 && (
+                            <div className="space-y-3">
+                                <h3 className="text-xs font-bold text-[#F97316] flex items-center gap-2 uppercase tracking-wide px-1">
+                                    <AlertTriangle className="w-4 h-4" />
+                                    Missing Components
+                                </h3>
+                                <div className="space-y-2">
+                                    {auditResult.missing_nodes.map((node, i) => (
+                                        <div key={i} className="p-3 bg-[#7C2D12]/10 border border-dashed border-[#7C2D12]/30 rounded-lg text-sm text-[#FDBA74] flex gap-3 items-start">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-[#F97316] mt-1.5 flex-shrink-0"></div>
+                                            <span className="leading-relaxed">{node}</span>
                                         </div>
                                     ))}
                                 </div>
@@ -121,9 +147,27 @@ export function AiInsightsPanel({ isOpen, onClose, isLoading, auditResult }: AiI
                                 </h3>
                                 <div className="space-y-2">
                                     {auditResult.warnings.map((warn, i) => (
-                                        <div key={i} className="p-3 bg-[#78350F]/10 border border-[#78350F]/30 rounded-lg text-sm text-[#FDE68A] flex gap-3 items-start hover:bg-[#78350F]/20 transition-colors">
-                                            <div className="w-1.5 h-1.5 rounded-full bg-[#F59E0B] mt-1.5 flex-shrink-0 shadow-[0_0_8px_rgba(245,158,11,0.5)]"></div>
+                                        <div key={i} className="p-3 bg-[#78350F]/10 border border-[#78350F]/30 rounded-lg text-sm text-[#FDE68A] flex gap-3 items-start">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-[#F59E0B] mt-1.5 flex-shrink-0"></div>
                                             <span className="leading-relaxed">{warn}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Needs Detailing */}
+                        {auditResult.needs_detailing && auditResult.needs_detailing.length > 0 && (
+                            <div className="space-y-3">
+                                <h3 className="text-xs font-bold text-[#60A5FA] flex items-center gap-2 uppercase tracking-wide px-1">
+                                    <Lightbulb className="w-4 h-4" />
+                                    Needs Detailing
+                                </h3>
+                                <div className="space-y-2">
+                                    {auditResult.needs_detailing.map((detail, i) => (
+                                        <div key={i} className="p-3 bg-[#1E3A8A]/10 border border-[#1E3A8A]/30 rounded-lg text-sm text-[#93C5FD] flex gap-3 items-start">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-[#3B82F6] mt-1.5 flex-shrink-0"></div>
+                                            <span className="leading-relaxed">{detail}</span>
                                         </div>
                                     ))}
                                 </div>
@@ -132,14 +176,12 @@ export function AiInsightsPanel({ isOpen, onClose, isLoading, auditResult }: AiI
 
                         {/* Regional Insights */}
                         {auditResult.regional_insights.length > 0 && (
-                            <div className="p-4 bg-[#1E3A8A]/10 border border-[#1E3A8A]/30 rounded-xl space-y-3 relative overflow-hidden group">
-                                <div className="absolute top-0 right-0 w-16 h-16 bg-[#3B82F6]/5 rounded-full blur-xl -mr-8 -mt-8"></div>
-
-                                <h3 className="text-xs font-bold text-[#60A5FA] flex items-center gap-2 uppercase tracking-wide relative z-10">
+                            <div className="p-4 bg-[#1E3A8A]/10 border border-[#1E3A8A]/30 rounded-xl space-y-3 relative overflow-hidden">
+                                <h3 className="text-xs font-bold text-[#60A5FA] flex items-center gap-2 uppercase tracking-wide">
                                     <Target className="w-4 h-4" />
                                     Regional Context Check
                                 </h3>
-                                <div className="space-y-2 relative z-10">
+                                <div className="space-y-2">
                                     {auditResult.regional_insights.map((insight, i) => (
                                         <div key={i} className="flex gap-3 text-sm text-[#BFDBFE]">
                                             <CheckCircle2 className="w-4 h-4 text-[#3B82F6] mt-0.5 flex-shrink-0" />
@@ -158,9 +200,9 @@ export function AiInsightsPanel({ isOpen, onClose, isLoading, auditResult }: AiI
                                 </h3>
                                 <div className="space-y-3">
                                     {auditResult.suggestions.map((sugg, i) => (
-                                        <div key={i} className="p-4 bg-[#1F2937]/30 rounded-lg border border-[#374151]/50 flex items-center justify-between group hover:border-[#6366F1]/50 hover:bg-[#1F2937]/50 transition-all duration-200">
-                                            <span className="text-sm text-[#9CA3AF] group-hover:text-[#D1D5DB] leading-relaxed pr-4">{sugg}</span>
-                                            <Button size="sm" variant="outline" className="h-7 text-[10px] border border-[#374151] bg-[#111827] text-[#9CA3AF] hover:text-[#818CF8] hover:border-[#818CF8]/50 hover:bg-[#1F2937] transition-all ml-2 whitespace-nowrap font-medium tracking-wide uppercase">
+                                        <div key={i} className="p-4 bg-[#1F2937]/30 rounded-lg border border-[#374151]/50 flex items-center justify-between">
+                                            <span className="text-sm text-[#9CA3AF] leading-relaxed pr-4">{sugg}</span>
+                                            <Button size="sm" variant="outline" className="h-7 text-[10px] border border-[#374151] bg-[#111827] text-[#9CA3AF] hover:text-[#818CF8] hover:border-[#818CF8]/50 ml-2 whitespace-nowrap font-medium tracking-wide uppercase">
                                                 Fix It
                                             </Button>
                                         </div>
@@ -180,7 +222,7 @@ export function AiInsightsPanel({ isOpen, onClose, isLoading, auditResult }: AiI
             </div>
 
             {/* Footer */}
-            <div className="px-6 py-4 border-t border-[#1F2937] bg-[#0F1216] text-center">
+            <div className="px-6 py-4 border-t border-[#1F2937] bg-[#0F1216] text-center shrink-0">
                 <p className="text-[10px] text-[#4B5563] uppercase tracking-wider font-medium">Powered by Groq & Llama 3</p>
             </div>
         </div>

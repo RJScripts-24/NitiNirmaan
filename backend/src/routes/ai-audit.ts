@@ -32,29 +32,42 @@ aiAuditRouter.post('/', async (req, res) => {
 
         console.log(`📊 [ai-audit] Context: Mode=${mode}, Region=${region}`);
 
-        const systemPrompt = `You are a Senior Monitoring & Evaluation (M&E) Expert for Niti Aayog. Your job is to audit a program design Logic Model.
+        const systemPrompt = `You are a Senior Monitoring & Evaluation (M&E) "Program Architect" for Niti Aayog. Your job is to perform a deep logic audit of a program design graph (Logic Model).
+Your goal is to be CRITICAL and CONSTRUCTIVE. You must identify what is MISSING just as much as what is wrong.
 
-Rules:
-1. Check the Logic Chain: Flag any 'Magical Jumps' (e.g., Input connected directly to Impact without an Outcome/Practice Change).
-2. Check Stakeholders: 
-   - If Mode is 'FLN' and Region is 'Bihar', complain if 'Jeevika' or 'CRCC' is missing. 
-   - If Mode is 'Career', complain if 'Employer' linkage is missing.
-3. Check Feasibility: If the problem is 'huge' (e.g. millions of students) but resources are 'tiny' (e.g. 2 volunteers), flag a Risk.
-
-Input Context:
-- Mode: ${mode}
+CONTEXT:
+- Mode: ${mode} (FLN = Foundational Literacy & Numeracy; Career = School-to-Work/Vocational)
 - Region: ${region}
 - Problem Statement: "${problemStatement}"
 
-Output Format (Strict JSON):
+DEEP AUDIT RULES:
+1. PROBLEM ALIGNMENT CHECK: 
+   - Does the graph actually solve the specific "${problemStatement}"? 
+   - If the problem mentions "Teacher Absenteeism" but the graph only has "Student Training", flag a Critical Gap.
+
+2. MISSING NODE DETECTION (Domain Specific):
+   - If Mode is 'FLN': Look for 'Teacher Training', 'TLM Distribution', 'Community/Jeevika Engagement', 'Pedagogy Shift' nodes. If missing, flag them.
+   - If Mode is 'Career': Look for 'Industry Partnership', 'Skill Gap Analysis', 'Job Fair/Placement' nodes. If missing, flag them.
+   - If Region is 'Bihar': Check for 'Jeevika' (Self Help Groups) or 'CRCC' involvement.
+
+3. DETAILING CHECK:
+   - Identify nodes that are too generic (e.g., "Activity 1", "Training", "Meeting").
+   - Identifying nodes disconnected from the main logic flow.
+
+4. LOGIC CHAIN:
+   - Flag "Magical Jumps" (Input -> Impact without Outcomes).
+
+OUTPUT FORMAT (Strict JSON):
 Return a JSON object with this shape:
 {
-  "score": number, // 0-100 logic score
-  "summary": "One sentence summary of the audit.",
-  "critical_gaps": [ "string" ], // Major logic breaks (Red)
-  "warnings": [ "string" ], // Missing best practices (Yellow)
-  "regional_insights": [ "string" ], // Specific to the location (Blue)
-  "suggestions": [ "string" ] // Actionable fixes
+  "score": number, // 0-100. Be strict. <50 if problem statement is ignored.
+  "summary": "2-sentence summary. First sentence on overall logic, second on key missing piece.",
+  "critical_gaps": [ "string" ], // Major logic breaks or missing core components (Red)
+  "warnings": [ "string" ], // Minor issues (Yellow)
+  "missing_nodes": [ "string" ], // Specific suggestions for new nodes to add (Orange). E.g. "Add 'Teacher Training' node"
+  "needs_detailing": [ "string" ], // Nodes that are too vague (Blue). E.g. "'Activity 1' needs specific topic"
+  "regional_insights": [ "string" ], // Specific to the location/context (Purple)
+  "suggestions": [ "string" ] // General improvements
 }`;
 
         const userPrompt = `Audit this Logic Model Graph:
