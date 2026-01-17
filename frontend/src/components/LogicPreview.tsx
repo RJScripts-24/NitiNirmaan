@@ -1,4 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 import ReactFlow, { Background, Node, Edge } from 'reactflow';
 import 'reactflow/dist/style.css';
 import {
@@ -114,6 +116,105 @@ export default function LogicPreview({
     }
     loadOrgDetails();
   }, []);
+
+  const documentRef = useRef<HTMLDivElement>(null);
+
+  const handleExportPDF = async () => {
+    if (!documentRef.current) return;
+
+    try {
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pageWidth = 210;
+      const pageHeight = 297;
+      const margin = 10;
+      const contentWidth = pageWidth - (margin * 2);
+      let currentY = margin;
+
+      // Helper function to inject color overrides
+      const injectColorOverrides = (clonedDoc: Document) => {
+        const style = clonedDoc.createElement('style');
+        style.innerHTML = `
+          :root, :host {
+            --color-gray-50: #f9fafb; --color-gray-100: #f3f4f6; --color-gray-200: #e5e7eb;
+            --color-gray-300: #d1d5db; --color-gray-400: #9ca3af; --color-gray-500: #6b7280;
+            --color-gray-600: #4b5563; --color-gray-700: #374151; --color-gray-800: #1f2937;
+            --color-gray-900: #111827; --color-red-50: #fef2f2; --color-red-100: #fee2e2;
+            --color-red-500: #ef4444; --color-red-600: #dc2626; --color-emerald-50: #ecfdf5;
+            --color-emerald-500: #10b981; --color-emerald-600: #059669; --color-green-50: #f0fdf4;
+            --color-green-400: #4ade80; --color-green-500: #22c55e; --color-green-600: #16a34a;
+            --color-amber-50: #fffbeb; --color-amber-500: #f59e0b; --color-amber-600: #d97706;
+            --color-blue-100: #dbeafe; --color-blue-600: #2563eb; --color-blue-800: #1e40af;
+            --color-indigo-600: #4f46e5;
+          }
+        `;
+        clonedDoc.head.appendChild(style);
+      };
+
+      // Get all sections in the document
+      const sections = documentRef.current.querySelectorAll('[data-pdf-section]');
+
+      if (sections.length === 0) {
+        // Fallback: capture entire document if no sections found
+        const canvas = await html2canvas(documentRef.current, {
+          scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff',
+          onclone: injectColorOverrides
+        });
+        const imgData = canvas.toDataURL('image/png');
+        const imgHeight = (canvas.height * contentWidth) / canvas.width;
+        pdf.addImage(imgData, 'PNG', margin, margin, contentWidth, imgHeight);
+      } else {
+        // Capture each section individually
+        for (let i = 0; i < sections.length; i++) {
+          const section = sections[i] as HTMLElement;
+
+          const canvas = await html2canvas(section, {
+            scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff',
+            onclone: injectColorOverrides
+          });
+
+          const imgData = canvas.toDataURL('image/png');
+          const imgHeight = (canvas.height * contentWidth) / canvas.width;
+
+          // Check if section fits on current page
+          if (currentY + imgHeight > pageHeight - margin) {
+            // Start new page if section doesn't fit
+            pdf.addPage();
+            currentY = margin;
+          }
+
+          // Add section image to PDF
+          pdf.addImage(imgData, 'PNG', margin, currentY, contentWidth, imgHeight);
+          currentY += imgHeight + 5; // Add small gap between sections
+        }
+      }
+
+      pdf.save(`${missionData?.projectName || 'LFA_Document'}.pdf`);
+    } catch (err) {
+      console.error("PDF Export failed", err);
+    }
+  };
+
+  const handleExportWord = () => {
+    if (!documentRef.current) return;
+
+    // Basic HTML content extraction with styles needed for Word
+    const header = "<html xmlns:o='urn:schemas-microsoft-com:office:office' " +
+      "xmlns:w='urn:schemas-microsoft-com:office:word' " +
+      "xmlns='http://www.w3.org/TR/REC-html40'> <head><meta charset='utf-8'><title>LFA Document</title>" +
+      "<style>table { border-collapse: collapse; width: 100%; } td, th { border: 1px solid #999; padding: 5px; } </style>" +
+      "</head><body>";
+    const footer = "</body></html>";
+    const sourceHTML = header + documentRef.current.innerHTML + footer;
+
+    const source = 'data:application/vnd.ms-word;charset=utf-8,' + encodeURIComponent(sourceHTML);
+    const fileDownload = document.createElement("a");
+    document.body.appendChild(fileDownload);
+    fileDownload.href = source;
+    fileDownload.download = `${missionData?.projectName || 'LFA_Document'}.doc`;
+    fileDownload.click();
+    document.body.removeChild(fileDownload);
+  };
+
 
   // Use Mission Data if available, else prop, else default
   const displayProjectName = missionData?.projectName || projectName;
@@ -276,26 +377,28 @@ export default function LogicPreview({
 
           {/* Document Content */}
           <div className="flex-1 overflow-auto p-6">
-            <LFADocumentPreview
-              hoveredNode={hoveredNode}
-              onSectionHover={setHoveredSection}
-              lfaData={lfaData}
-              missionData={missionData}
-              shortcomings={shortcomings}
-              canvasNodes={canvasNodes}
-              orgName={orgDetails?.name}
-              orgLogo={orgDetails?.logo}
-            />
+            <div ref={documentRef} className="bg-white p-4">
+              <LFADocumentPreview
+                hoveredNode={hoveredNode}
+                onSectionHover={setHoveredSection}
+                lfaData={lfaData}
+                missionData={missionData}
+                shortcomings={shortcomings}
+                canvasNodes={canvasNodes}
+                orgName={orgDetails?.name}
+                orgLogo={orgDetails?.logo}
+              />
+            </div>
           </div>
 
           {/* Export Actions - Bottom Right */}
           <div className="px-8 py-4 bg-white border-t border-[#D1D5DB]">
             <div className="flex items-center gap-3">
-              <Button className="flex items-center gap-2 px-4 py-2 bg-[#D97706] text-white rounded font-medium hover:bg-[#B45309] transition-colors h-auto border-none shadow-none">
+              <Button onClick={handleExportPDF} className="flex items-center gap-2 px-4 py-2 bg-[#D97706] text-white rounded font-medium hover:bg-[#B45309] transition-colors h-auto border-none shadow-none">
                 <Download className="w-4 h-4" />
                 Export to PDF
               </Button>
-              <Button variant="outline" className="flex items-center gap-2 px-4 py-2 bg-white text-[#1F2937] border border-[#D1D5DB] rounded font-medium hover:bg-[#F9FAFB] transition-colors h-auto shadow-none">
+              <Button onClick={handleExportWord} variant="outline" className="flex items-center gap-2 px-4 py-2 bg-white text-[#1F2937] border border-[#D1D5DB] rounded font-medium hover:bg-[#F9FAFB] transition-colors h-auto shadow-none">
                 <FileText className="w-4 h-4" />
                 Export to Word
               </Button>
@@ -343,7 +446,7 @@ function LFADocumentPreview({
   // --- Data Maps ---
   const projectName = missionData?.projectName || 'Project Name';
   const geography = (missionData?.state || missionData?.district)
-    ? `${missionData.district || ''}${missionData.district && missionData.state ? ', ' : ''}${missionData.state || ''}`
+    ? `${missionData.district || ''}${missionData.district && missionData.state ? ', ' : ''}${missionData.state || ''} `
     : 'Not defined';
   const domain = missionData?.domain || 'Not defined';
   const goalNarrative = missionData?.outcome || lfaData?.goal?.narrative || 'Not defined';
@@ -391,7 +494,7 @@ function LFADocumentPreview({
         </div>
 
         {/* --- Section 1: Program Identity (Header) --- */}
-        <section className="mb-10 border-b-2 border-gray-100 pb-6">
+        <section data-pdf-section="program-identity" className="mb-10 border-b-2 border-gray-100 pb-6">
           <h2 className="text-xl font-bold text-[#111827] mb-6 border-l-4 border-[#047857] pl-3">1. Program Identity</h2>
           <div className="grid grid-cols-2 gap-y-4 gap-x-8 text-sm">
             <div>
@@ -418,7 +521,7 @@ function LFADocumentPreview({
         </section>
 
         {/* --- Section 2: The FLN LogFrame Matrix --- */}
-        <section className="mb-10">
+        <section data-pdf-section="logframe-matrix" className="mb-10">
           <h2 className="text-xl font-bold text-[#111827] mb-6 border-l-4 border-[#B91C1C] pl-3">2. The FLN LogFrame Matrix</h2>
 
           <div className="border border-gray-300 rounded overflow-hidden">
@@ -453,7 +556,7 @@ function LFADocumentPreview({
                 {/* OUTCOMES - Dynamic Mapping */}
                 {lfaData?.outcomes?.length ? (
                   lfaData.outcomes.map((item, i) => (
-                    <tr key={`outcome-${i}`} className="bg-emerald-50/30">
+                    <tr key={`outcome - ${i} `} className="bg-emerald-50/30">
                       <td className="py-3 px-4 font-bold text-[#047857] border-r border-gray-200">
                         {i === 0 ? 'OUTCOMES (Practice)' : ''}
                       </td>
@@ -484,7 +587,7 @@ function LFADocumentPreview({
                 {/* OUTPUTS - Dynamic Mapping */}
                 {lfaData?.outputs?.length ? (
                   lfaData.outputs.map((item, i) => (
-                    <tr key={`output-${i}`} className="bg-amber-50/30">
+                    <tr key={`output - ${i} `} className="bg-amber-50/30">
                       <td className="py-3 px-4 font-bold text-[#B45309] border-r border-gray-200">
                         {i === 0 ? 'OUTPUTS (Deliverables)' : ''}
                       </td>
@@ -542,7 +645,7 @@ function LFADocumentPreview({
         </section>
 
         {/* --- Section 3: FLN Stakeholder Shift Map --- */}
-        <section>
+        <section data-pdf-section="stakeholder-shift">
           <h2 className="text-xl font-bold text-[#111827] mb-6 border-l-4 border-blue-600 pl-3">3. FLN Stakeholder Shift Map</h2>
           <div className="overflow-hidden rounded-lg border border-gray-200 shadow-sm">
             <table className="w-full text-sm text-left">
@@ -595,7 +698,7 @@ function LFADocumentPreview({
     <div className="bg-white rounded shadow-sm p-10 text-[#1F2937] max-w-4xl mx-auto font-sans">
 
       {/* --- Section 1: Program Identity --- */}
-      <section className="mb-10 border-b-2 border-gray-100 pb-6">
+      <section data-pdf-section="program-identity" className="mb-10 border-b-2 border-gray-100 pb-6">
         <h1 className="text-2xl font-bold text-[#111827] mb-6">Program Identity</h1>
 
         {/* Org Header Integration */}
@@ -640,7 +743,7 @@ function LFADocumentPreview({
       </section>
 
       {/* --- Section 2: Narrative Logic --- */}
-      <section className="mb-10 border-b-2 border-gray-100 pb-6">
+      <section data-pdf-section="narrative-logic" className="mb-10 border-b-2 border-gray-100 pb-6">
         <h2 className="text-xl font-bold text-[#111827] mb-6">Narrative Logic</h2>
 
         <div className="mb-6">
@@ -665,7 +768,7 @@ function LFADocumentPreview({
       </section>
 
       {/* --- Section 3: Master LogFrame Matrix --- */}
-      <section className="mb-10">
+      <section data-pdf-section="logframe-matrix" className="mb-10">
         <h2 className="text-xl font-bold text-[#111827] mb-6">Master LogFrame Matrix</h2>
 
         {lfaData ? (
@@ -692,7 +795,7 @@ function LFADocumentPreview({
 
                 {/* Outcomes */}
                 {lfaData.outcomes.length > 0 ? lfaData.outcomes.map((item, i) => (
-                  <tr key={`outcome-${i}`} className="bg-emerald-50/30 hover:bg-emerald-50/60">
+                  <tr key={`outcome - ${i} `} className="bg-emerald-50/30 hover:bg-emerald-50/60">
                     <td className="py-3 px-4 font-bold text-[#047857]">{i === 0 ? 'Outcomes (Behavior)' : ''}</td>
                     <td className="py-3 px-4 text-gray-800">{item.narrative}</td>
                     <td className="py-3 px-4 text-gray-600">{item.indicators?.join('; ')}</td>
@@ -708,7 +811,7 @@ function LFADocumentPreview({
 
                 {/* Outputs */}
                 {lfaData.outputs.length > 0 ? lfaData.outputs.map((item, i) => (
-                  <tr key={`output-${i}`} className="bg-amber-50/30 hover:bg-amber-50/60">
+                  <tr key={`output - ${i} `} className="bg-amber-50/30 hover:bg-amber-50/60">
                     <td className="py-3 px-4 font-bold text-[#B45309]">{i === 0 ? 'Outputs (Deliverables)' : ''}</td>
                     <td className="py-3 px-4 text-gray-800">{item.narrative}</td>
                     <td className="py-3 px-4 text-gray-600">{item.indicators?.join('; ')}</td>
@@ -719,7 +822,7 @@ function LFADocumentPreview({
 
                 {/* Activities */}
                 {lfaData.activities.length > 0 ? lfaData.activities.map((item, i) => (
-                  <tr key={`activity-${i}`} className="bg-white hover:bg-gray-50">
+                  <tr key={`activity - ${i} `} className="bg-white hover:bg-gray-50">
                     <td className="py-3 px-4 font-bold text-[#4B5563]">{i === 0 ? 'Activities (Tasks)' : ''}</td>
                     <td className="py-3 px-4 text-gray-800">{item.narrative}</td>
                     <td className="py-3 px-4 text-gray-600">{item.indicators?.join('; ')}</td>
@@ -738,7 +841,7 @@ function LFADocumentPreview({
       </section>
 
       {/* --- Section 3: Career Stakeholder Shift Map --- */}
-      <section>
+      <section data-pdf-section="stakeholder-shift">
         <h2 className="text-xl font-bold text-[#111827] mb-6 border-l-4 border-indigo-600 pl-3">3. Career Stakeholder Shift Map</h2>
         <div className="overflow-hidden rounded-lg border border-gray-200 shadow-sm">
           <table className="w-full text-sm text-left">
