@@ -3,6 +3,7 @@ import { Plus, Book, Bell, Settings, User, MoreVertical, Search } from 'lucide-r
 import { Button } from "@/components/ui/button";
 import NoiseBackground from './NoiseBackground';
 import HexagonBackground from './HexagonBackground';
+import Loader from './Loader';
 
 interface DashboardProps {
   onBack?: () => void;
@@ -18,6 +19,7 @@ import { supabase } from '../lib/supabase';
 export default function Dashboard({ onBack, onNavigateToPatterns, onNavigateToInitialize, onNavigateToSettings }: DashboardProps) {
   const [sortBy, setSortBy] = useState('Recently Edited');
   const [showMenu, setShowMenu] = useState<string | null>(null);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
   // Delete State
   const [projectToDelete, setProjectToDelete] = useState<any | null>(null);
@@ -121,53 +123,58 @@ export default function Dashboard({ onBack, onNavigateToPatterns, onNavigateToIn
 
   useEffect(() => {
     const checkAuthAndFetch = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      const token = localStorage.getItem('token');
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const token = localStorage.getItem('token');
 
-      if (session || token) {
-        setIsAuthenticated(true);
-        setIsLoadingProjects(true);
-        try {
-          // Fetch real projects
-          // Using Supabase client directly, assuming RLS allows selecting own projects
-          const { data, error } = await supabase
-            .from('projects')
-            .select('*')
-            .order('created_at', { ascending: false });
+        if (session || token) {
+          setIsAuthenticated(true);
+          setIsLoadingProjects(true);
+          try {
+            // Fetch real projects
+            // Using Supabase client directly, assuming RLS allows selecting own projects
+            const { data, error } = await supabase
+              .from('projects')
+              .select('*')
+              .order('created_at', { ascending: false });
 
-          if (error) throw error;
+            if (error) throw error;
 
-          if (data) {
-            // Map DB projects to Dashboard UI format
-            const mappedProjects = data.map(p => ({
-              id: p.id,
-              name: p.title,
-              status: 'Draft', // Default for now
-              edited: new Date(p.updated_at || p.created_at).toLocaleDateString(),
-              logicHealth: 0, // Need to calculate or store this?
-              statusColor: 'neutral'
-            }));
-            setUserProjects(mappedProjects);
+            if (data) {
+              // Map DB projects to Dashboard UI format
+              const mappedProjects = data.map(p => ({
+                id: p.id,
+                name: p.title,
+                status: 'Draft', // Default for now
+                edited: new Date(p.updated_at || p.created_at).toLocaleDateString(),
+                logicHealth: 0, // Need to calculate or store this?
+                statusColor: 'neutral'
+              }));
+              setUserProjects(mappedProjects);
+            }
+          } catch (err) {
+            console.error('Error fetching projects:', err);
+          } finally {
+            setIsLoadingProjects(false);
           }
-        } catch (err) {
-          console.error('Error fetching projects:', err);
-        } finally {
-          setIsLoadingProjects(false);
+        } else {
+          // Guest Mode
+          setIsAuthenticated(false);
+          const stored = localStorage.getItem('guest_active_project');
+          if (stored) {
+            setGuestProject(JSON.parse(stored));
+          }
         }
-      } else {
-        // Guest Mode
-        setIsAuthenticated(false);
-        const stored = localStorage.getItem('guest_active_project');
-        if (stored) {
-          setGuestProject(JSON.parse(stored));
-        }
+      } catch (e) {
+        console.error("Auth check failed", e);
+      } finally {
+        setIsCheckingAuth(false);
       }
     };
 
     checkAuthAndFetch();
   }, []);
 
-  // Determine which projects to show
   const allProjects = isAuthenticated
     ? userProjects
     : (guestProject ? [{
@@ -179,6 +186,15 @@ export default function Dashboard({ onBack, onNavigateToPatterns, onNavigateToIn
       statusColor: 'neutral',
       isGuest: true
     }, ...mockProjects] : mockProjects);
+
+  if (isCheckingAuth) {
+    return (
+      <div className="min-h-screen bg-[#0F1216]">
+        <NoiseBackground />
+        <Loader />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#0F1216] text-gray-200 relative">
