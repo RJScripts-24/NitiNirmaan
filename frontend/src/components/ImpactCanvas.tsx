@@ -78,6 +78,7 @@ import {
 import { Button } from './ui/button';
 import { supabase } from '../lib/supabase';
 import { useRealtime } from '../hooks/useRealtime';
+import { api } from '../lib/api';
 
 import HexagonBackground from './HexagonBackground';
 import {
@@ -518,20 +519,17 @@ export default function ImpactCanvas({
       setIsSaving(true);
       console.log(`💾 [Auto-Save] Saving to ${activeProjectId} with fresh token`);
 
-      const response = await fetch(`/api/projects/${activeProjectId}/graph`, {
-        method: 'PUT',
+      const response = await api.put(`/api/projects/${activeProjectId}/graph`, {
+        nodes: currentNodes,
+        edges: currentEdges,
+        logicScore: 0
+      }, {
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          nodes: currentNodes,
-          edges: currentEdges,
-          logicScore: 0
-        })
+        }
       });
 
-      if (!response.ok) throw new Error('Failed to auto-save');
+      if (response.status !== 200) throw new Error('Failed to auto-save');
 
       setLastSaved(new Date());
       console.log('✅ [Auto-Save] Saved project graph');
@@ -776,24 +774,17 @@ export default function ImpactCanvas({
       const token = session?.access_token;
 
       // Use the unified backend endpoint
-      const response = await fetch(`/api/simulation/${activeProjectId}`, {
-        method: 'POST',
+      const response = await api.post(`/api/simulation/${activeProjectId}`, {
+        nodes,
+        edges,
+        domain // 'Career Readiness' or 'FLN'
+      }, {
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': token ? `Bearer ${token}` : ''
-        },
-        body: JSON.stringify({
-          nodes,
-          edges,
-          domain // 'Career Readiness' or 'FLN'
-        })
+        }
       });
 
-      if (!response.ok) {
-        throw new Error(`Backend simulation failed: ${response.statusText}`);
-      }
-
-      const result = await response.json();
+      const result = response.data;
       console.log('✅ [Simulation] Backend result:', result);
 
       // Handle the unified result (works for both FLN and Career Readiness)
