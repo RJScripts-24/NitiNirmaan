@@ -847,7 +847,7 @@ export default function ImpactCanvas({
       // Fallback for FLN if backend isn't ready for it (optional, but good for safety)
       if (domain === 'FLN' || !domain) { // Added !domain fallback
         console.log('⚠️ [Simulation] Falling back to local FLN compilation...');
-        const lfa = compileFLNGraphToLFA(nodes, edges); // Keep this helper available?
+        const lfa = compileFLNGraphToLFA(nodes as any, edges); // Keep this helper available?
         const shortcomings: string[] = [];
         // ... simplistic fallback
         if (lfa) {
