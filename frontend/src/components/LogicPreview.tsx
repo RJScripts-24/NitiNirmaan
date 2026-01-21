@@ -24,7 +24,7 @@ import HexagonBackground from './HexagonBackground';
 import { LFADocument } from '../lib/fln-compiler';
 import { supabase } from '../lib/supabase';
 import { AiInsightsPanel } from './simulation/AiInsightsPanel';
-import axios from 'axios';
+import { api } from '../lib/api';
 
 // Define MissionData interface to match MissionInitialize
 interface MissionData {
@@ -71,7 +71,7 @@ export default function LogicPreview({
     setIsAuditing(true);
     setShowAuditPanel(true);
     try {
-      const response = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/ai-audit`, {
+      const response = await api.post('/api/ai-audit', {
         graphData: { nodes: canvasNodes, edges: canvasEdges },
         projectContext: {
           mode: missionData?.domain === 'Career Readiness' ? 'Career' : 'FLN',

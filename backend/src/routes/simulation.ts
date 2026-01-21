@@ -184,6 +184,7 @@ If the plan is solid, return empty arrays.`;
         if (supabase && projectId !== 'guest') {
             await supabase
                 .from('projects')
+                // @ts-ignore
                 .update({ logic_health_score: Math.max(0, score) } as any)
                 .eq('id', projectId);
         }
