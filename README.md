@@ -87,4 +87,4 @@ See the [LICENSE](./License.md) file for details. You are **NOT** allowed to cop
 - GitHub: [@RJScripts-24](https://github.com/RJScripts-24)
 
 ---
-*Built with ❤️ for impactful policy making.*
+
