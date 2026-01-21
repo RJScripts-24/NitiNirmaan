@@ -39,10 +39,21 @@ export default function App() {
   const ctaRef = useRef<HTMLDivElement>(null);
   const taglineRef = useRef<HTMLParagraphElement>(null);
 
+  // Force scroll to top on reload
+  useEffect(() => {
+    if ('scrollRestoration' in window.history) {
+      window.history.scrollRestoration = 'manual';
+    }
+    window.scrollTo(0, 0);
+  }, []);
+
   // Hero text fade-in animation from center
   useGSAP(() => {
     if (currentPage === 'landing') {
       const timeline = gsap.timeline();
+
+      // Ensure we start at the top
+      window.scrollTo(0, 0);
 
       timeline
         .fromTo(
