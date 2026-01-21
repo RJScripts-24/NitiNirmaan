@@ -52,7 +52,8 @@ export default function AuthPage({ onBack, onAuthSuccess }: AuthPageProps) {
           options: {
             data: {
               organization_name: orgName,
-            }
+            },
+            emailRedirectTo: window.location.origin,
           }
         });
       } else {

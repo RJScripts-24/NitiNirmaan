@@ -129,9 +129,12 @@ export default function Dashboard({ onBack, onNavigateToPatterns, onNavigateToIn
           try {
             // Fetch real projects
             // Using Supabase client directly, assuming RLS allows selecting own projects
+            const { data: { user } } = await supabase.auth.getUser();
+
             const { data, error } = await supabase
               .from('projects')
               .select('*')
+              .eq('user_id', user?.id)
               .order('created_at', { ascending: false });
 
             if (error) throw error;
