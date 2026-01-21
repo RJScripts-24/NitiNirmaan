@@ -1089,22 +1089,15 @@ export default function ImpactCanvas({
 
                 try {
                   // 2. Create Project
-                  const createRes = await fetch('/api/projects', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                    body: JSON.stringify({
-                      projectName: currentProjectName || 'Untitled Canvas',
-                      description: 'Shared via Link',
-                      domain: domain || 'GENERAL'
-                    })
+                  const createRes = await api.post('/api/projects', {
+                    projectName: currentProjectName || 'Untitled Canvas',
+                    description: 'Shared via Link',
+                    domain: domain || 'GENERAL'
+                  }, {
+                    headers: { 'Authorization': `Bearer ${token}` }
                   });
 
-                  if (!createRes.ok) {
-                    if (createRes.status === 401) throw new Error('Unauthorized: Token invalid');
-                    throw new Error('Failed to create project');
-                  }
-
-                  const createData = await createRes.json();
+                  const createData = createRes.data;
                   activeProjectId = createData.id;
 
                   // Update Local State
@@ -1112,12 +1105,11 @@ export default function ImpactCanvas({
                   setProjectId(activeProjectId);
 
                   // 3. Save Graph Logic
-                  const saveRes = await fetch(`/api/projects/${activeProjectId}/graph`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                    body: JSON.stringify({ nodes, edges, logicScore: 0 })
+                  await api.put(`/api/projects/${activeProjectId}/graph`, {
+                    nodes, edges, logicScore: 0
+                  }, {
+                    headers: { 'Authorization': `Bearer ${token}` }
                   });
-                  if (!saveRes.ok) throw new Error('Failed to save content');
 
                 } catch (e) {
                   console.error('Auto-save failed:', e);
@@ -1129,29 +1121,16 @@ export default function ImpactCanvas({
               // C. Standard Share
               try {
                 console.log(`📤 [Share] Requesting share for project: ${activeProjectId}`);
-                const response = await fetch(`/api/projects/${activeProjectId}/share`, {
-                  method: 'POST',
+                const response = await api.post(`/api/projects/${activeProjectId}/share`, {}, {
                   headers: {
-                    'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                   }
                 });
 
-                const contentType = response.headers.get("content-type");
-                if (contentType && contentType.indexOf("application/json") !== -1) {
-                  const data = await response.json();
-                  if (!response.ok) {
-                    console.error('❌ [Share] Server Error:', data);
-                    throw new Error(data.error || 'Failed to generate link');
-                  }
-                  console.log('✅ [Share] Success:', data);
-                  navigator.clipboard.writeText(data.shareUrl);
-                  alert('Share link copied to clipboard!');
-                } else {
-                  const text = await response.text();
-                  console.error('❌ [Share] Non-JSON Response:', text);
-                  throw new Error(`Server returned ${response.status}: ${text}`);
-                }
+                const data = response.data;
+                console.log('✅ [Share] Success:', data);
+                navigator.clipboard.writeText(data.shareUrl);
+                alert('Share link copied to clipboard!');
 
               } catch (e: any) {
                 console.error('❌ [Share] Client Error:', e);
@@ -1243,20 +1222,21 @@ export default function ImpactCanvas({
             {isSimulating ? 'Running...' : 'Run Simulation'}
           </Button>
         </div>
-      </header>
+      </header >
 
       {/* Main Content Area */}
-      <div className="flex flex-1 overflow-hidden relative">
+      < div className="flex flex-1 overflow-hidden relative" >
         {/* Left Sidebar - Logic Toolbox */}
-        <LogicToolbox
+        < LogicToolbox
           collapsed={toolboxCollapsed}
-          onToggleCollapse={() => setToolboxCollapsed(!toolboxCollapsed)}
+          onToggleCollapse={() => setToolboxCollapsed(!toolboxCollapsed)
+          }
           isUnlocked={hasProblemStatement}
           domain={domain}
         />
 
         {/* Canvas */}
-        <div className="flex-1 relative" ref={reactFlowWrapper} onDragOver={onDragOver} onDrop={onDrop}>
+        < div className="flex-1 relative" ref={reactFlowWrapper} onDragOver={onDragOver} onDrop={onDrop} >
           <ReactFlow
             nodes={nodes}
             edges={edges}
@@ -1323,19 +1303,21 @@ export default function ImpactCanvas({
           </ReactFlow>
 
           {/* Simulation Overlay */}
-          {isSimulating && (
-            <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-20">
-              <div className="text-center">
-                <div className="w-16 h-16 border-4 border-[#D97706] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                <p className="text-[#E5E7EB] text-lg">Running simulation...</p>
-                <p className="text-[#9CA3AF] text-sm mt-2">Analyzing logic chains and stress points</p>
+          {
+            isSimulating && (
+              <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-20">
+                <div className="text-center">
+                  <div className="w-16 h-16 border-4 border-[#D97706] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                  <p className="text-[#E5E7EB] text-lg">Running simulation...</p>
+                  <p className="text-[#9CA3AF] text-sm mt-2">Analyzing logic chains and stress points</p>
+                </div>
               </div>
-            </div>
-          )}
-        </div>
+            )
+          }
+        </div >
 
         {/* Right Sidebar - Inspector */}
-        <InspectorPanel
+        < InspectorPanel
           selectedNode={selectedNode}
           selectedEdge={selectedEdge}
           show={showInspector}
@@ -1350,24 +1332,26 @@ export default function ImpactCanvas({
         />
 
         {/* AI Companion */}
-        <AICompanionWidget
+        < AICompanionWidget
           show={showAICompanion}
           onToggle={() => setShowAICompanion(!showAICompanion)}
           nodes={nodes}
           edges={edges}
         />
-      </div>
+      </div >
 
       {/* Simulation Results Modal */}
-      {showSimulationResult && (
-        <SimulationResultsModal
-          onClose={() => setShowSimulationResult(false)}
-          data={simulationData}
-          nodes={nodes}
-          edges={edges}
-        />
-      )}
-    </div>
+      {
+        showSimulationResult && (
+          <SimulationResultsModal
+            onClose={() => setShowSimulationResult(false)}
+            data={simulationData}
+            nodes={nodes}
+            edges={edges}
+          />
+        )
+      }
+    </div >
   );
 }
 
@@ -2486,7 +2470,8 @@ function AICompanionWidget({ show, onToggle, nodes, edges }: { show: boolean; on
         edges: edges.map(e => ({ source: e.source, target: e.target }))
       };
 
-      const response = await fetch('/api/chat', {
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${API_URL}/api/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

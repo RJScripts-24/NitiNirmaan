@@ -5,6 +5,7 @@ import { Ripple } from "./ui/ripple";
 import NoiseBackground from './NoiseBackground';
 import HexagonBackground from './HexagonBackground';
 import { supabase } from '../lib/supabase';
+import { api } from '../lib/api';
 import { useEffect } from 'react';
 
 interface MissionInitializeProps {
@@ -60,28 +61,21 @@ export default function MissionInitialize({ onClose, onComplete }: MissionInitia
 
       if (token) {
         // Authenticated User: Create Project in DB
-        const response = await fetch('/api/projects', {
-          method: 'POST',
+        const response = await api.post('/api/projects', {
+          projectName: missionData.projectName,
+          description: `Mission for ${missionData.state}, ${missionData.district}. Outcome: ${missionData.outcome}`,
+          domain: missionData.domain,
+          location: `${missionData.district}, ${missionData.state}`,
+          state: missionData.state,
+          district: missionData.district,
+          outcome: missionData.outcome
+        }, {
           headers: {
-            'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({
-            projectName: missionData.projectName,
-            description: `Mission for ${missionData.state}, ${missionData.district}. Outcome: ${missionData.outcome}`,
-            domain: missionData.domain,
-            location: `${missionData.district}, ${missionData.state}`,
-            state: missionData.state,
-            district: missionData.district,
-            outcome: missionData.outcome
-          })
+          }
         });
 
-        if (!response.ok) {
-          throw new Error('Failed to create project');
-        }
-
-        const data = await response.json();
+        const data = response.data;
         localStorage.setItem('active_project_id', data.id);
         // Also Save initial mission data logic if needed? For now just setting active ID.
 

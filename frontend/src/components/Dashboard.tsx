@@ -13,6 +13,7 @@ interface DashboardProps {
 }
 
 import { supabase } from '../lib/supabase';
+import { api } from '../lib/api';
 
 // ... (keep imports)
 
@@ -47,16 +48,11 @@ export default function Dashboard({ onBack, onNavigateToPatterns, onNavigateToIn
       }
 
       // 2. Call Delete API
-      const response = await fetch(`/api/projects/${projectToDelete.id}`, {
-        method: 'DELETE',
+      await api.delete(`/api/projects/${projectToDelete.id}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to delete project');
-      }
 
       // 3. Update UI
       setUserProjects(prev => prev.filter(p => p.id !== projectToDelete.id));
